@@ -1,0 +1,16 @@
+{
+  "notify": {
+    "approval": "approvazione",
+    "needs": "chiede la tua approvazione",
+    "allow": "Consenti",
+    "deny": "Nega",
+    "terminal": "Nel terminale",
+    "waiting": "Ti aspetta",
+    "idle": "Aspetta la tua risposta",
+    "finished": "Finito",
+    "stopped": "Interrotto",
+    "failed": "Interrotto da un errore",
+    "limit": "Hai raggiunto il limite di utilizzo",
+    "countdown": "Senza risposta, decide il terminale tra %s s"
+  }
+}

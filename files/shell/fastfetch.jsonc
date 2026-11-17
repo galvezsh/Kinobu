@@ -1,0 +1,32 @@
+// Managed by @NAME@: running it again rewrites this file. Delete this line to keep your own changes.
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "file",
+    "source": "@LOGO@",
+    "color": { "1": "38;2;236;230;217", "2": "38;2;169;163;151", "3": "38;2;201;165;74" },
+    "padding": { "top": 2, "left": 2, "right": 4 }
+  },
+  "display": { "separator": "  ", "color": { "keys": "38;2;201;165;74" } },
+  "modules": [
+    { "type": "command", "key": " ", "text": "printf '\\033[1;%sm@NAME@ \\033[0;37mv@VERSION@ \\033[90m· %s\\033[0m' \"${KINOBU_ACCENT:-38;2;201;165;74}\" \"$(shuf -n 1 @TAGLINES@)\"" },
+    "break",
+    { "type": "custom", "format": "{#90}── Hardware ────────────────────────────────{#}" },
+    { "type": "host", "key": "\udb80\udf22 PC    " },
+    { "type": "display", "key": "\udb80\udf79 Screen" },
+    { "type": "cpu", "key": "\uf4bc CPU   " },
+    { "type": "gpu", "key": "\udb82\udcae GPU   " },
+    { "type": "memory", "key": "\udb80\udf5b RAM   " },
+    { "type": "swap", "key": "\udb81\udce1 Swap  " },
+    { "type": "disk", "key": "\udb80\udeca Disk  ", "format": "{size-used} / {size-total} ({size-percentage}) - {filesystem} [{mountpoint}]" },
+    "break",
+    { "type": "custom", "format": "{#90}── Software ────────────────────────────────{#}" },
+    { "type": "uptime", "key": "\udb80\udd50 Uptime" },
+    { "type": "os", "key": "\uf31b OS    ", "format": "{pretty-name}" },
+    { "type": "kernel", "key": "\uf17c Kernel" },
+    { "type": "packages", "key": "\udb80\udfd7 Pkgs  " },
+    { "type": "de", "key": "\udb81\udd6e Desk  ", "format": "{pretty-name} {version} (Wayland)" },
+    { "type": "terminal", "key": "\uf489 Term  " },
+    { "type": "localip", "key": "\udb82\ude5f IP    " }
+  ]
+}

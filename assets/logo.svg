@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <title>Kinobu</title>
+  <circle cx="400" cy="400" r="282" fill="none" stroke="#ECE6D9" stroke-width="60" stroke-dasharray="1725.86 46.00" transform="rotate(-40.33 400 400)"/>
+  <circle cx="400" cy="400" r="204" fill="none" stroke="#A9A397" stroke-width="26" stroke-dasharray="1241.77 40.00" transform="rotate(98.12 400 400)"/>
+  <circle cx="400" cy="400" r="152" fill="none" stroke="#A9A397" stroke-width="26" stroke-dasharray="915.04 40.00" transform="rotate(237.54 400 400)"/>
+  <circle cx="400" cy="400" r="100" fill="none" stroke="#A9A397" stroke-width="26" stroke-dasharray="588.32 40.00" transform="rotate(378.96 400 400)"/>
+  <circle cx="400" cy="400" r="46" fill="#C9A54A"/>
+</svg>

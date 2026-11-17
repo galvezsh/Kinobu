@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Kinobu user setup
+Comment=Sets Kinobu up for a new user, or brings it up to date after an update
+Exec=@LAUNCHER@ user-setup
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

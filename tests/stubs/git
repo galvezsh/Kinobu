@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Test double of git: a clone only creates the folder with the file Kinobu looks for.
+echo "git $*" >>"${KINOBU_TEST_SUDO:-/dev/null}"
+if [[ ${1:-} == clone ]]; then mkdir -p "${!#}"; : >"${!#}/oh-my-bash.sh"; fi
+exit 0

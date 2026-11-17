@@ -1,0 +1,16 @@
+{
+  "notify": {
+    "approval": "Freigabe",
+    "needs": "braucht deine Freigabe",
+    "allow": "Erlauben",
+    "deny": "Ablehnen",
+    "terminal": "Im Terminal",
+    "waiting": "Wartet auf dich",
+    "idle": "Wartet auf deine Antwort",
+    "finished": "Fertig",
+    "stopped": "Angehalten",
+    "failed": "Wegen eines Fehlers angehalten",
+    "limit": "Nutzungslimit erreicht",
+    "countdown": "Ohne Antwort entscheidet das Terminal in %s s"
+  }
+}

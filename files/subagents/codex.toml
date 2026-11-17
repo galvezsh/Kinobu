@@ -1,0 +1,7 @@
+# Managed by Kinobu: rewritten on every run and --update. Do not edit it, changes are
+# lost: copy it under another name to make your own subagent.
+name = "kinobu-system"
+description = "@DESCRIPTION@"
+developer_instructions = '''
+@INSTRUCTIONS@
+'''

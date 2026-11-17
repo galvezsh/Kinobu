@@ -1,0 +1,141 @@
+/* ==========================================================================
+   Managed by Kinobu: rewritten on every run and --update. Do not edit it,
+   changes are lost: put your own CSS in gtk.css, outside the kinobu block.
+
+   Kinobu — livelier GTK 3 apps
+   GTK 3 has no CSS variables: it uses the theme's named colours (Yaru, Adwaita),
+   so it follows the accent colour and light/dark mode too (restart the app after
+   changing them). The accent is used for details; surfaces only get a faint tint.
+   ========================================================================== */
+
+@define-color kinobu_accent @theme_selected_bg_color;
+@define-color kinobu_surface alpha(@kinobu_accent, 0.03);
+@define-color kinobu_band_top mix(@theme_bg_color, @kinobu_accent, 0.10);
+@define-color kinobu_band_bottom mix(@theme_bg_color, @kinobu_accent, 0.05);
+@define-color kinobu_sidebar mix(@theme_bg_color, @kinobu_accent, 0.05);
+@define-color kinobu_hover alpha(@kinobu_accent, 0.10);
+@define-color kinobu_selected alpha(@kinobu_accent, 0.22);
+@define-color kinobu_selected_hover alpha(@kinobu_accent, 0.30);
+@define-color kinobu_outline alpha(@kinobu_accent, 0.60);
+@define-color kinobu_edge alpha(@kinobu_accent, 0.18);
+
+/* --- Surfaces: a faint tint over the theme colour --- */
+window.background,
+.view,
+textview text,
+popover,
+menu {
+  background-image: linear-gradient(@kinobu_surface, @kinobu_surface);
+}
+
+/* --- Header bars: a soft accent gradient --- */
+headerbar,
+.titlebar:not(headerbar) {
+  background-color: @theme_bg_color;
+  background-image: linear-gradient(to bottom, @kinobu_band_top, @kinobu_band_bottom);
+}
+headerbar:backdrop,
+.titlebar:not(headerbar):backdrop {
+  background-image: linear-gradient(@kinobu_band_bottom, @kinobu_band_bottom);
+}
+
+/* --- Sidebars: tinted, accent icons, current-location indicator --- */
+placessidebar,
+stacksidebar,
+.sidebar,
+.navigation-sidebar {
+  background-color: @kinobu_sidebar;
+}
+placessidebar row image,
+.navigation-sidebar row image {
+  color: @kinobu_accent;
+}
+placessidebar row:hover,
+stacksidebar row:hover,
+.navigation-sidebar row:hover {
+  background-color: @kinobu_hover;
+}
+placessidebar row:selected,
+stacksidebar row:selected,
+.navigation-sidebar row:selected {
+  color: @theme_fg_color;
+  background-color: @kinobu_selected;
+  background-image: linear-gradient(to right, @kinobu_accent 3px, transparent 3px);
+}
+placessidebar row:selected image,
+.navigation-sidebar row:selected image {
+  color: @kinobu_accent;
+}
+
+/* --- Lists and tables: tint and border when selected --- */
+treeview.view:selected,
+iconview:selected,
+flowbox flowboxchild:selected {
+  color: @theme_fg_color;
+  background-color: @kinobu_selected;
+}
+treeview.view:selected:hover {
+  background-color: @kinobu_selected_hover;
+}
+iconview:selected,
+flowbox flowboxchild:selected {
+  box-shadow: inset 0 0 0 1px @kinobu_outline;
+  border-radius: 6px;
+}
+list.content,
+list.boxed-list,
+frame > border {
+  border-color: @kinobu_edge;
+}
+
+/* --- Menus: tinted hover --- */
+menu menuitem:hover,
+popover modelbutton:hover {
+  color: @theme_fg_color;
+  background-color: @kinobu_hover;
+}
+
+/* --- Tabs: accent underline on the open tab --- */
+notebook > header > tabs > tab:checked {
+  box-shadow: inset 0 -2px @kinobu_accent;
+  background-color: @kinobu_hover;
+}
+
+/* --- Text fields: a tinted background while typing --- */
+entry:focus {
+  background-image: linear-gradient(@kinobu_hover, @kinobu_hover);
+}
+
+/* --- Buttons and switches --- */
+button.suggested-action:not(:disabled) {
+  background-image: linear-gradient(to bottom, shade(@kinobu_accent, 1.12), @kinobu_accent);
+}
+switch:checked {
+  box-shadow: 0 0 6px alpha(@kinobu_accent, 0.45);
+}
+
+/* --- Scrollbars: accent-tinted sliders --- */
+scrollbar slider {
+  background-color: alpha(@kinobu_accent, 0.45);
+}
+scrollbar slider:hover {
+  background-color: alpha(@kinobu_accent, 0.65);
+}
+scrollbar slider:active {
+  background-color: @kinobu_accent;
+}
+
+/* --- Window buttons: theme look at rest; on hover close turns red, minimise
+       amber and maximise the accent colour --- */
+headerbar button.titlebutton.close:hover, .titlebar button.titlebutton.close:hover {
+  color: white; background-color: @error_color; background-image: none;
+  border-radius: 100%; box-shadow: 0 0 6px alpha(@error_color, 0.5);
+}
+headerbar button.titlebutton.minimize:hover, .titlebar button.titlebutton.minimize:hover {
+  color: white; background-color: @warning_color; background-image: none;
+  border-radius: 100%; box-shadow: 0 0 6px alpha(@warning_color, 0.5);
+}
+headerbar button.titlebutton.maximize:hover, .titlebar button.titlebutton.maximize:hover {
+  color: white; background-color: @kinobu_accent; background-image: none;
+  border-radius: 100%; box-shadow: 0 0 6px alpha(@kinobu_accent, 0.5);
+}

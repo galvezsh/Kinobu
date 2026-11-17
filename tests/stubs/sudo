@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Test double of sudo: writes the command down and runs nothing, so tests never touch the system.
+echo "sudo $*" >>"${KINOBU_TEST_SUDO:-/dev/null}"
+if [[ -n ${KINOBU_TEST_FAIL:-} && "$*" == *"$KINOBU_TEST_FAIL"* ]]; then echo "E: stubbed failure of: $*" >&2; exit 100; fi
+if [[ ${1:-} == -n ]]; then shift; fi
+if [[ ${1:-} == cmp ]]; then exit 1; fi      # every system file looks different: it gets "written"
+exit 0

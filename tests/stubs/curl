@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Test double of curl: downloads nothing; a file asked with -o gets a few bytes.
+echo "curl $*" >>"${KINOBU_TEST_SUDO:-/dev/null}"
+while (($#)); do
+    if [[ $1 == -o ]]; then echo ": stub" >"$2"; fi
+    shift
+done
+exit 0

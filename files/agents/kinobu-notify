@@ -1,0 +1,173 @@
+#!/usr/bin/env bash
+# Kinobu agent notifications (written by Kinobu: rewritten on every run and --update): turns the hooks of the coding agents into GNOME notifications.
+# Usage: kinobu-notify <agent> <start|done|waiting|permission>   (hook JSON on stdin)
+#   start       a task begins (remembered, so short tasks do not notify when they end)
+#   done        the agent finished: notifies when the task took KINOBU_NOTIFY_MIN_SECONDS or more
+#   failed      the turn ended on an error (API, usage limit): always notifies
+#   waiting     the agent waits for the user
+#   permission  approval (Claude Code, Codex): Kinobu's window with Allow, Deny and "In terminal"
+#               (GNOME 50 shows no buttons in notifications). Closing it, "In terminal" or no
+#               answer in time leave the decision to the agent's own prompt in the terminal
+# One notice per turn and session: a new one replaces the last, and "waiting" after a
+# "finished" is skipped. The notice header is the agent's name.
+# Privacy: only the agent's name, the project folder, the tool, the command and the agent's own text are
+# shown. Nothing is logged or sent anywhere, and fields such as user_email are never read.
+set -u
+agent=${1:-agent}; event=${2:-}
+input=$(cat)
+min_seconds=${KINOBU_NOTIFY_MIN_SECONDS:-@MIN@}
+wait_seconds=${KINOBU_NOTIFY_WAIT:-@WAIT@}
+approvals=${KINOBU_NOTIFY_APPROVALS:-@APPROVALS@}   # dialog | notify
+sound=${KINOBU_NOTIFY_SOUND:-@SOUND@}               # true | false
+state="${XDG_RUNTIME_DIR:-/tmp}/kinobu-notify"
+mkdir -p "$state"
+
+field() { jq -r "$1 // empty" <<<"$input" 2>/dev/null; }
+
+# Texts in the desktop language, from @SYSTEM_DIR@/i18n/<language>.json (section "notify");
+# English for a language or a text that is not there
+lang=${LANGUAGE:-${LC_ALL:-${LC_MESSAGES:-${LANG:-en}}}}; lang=${lang%%[_.:]*}
+i18n="@SYSTEM_DIR@/i18n"
+t() {
+    local file text
+    for file in "$i18n/$lang.json" "$i18n/en.json"; do
+        text=$(jq -r --arg k "$1" '.notify[$k] // empty' "$file" 2>/dev/null)
+        if [[ -n $text ]]; then printf '%s\n' "$text"; return; fi
+    done
+    printf '%s\n' "$1"
+}
+
+case $agent in
+    claude) name="Claude Code" ;; codex) name="Codex" ;; agy) name="Antigravity" ;;
+    *) name=$agent ;;
+esac
+dir=$(field '.cwd // .workspace_roots[0] // .workspacePaths[0]')
+project=${dir:+${dir%/}}; project=${project##*/}
+# The notice header shows the agent; the title, the project folder
+title=${project:-$name}
+session=$(field '.session_id // .conversation_id // .conversationId')
+mark="$state/${agent}-${session:-default}"
+
+# The app the agent runs in, from the environment it passes to its hooks: clicking a notice
+# brings it back. Nothing found: the click just closes the notice.
+terminal_app() {
+    local id dir
+    if [[ -n ${PTYXIS_VERSION:-} ]]; then id=org.gnome.Ptyxis
+    elif [[ ${TERM_PROGRAM:-} == vscode ]]; then
+        case ${VSCODE_GIT_ASKPASS_NODE:-} in *cursor*) id=cursor ;; *) id=com.microsoft.VSCode ;; esac
+    elif [[ -n ${GNOME_TERMINAL_SCREEN:-} ]]; then id=org.gnome.Terminal
+    fi
+    [[ -n ${id:-} ]] || return 0
+    for dir in /usr/share/applications /var/lib/snapd/desktop/applications "$HOME/.local/share/applications"; do
+        if [[ -f $dir/$id.desktop ]]; then echo "$id"; return; fi
+    done
+}
+
+
+# Plain, short text for a notification body (no Markdown, at most $2 characters, 180 by default)
+short() {
+    local text max=${2:-180}
+    text=$(tr '\n' ' ' <<<"$1" | sed -E 's/[`*_#>]+//g; s/\[([^]]*)\]\([^)]*\)/\1/g; s/ +/ /g; s/^ //; s/ $//')
+    if ((${#text} > max)); then text="${text:0:max-1}…"; fi
+    printf '%s' "$text"
+}
+
+# Agents that need an answer on stdout even when they have nothing to decide
+reply_neutral() {
+    case "$agent:$event" in
+        agy:waiting) echo '{"decision": "allow"}' ;;
+    esac
+}
+
+# A short sound from the desktop's sound theme, in the background; silent with Do Not Disturb
+chime() {
+    [[ $sound == true ]] || return 0
+    [[ "$(gsettings get org.gnome.desktop.notifications show-banners 2>/dev/null)" != false ]] || return 0
+    if command -v canberra-gtk-play >/dev/null; then
+        (canberra-gtk-play --id="$1" >/dev/null 2>&1 &)
+    elif command -v pw-play >/dev/null && [[ -f /usr/share/sounds/freedesktop/stereo/$1.oga ]]; then
+        (pw-play "/usr/share/sounds/freedesktop/stereo/$1.oga" >/dev/null 2>&1 &)
+    fi
+}
+
+notify() {   # notify <urgency> <summary> <body>
+    local urgency=$1 summary=$2 body=$3 id level=1
+    local helper="@PROGRAMS_DIR@/kinobu-notice.py"
+    # The last notice of this session is replaced, not stacked
+    id=$(cat "$mark.id" 2>/dev/null || true)
+    [[ $id =~ ^[0-9]+$ ]] || id=0
+    if [[ -f $helper ]] && command -v python3 >/dev/null; then
+        # kinobu-notice.py: agent name and a terminal icon in the header, click → the terminal
+        case $urgency in low) level=0 ;; critical) level=2 ;; esac
+        (setsid python3 "$helper" --app-name "$name" --summary "$summary" --body "$body" \
+            --urgency "$level" --replace-id "$id" --id-file "$mark.id" --terminal "$(terminal_app)" \
+            </dev/null >/dev/null 2>&1 &)
+    else
+        notify-send --app-name="$name" --urgency="$urgency" --icon=utilities-terminal "$summary" "$body" 2>/dev/null
+    fi
+}
+
+case $event in
+    start)
+        date +%s >"$mark"
+        rm -f "$mark.done"   # a new turn: it may notify again
+        ;;
+    done)
+        started=$(cat "$mark" 2>/dev/null || true)
+        rm -f "$mark"
+        if [[ -n $started ]] && (($(date +%s) - started < min_seconds)); then exit 0; fi
+        # An agent may fire twice for one end: one notification is enough
+        if [[ -e $mark.done ]] && (($(date +%s) - $(stat -c %Y "$mark.done") < 5)); then exit 0; fi
+        : >"$mark.done"
+        status=$(field '.status // .terminationReason')
+        message=$(field '.last_assistant_message')
+        case $status in
+            error|aborted) chime dialog-warning; notify normal "❌ $title" "$(t stopped): $status" ;;
+            *) chime complete; notify normal "✅ $title" "$(short "${message:-$(t finished)}")" ;;
+        esac
+        ;;
+    failed)
+        # Claude Code's StopFailure: the turn ended on an API error or a usage limit
+        rm -f "$mark"
+        : >"$mark.done"
+        reason=$(field '.error.message // .error // .message // .reason')
+        chime dialog-warning
+        if [[ $(field '.error.type? // .error') == rate_limit* ]]; then notify normal "❌ $title" "$(t limit)"
+        else notify normal "❌ $title" "$(t failed)${reason:+: $(short "$reason" 160)}"; fi
+        ;;
+    waiting)
+        # Claude Code's own notice text is always English: say it in the desktop language instead.
+        # Its idle notice comes a minute after a turn ends: skip it when "finished" already said so.
+        if [[ -n $(field '.notification_type') ]]; then
+            if [[ -e $mark.done ]]; then exit 0; fi
+            message=$(t idle)
+        else message=$(field '.message // .toolCall.args.Question // .toolCall.args.question // .description // .command'); fi
+        : >"$mark.done"
+        chime message-new-instant
+        notify normal "💬 $title" "$(short "${message:-$(t waiting)}")"
+        ;;
+    permission)
+        tool=$(field '.tool_name')
+        detail=$(field '.tool_input.command // .tool_input.file_path // .tool_input.url // .tool_input.description')
+        what=$(short "${tool:-Tool}${detail:+: $detail}" 400)
+        chime dialog-warning
+        window="@PROGRAMS_DIR@/approve.py"
+        if [[ $approvals == dialog && -n ${WAYLAND_DISPLAY:-}${DISPLAY:-} && -f $window ]]; then
+            # Kinobu's approval window prints allow or deny; "In terminal", Esc, closing it or
+            # the countdown print nothing, so the agent's own prompt in the terminal decides
+            answer=$(python3 "$window" --agent "$name" --project "$project" --tool "${tool:-Tool}" \
+                --detail "$(short "$detail" 600)" --timeout "$wait_seconds" --title "$(t approval)" \
+                --question "$(t needs)" --allow "$(t allow)" --deny "$(t deny)" \
+                --terminal "$(t terminal)" --countdown "$(t countdown)" 2>/dev/null)
+            if [[ $answer == allow ]]; then
+                echo '{"hookSpecificOutput": {"hookEventName": "PermissionRequest", "decision": {"behavior": "allow"}}}'
+            elif [[ $answer == deny ]]; then
+                echo '{"hookSpecificOutput": {"hookEventName": "PermissionRequest", "decision": {"behavior": "deny", "message": "Denied by the user from the desktop"}}}'
+            fi
+        else
+            notify critical "🔐 ${project:+$project · }$(t needs)" "$(short "$what")"
+        fi
+        ;;
+esac
+reply_neutral
+exit 0

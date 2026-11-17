@@ -1,0 +1,224 @@
+/* ==========================================================================
+   Managed by Kinobu: rewritten on every run and --update. Do not edit it,
+   changes are lost: put your own CSS in gtk.css, outside the kinobu block.
+
+   Kinobu — livelier GTK 4 apps (libadwaita and plain GTK 4)
+   Every colour comes from the theme, so it follows the accent colour and
+   light/dark mode live. The accent is used for details, not for everything:
+   surfaces get a faint tint, a companion hue (the accent turned 40°) adds
+   variety, and text stays neutral.
+   Plain GTK 4 apps (no libadwaita, e.g. HandBrake) use the theme's named colours.
+   ========================================================================== */
+
+:root {
+  /* Overall strength: 0 turns the tints off, 1 is the default, 2 is bold */
+  --kinobu-intensity: 1;
+
+  /* libadwaita variables first, the theme's named colours (Yaru, Adwaita) as fallback */
+  --kinobu-accent: var(--accent-bg-color, @theme_selected_bg_color);
+  --kinobu-accent-fg: var(--accent-color, @theme_selected_bg_color);
+  --kinobu-companion: oklch(from var(--kinobu-accent) l c calc(h + 40));
+  --kinobu-window: var(--window-bg-color, @theme_bg_color);
+  --kinobu-view: var(--view-bg-color, @theme_base_color);
+
+  /* Tint amounts (scaled by the intensity) */
+  --kinobu-surface-tint: calc(var(--kinobu-intensity) * 3%);
+  --kinobu-band-tint: calc(var(--kinobu-intensity) * 12%);
+  --kinobu-sidebar-tint: calc(var(--kinobu-intensity) * 6%);
+
+  --kinobu-surface: color-mix(in srgb, var(--kinobu-accent) var(--kinobu-surface-tint), transparent);
+  --kinobu-hover: color-mix(in srgb, var(--kinobu-accent) 10%, transparent);
+  --kinobu-selected: color-mix(in srgb, var(--kinobu-accent) 22%, transparent);
+  --kinobu-selected-hover: color-mix(in srgb, var(--kinobu-accent) 30%, transparent);
+  --kinobu-outline: color-mix(in srgb, var(--kinobu-accent) 60%, transparent);
+  --kinobu-edge: color-mix(in srgb, var(--kinobu-accent) 18%, transparent);
+  --kinobu-divider: color-mix(in srgb, currentColor 10%, transparent);
+  --kinobu-band-top: color-mix(in srgb, var(--kinobu-accent) var(--kinobu-band-tint), var(--kinobu-window));
+  --kinobu-band-bottom: color-mix(in srgb, var(--kinobu-companion) calc(var(--kinobu-band-tint) / 2), var(--kinobu-window));
+
+  /* libadwaita reads these */
+  --sidebar-bg-color: color-mix(in srgb, var(--kinobu-accent) var(--kinobu-sidebar-tint), var(--kinobu-window));
+  --sidebar-backdrop-color: var(--sidebar-bg-color);
+  --headerbar-bg-color: var(--kinobu-band-bottom);
+  --headerbar-backdrop-color: var(--kinobu-band-bottom);
+}
+
+/* The same tint looks stronger in dark mode, so soften it */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --kinobu-surface-tint: calc(var(--kinobu-intensity) * 2.5%);
+    --kinobu-band-tint: calc(var(--kinobu-intensity) * 9%);
+    --kinobu-sidebar-tint: calc(var(--kinobu-intensity) * 4%);
+  }
+}
+
+/* --- Surfaces: a faint tint over the theme colour, so nothing is flat grey.
+       Not in Ptyxis: its window colour is the terminal palette --- */
+window.background:not(.ptyxis-window),
+window:not(.ptyxis-window) .view,
+window:not(.ptyxis-window) textview > text,
+window:not(.ptyxis-window) popover > contents {
+  background-image: linear-gradient(var(--kinobu-surface), var(--kinobu-surface));
+}
+
+/* --- Top bar: a soft gradient from the accent to its companion hue --- */
+window:not(.ptyxis-window) .top-bar {
+  background-color: var(--kinobu-window);
+  background-image: linear-gradient(to bottom, var(--kinobu-band-top), var(--kinobu-band-bottom));
+  box-shadow: inset 0 -1px var(--kinobu-divider);
+}
+window:not(.ptyxis-window) .top-bar headerbar {
+  background: none;
+  box-shadow: none;
+}
+
+/* --- Sidebars: accent icons and a current-location indicator --- */
+.navigation-sidebar > row {
+  border-radius: 6px;
+}
+.navigation-sidebar > row image {
+  color: var(--kinobu-accent-fg);
+}
+.navigation-sidebar > row:hover {
+  background-color: var(--kinobu-hover);
+}
+.navigation-sidebar > row:selected {
+  color: inherit;
+  background-color: var(--kinobu-selected);
+  background-image: linear-gradient(var(--kinobu-accent), var(--kinobu-accent));
+  background-size: 3px 16px;
+  background-position: left center;
+  background-repeat: no-repeat;
+}
+.navigation-sidebar > row:selected:dir(rtl) {
+  background-position: right center;
+}
+
+/* --- Settings-style lists and cards: an accent edge, tinted hover,
+       group titles in the accent colour --- */
+.boxed-list,
+.card {
+  box-shadow: 0 0 0 1px var(--kinobu-edge), 0 1px 3px 1px rgb(0 0 6 / 7%);
+}
+.boxed-list > row.activatable:hover,
+.card.activatable:hover {
+  background-image: linear-gradient(var(--kinobu-hover), var(--kinobu-hover));
+}
+preferencesgroup .header .labels > .heading {
+  color: var(--kinobu-accent-fg);
+}
+
+/* --- Big titles and empty pages: a hint of colour, not plain grey --- */
+.title-1,
+.title-2 {
+  color: color-mix(in srgb, var(--kinobu-accent-fg) 35%, currentColor);
+}
+statuspage .icon {
+  color: var(--kinobu-accent-fg);
+  opacity: 0.75;
+}
+
+/* --- Grids and tables: tint on hover; tint and border when selected --- */
+gridview > child,
+columnview > listview > row {
+  border-radius: 6px;
+}
+gridview > child:hover,
+columnview > listview > row:hover {
+  background-color: var(--kinobu-hover);
+}
+gridview > child:selected,
+columnview > listview > row:selected {
+  color: inherit;
+  background-color: var(--kinobu-selected);
+  box-shadow: inset 0 0 0 1px var(--kinobu-outline);
+}
+gridview > child:selected:hover,
+columnview > listview > row:selected:hover {
+  background-color: var(--kinobu-selected-hover);
+}
+columnview > header > button {
+  border-right: 1px solid var(--kinobu-divider);
+}
+columnview > header > button:hover {
+  background-color: var(--kinobu-hover);
+}
+
+/* --- Menus: tinted hover --- */
+popover.menu modelbutton:hover,
+popover.menu row:hover {
+  background-color: var(--kinobu-hover);
+}
+
+/* --- Tabs: the open tab gets an accent underline and a tint --- */
+window:not(.ptyxis-window) tabbar tab:selected {
+  background-color: var(--kinobu-hover);
+  background-image: linear-gradient(to top, var(--kinobu-accent) 2px, transparent 2px);
+}
+
+/* --- Text fields: a tinted background while typing --- */
+entry:focus-within,
+spinbutton:focus-within {
+  background-image: linear-gradient(var(--kinobu-hover), var(--kinobu-hover));
+}
+
+/* --- Buttons and switches: the main action blends into the companion hue,
+       switches glow softly when on --- */
+button.suggested-action,
+splitbutton.suggested-action > button {
+  background-image: linear-gradient(135deg, transparent, color-mix(in srgb, var(--kinobu-companion) 45%, transparent));
+}
+/* keep libadwaita's hover and press feedback on top of the gradient */
+button.suggested-action:hover,
+splitbutton.suggested-action > button:hover {
+  background-image: image(color-mix(in srgb, currentColor 10%, transparent)),
+                    linear-gradient(135deg, transparent, color-mix(in srgb, var(--kinobu-companion) 45%, transparent));
+}
+button.suggested-action:active,
+splitbutton.suggested-action > button:active {
+  background-image: image(color-mix(in srgb, black 20%, transparent)),
+                    linear-gradient(135deg, transparent, color-mix(in srgb, var(--kinobu-companion) 45%, transparent));
+}
+switch:checked {
+  box-shadow: 0 0 6px color-mix(in srgb, var(--kinobu-accent) 45%, transparent);
+}
+
+/* --- Scrollbars: accent-tinted sliders --- */
+scrollbar slider {
+  background-color: color-mix(in srgb, var(--kinobu-accent-fg) 45%, transparent);
+}
+scrollbar slider:hover {
+  background-color: color-mix(in srgb, var(--kinobu-accent-fg) 65%, transparent);
+}
+scrollbar slider:active {
+  background-color: var(--kinobu-accent-fg);
+}
+
+/* --- Files: the address bar as a clear field with accent folder icons --- */
+.nautilus-window .nautilus-pathbar {
+  background-color: var(--kinobu-view);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 8px;
+}
+.nautilus-window .nautilus-path-button:not(.current-dir) image {
+  color: var(--kinobu-accent-fg);
+  opacity: 1;
+}
+.nautilus-window .nautilus-path-button:hover {
+  background-color: var(--kinobu-hover);
+}
+
+/* --- Window buttons: theme look at rest; on hover close turns red, minimise
+       amber and maximise the accent colour, solid with a soft glow --- */
+windowcontrols > button.close    { --kinobu-wc: var(--destructive-bg-color, @error_color); }
+windowcontrols > button.minimize { --kinobu-wc: var(--warning-bg-color, @warning_color); }
+windowcontrols > button.maximize { --kinobu-wc: var(--kinobu-accent); }
+windowcontrols > button:hover > image {
+  color: white;
+  background-color: var(--kinobu-wc, currentColor);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--kinobu-wc, currentColor) 50%, transparent);
+}
+windowcontrols > button:active > image {
+  color: white;
+  background-color: color-mix(in srgb, var(--kinobu-wc, currentColor) 80%, black);
+}

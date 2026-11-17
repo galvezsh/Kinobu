@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Test double: the Nerd Font is already there.
+echo "UbuntuSansMono Nerd Font Mono"

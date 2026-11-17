@@ -1,0 +1,5 @@
+<application>
+  <component name="TerminalFontOptions">
+    <option name="FONT_FAMILY" value="@FONT@" />
+  </component>
+</application>

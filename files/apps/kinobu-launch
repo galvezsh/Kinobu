@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Kinobu launcher used by the keyboard shortcuts. Resolves apps at run time,
+# so changing the default browser or terminal needs no reconfiguration.
+# Managed by Kinobu: rewritten on every run and --update. Do not edit it, changes are lost.
+set -u
+terminal() {   # terminal [command...]
+    if command -v ptyxis >/dev/null; then
+        if (($#)); then exec ptyxis --new-window --maximize -x "$(printf '%q ' "$@")"; fi
+        exec ptyxis --new-window --maximize
+    elif command -v gnome-terminal >/dev/null; then
+        if (($#)); then exec gnome-terminal --window --maximize -- "$@"; fi
+        exec gnome-terminal --window --maximize
+    else
+        if (($#)); then exec x-terminal-emulator -e "$@"; fi
+        exec x-terminal-emulator
+    fi
+}
+case ${1:-} in
+    terminal) terminal ;;
+    files)
+        if command -v nautilus >/dev/null; then exec nautilus --new-window "$HOME"; else exec xdg-open "$HOME"; fi ;;
+    browser)
+        exec gtk-launch "$(xdg-settings get default-web-browser)" ;;
+    emoji)
+        if command -v gnome-characters >/dev/null; then exec gnome-characters; fi
+        notify-send "Kinobu" "GNOME Characters is not installed" ;;
+    monitor)
+        for app in mission-center resources gnome-system-monitor; do
+            if command -v "$app" >/dev/null; then exec "$app"; fi
+        done
+        notify-send "Kinobu" "No system monitor installed" ;;
+    agent)
+        agent=$(cat "$HOME/.config/kinobu/agent" 2>/dev/null)
+        if [[ -n $agent && -x $agent ]]; then
+            cd "$HOME" && terminal bash -lc "exec $(printf '%q' "$agent")"
+        fi
+        notify-send "Kinobu" "No default agent set: run the Kinobu setup again and choose one" ;;
+    dictation)
+        if command -v handy >/dev/null; then exec handy --toggle-transcription; fi
+        notify-send "Kinobu" "Handy is not installed: run the Kinobu setup again to add it" ;;
+    keys)
+        # A GNOME-style window (libadwaita); a second Super+K closes it
+        exec python3 "@PROGRAMS_DIR@/keys.py" ;;
+    welcome)
+        exec python3 "@PROGRAMS_DIR@/welcome.py" ;;
+    zen)
+        # Zen, the voice assistant; a second press brings back the open window
+        exec python3 "@PROGRAMS_DIR@/zen.py" ;;
+    user-setup)
+        # Run at every login: a user who is new, or behind the installed version, gets their part
+        if [[ "$(cat "@SYSTEM_DIR@/version" 2>/dev/null)" != "$(cat "$HOME/.config/kinobu/version" 2>/dev/null)" ]]; then
+            terminal "@BIN_DIR@/kinobu" --user
+        fi ;;
+    *)
+        echo "Usage: kinobu-launch terminal|files|browser|monitor|agent|dictation|emoji|keys|welcome|zen|user-setup" >&2
+        exit 1 ;;
+esac

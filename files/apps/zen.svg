@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Zen icon: the living orb of Kinobu's voice assistant -->
+  <defs>
+    <radialGradient id="halo" cx="64" cy="64" r="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0.55" stop-color="#3584e4" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#3584e4" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="violet" cx="52" cy="46" r="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c7a6ff"/><stop offset="0.6" stop-color="#8f5be8"/>
+      <stop offset="1" stop-color="#5b2fb3"/>
+    </radialGradient>
+    <radialGradient id="cyan" cx="70" cy="50" r="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#a6f0ff"/><stop offset="0.6" stop-color="#2fb7e6"/>
+      <stop offset="1" stop-color="#1569a8"/>
+    </radialGradient>
+    <radialGradient id="blue" cx="56" cy="50" r="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#b8d8ff"/><stop offset="0.6" stop-color="#3584e4"/>
+      <stop offset="1" stop-color="#1a4f9c"/>
+    </radialGradient>
+    <radialGradient id="glint" cx="52" cy="46" r="26" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="62" fill="url(#halo)"/>
+  <path fill="url(#violet)" fill-opacity="0.75"
+        d="M64 18c22 0 42 14 44 38s-12 50-40 52-48-16-50-40 24-50 46-50z"/>
+  <path fill="url(#cyan)" fill-opacity="0.7"
+        d="M70 20c24 2 40 22 38 46s-22 44-46 42-42-24-40-46 24-44 48-42z"/>
+  <path fill="url(#blue)" fill-opacity="0.85"
+        d="M62 30c18-2 36 12 36 32s-14 36-34 36-36-14-34-34 14-32 32-34z"/>
+  <circle cx="52" cy="46" r="26" fill="url(#glint)"/>
+</svg>

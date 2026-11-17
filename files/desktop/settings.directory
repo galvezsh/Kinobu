@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Directory
+Name=Settings
+Name[es]=Configuración
+Name[fr]=Paramètres
+Name[de]=Einstellungen
+Name[it]=Impostazioni
+Name[pt]=Definições
+Name[pt_BR]=Configurações
+Icon=org.gnome.Settings
