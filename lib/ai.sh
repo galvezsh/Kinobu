@@ -7,13 +7,11 @@
 # Official installers, run as the user: "software id|command it installs|installer URL|shell"
 AI_INSTALLERS=(
     "claude|claude|https://claude.ai/install.sh|bash"
-    "codex|codex|https://chatgpt.com/codex/install.sh|sh"
-    "agy|agy|https://antigravity.google/cli/install.sh|bash"
     "ollama|ollama|https://ollama.com/install.sh|sh"
 )
 LMSTUDIO_URL="https://lmstudio.ai/download/latest/linux/x64?format=deb"   # the package is lm-studio
 UV_URL="https://astral.sh/uv/install.sh"
-AGENT_TOOLS=(claude codex agy)      # coding agents, in the order they become the default one
+AGENT_TOOLS=(claude)               # coding agents, in the order they become the default one
 
 # Zen, the voice assistant (always installed with Handy, which it listens through). Its voices
 # follow the desktop language (ZEN_PIPER; English for any other). Qwen3-TTS, its most natural
@@ -41,8 +39,7 @@ run_installer() {   # run_installer URL SHELL
     local script="$TMP_DIR/installer.sh"
     rm -f "$script"
     if ! curl -fsSL "$1" -o "$script" 2>>"$LOG"; then return 1; fi
-    # Codex's installer asks questions unless told not to
-    run env CODEX_NON_INTERACTIVE=true "$2" "$script"
+    run "$2" "$script"
 }
 
 install_ai_tools() {

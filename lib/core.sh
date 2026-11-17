@@ -423,9 +423,6 @@ finish_run() {
         mkdir -p "$CONFIG_DIR"
         printf '%s\n' "$APP_VERSION" >"$CONFIG_DIR/version"
     fi
-    if planned context && has_cmd codex; then
-        NEXT_STEPS+=("Codex: open it and type /hooks once to trust $APP_NAME's notifications")
-    fi
     if [[ $ACTION != manual && $RUN_KIND == setup ]]; then
         NEXT_STEPS+=("Connect your Google or Microsoft account in Settings > Online Accounts (mail, contacts, calendar)")
         NEXT_STEPS+=("Handy: open it and download a model (Parakeet Ultra is recommended); the voice assistant listens through it")

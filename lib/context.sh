@@ -6,7 +6,7 @@
 # ---------------------------------------------------------------------------------------------
 # GNOME notifications from the agents' hooks: finished, waiting for you, approve or deny
 AGENT_NOTIFICATIONS=true
-NOTIFY_APPROVALS="dialog"           # dialog: Allow / Deny window (Claude Code, Codex) | notify: notification only
+NOTIFY_APPROVALS="dialog"           # dialog: Allow / Deny window | notify: notification only
 NOTIFY_SOUND=true                   # a short sound with each notice (silent with Do Not Disturb)
 NOTIFY_WAIT=45                      # seconds the approval window waits before the terminal decides
 NOTIFY_MIN_SECONDS=20               # "finished" is only shown for tasks that took at least this long
@@ -24,10 +24,7 @@ install_context() {
     step "Linking the skill into each agent"
     # Same layout as Omarchy: symlinks, so re-running this script updates every agent.
     # Every supported agent gets it, installed or not, so one installed later is ready too.
-    # ~/.agents/skills is read by Codex; Claude Code reads ~/.claude/skills; Antigravity,
-    # ~/.gemini/config/skills.
-    local dirs=("$HOME/.agents/skills" "$HOME/.claude/skills" "$HOME/.codex/skills"
-        "$HOME/.gemini/config/skills") dir link
+    local dirs=("$HOME/.claude/skills") dir link
     for dir in "${dirs[@]}"; do
         link="$dir/$APP_ID"
         mkdir -p "$dir"
@@ -47,11 +44,9 @@ install_context() {
     pointer=$(render agents/note.md APP_NAME APP_ID)
     local -A files=(
         [claude]="$HOME/.claude/CLAUDE.md"
-        [codex]="$HOME/.codex/AGENTS.md"
-        [agy]="$HOME/.gemini/GEMINI.md"
     )
     local tool
-    for tool in claude codex agy; do
+    for tool in "${AGENT_TOOLS[@]}"; do
         put_block "${files[$tool]}" "<!-- $APP_ID:begin -->" "<!-- $APP_ID:end -->" "$pointer"
         report_changed "${files[$tool]/#$HOME/\~} updated" "${files[$tool]/#$HOME/\~} already up to date"
     done
@@ -77,10 +72,8 @@ install_subagents() {
     instructions=$(render subagents/instructions.md SYSTEM_DIR PROGRAMS_DIR)
     local -A dests=(
         [claude]="$HOME/.claude/agents/kinobu-system.md"
-        [codex]="$HOME/.codex/agents/kinobu-system.toml"
-        [antigravity]="$HOME/.gemini/config/agents/kinobu-system/agent.md"
     )
-    for tool in claude codex antigravity; do
+    for tool in "${AGENT_TOOLS[@]}"; do
         dest=${dests[$tool]}
         put_user_file "$dest" < <(render "subagents/$tool.${dest##*.}" DESCRIPTION="$description" \
             INSTRUCTIONS="$instructions")
@@ -90,8 +83,7 @@ install_subagents() {
 
 # Installs kinobu-notify and adds Kinobu's own entries to every agent's hooks, installed or
 # not, next to the hooks of other tools (only entries that run kinobu-notify are replaced).
-# Formats from each agent's docs: Claude Code and Codex (hooks + PermissionRequest) and
-# Antigravity (~/.gemini/config/hooks.json).
+# Format from Claude Code's docs (hooks + PermissionRequest).
 # shellcheck disable=SC2016  # the jq filters use jq variables ($ours), not shell ones
 install_agent_hooks() {
     step "Agent notifications (GNOME)"
@@ -105,7 +97,7 @@ install_agent_hooks() {
     # Sends each notice and brings back the agent's terminal when it is clicked
     put_file "$PROGRAMS_DIR/kinobu-notice.py" < <(render agents/kinobu-notice.py)
 
-    # Claude Code and Codex share the format: {"hooks": {"Event": [{matcher, hooks: [...]}]}}
+    # Claude Code's format: {"hooks": {"Event": [{matcher, hooks: [...]}]}}
     local claude_style='.hooks = ((.hooks // {})
         | with_entries(.value |= (map(.hooks |= map(select((.command // "") | contains("kinobu-notify") | not)))
                                   | map(select((.hooks // []) | length > 0))))
@@ -119,20 +111,6 @@ install_agent_hooks() {
         PermissionRequest: {hooks: [{type: "command", command: "\($n) claude permission", timeout: $w}]}}')
     edit_json "$HOME/.claude/settings.json" "$claude_style" --argjson ours "$ours"
     hooks_report "Claude Code" "$HOME/.claude/settings.json"
-    ours=$(jq -n --arg n "$n" --argjson w "$wait" '{
-        UserPromptSubmit: {hooks: [{type: "command", command: "\($n) codex start", timeout: 5}]},
-        Stop: {hooks: [{type: "command", command: "\($n) codex done", timeout: 10}]},
-        PermissionRequest: {hooks: [{type: "command", command: "\($n) codex permission", timeout: $w}]}}')
-    edit_json "$HOME/.codex/hooks.json" "$claude_style" --argjson ours "$ours"
-    hooks_report "Codex" "$HOME/.codex/hooks.json"
-    if $CHANGED; then info "Codex runs new hooks once you trust them: open Codex and type /hooks"; fi
-
-    # Antigravity: one named hook set; waiting = the agent asks you (ask_question, ask_permission)
-    ours=$(jq -n --arg n "$n" '{
-        PreToolUse: [{matcher: "ask_question|ask_permission", hooks: [{type: "command", command: "\($n) agy waiting", timeout: 5}]}],
-        Stop: [{type: "command", command: "\($n) agy done", timeout: 10}]}')
-    edit_json "$HOME/.gemini/config/hooks.json" '.["kinobu-notify"] = $ours' --argjson ours "$ours"
-    hooks_report "Antigravity" "$HOME/.gemini/config/hooks.json"
 }
 
 # One line per agent for install_agent_hooks

@@ -70,7 +70,7 @@ They run in this order. `--update` runs the ones marked, with the function in th
 | `user` | Oh My Bash, the Nerd Font, Kinobu's block in `~/.bashrc`, the fastfetch summary, the Ptyxis palette and the terminal fonts of VS Code and the JetBrains IDEs | The `~/.bashrc` block and fastfetch |
 | `desktop` | GNOME extensions, theme, clock, weather (the city of your time zone), four workspaces, power settings, dock, Geary in the background, the app grid and the GTK app colours | Only the app colours |
 | `shortcuts` | The launcher, the shortcut table, the Super+K cheat sheet and the welcome tour | The same: Kinobu's shortcuts always win |
-| `context` | The system skill, the read-only subagent, the note and the notifications of every agent | The same |
+| `context` | The system skill, the read-only subagent, the note and the agent's notifications | The same |
 
 Always installed: Python (`pip`, `venv`, the `python` command), Node.js, build tools, the GraalVM JDK, Git and GitHub CLI, ripgrep, fd, fastfetch, WireGuard, the GNOME apps (Contacts, Calendar, Weather, Clocks, Calculator, Tweaks, Characters, Geary), Handy and Zen. Firefox always stays.
 
@@ -86,7 +86,7 @@ Unticking something never uninstalls it, and a vendor's software source is only 
 | | Desktop | Mission Center ✅ |
 | Development | Editors | VS Code ✅, Antigravity, Cursor, Android Studio, Eclipse |
 | | JetBrains | IntelliJ IDEA ✅, PyCharm ✅, WebStorm, CLion, GoLand, Rider, PhpStorm, RubyMine, RustRover, DataGrip |
-| AI agents | Coding agents | Claude Code ✅, Codex, Antigravity CLI |
+| AI agents | Coding agents | Claude Code ✅ |
 | Extra tools | Containers and virtual machines | Docker Engine, virt-manager |
 | | Local AI | Ollama, LM Studio |
 | | Office | LibreOffice, OnlyOffice |
@@ -112,7 +112,7 @@ What is the same for everybody lives in the system; what is personal lives in ea
 | `share/kinobu/version` | The installed version |
 | `/etc/xdg/autostart/kinobu-user.desktop` | Runs at every login (see below) |
 
-**Each user**, without a password: Kinobu's block in `~/.bashrc`, the fastfetch config, the GNOME settings and shortcuts, the agents themselves and, for each agent, the link to the skill, the note, the subagent and the hooks; and Zen's voices and settings.
+**Each user**, without a password: Kinobu's block in `~/.bashrc`, the fastfetch config, the GNOME settings and shortcuts, the agent itself with its link to the skill, the note, the subagent and the hooks; and Zen's voices and settings.
 
 **Another user.** `kinobu --user` gives a user their part: the first time it lets them choose their agents and applies the desktop; later it only refreshes Kinobu's own files and keeps their look. The login entry compares the user's version (`~/.config/kinobu/version`) with the system's and opens a terminal with `kinobu --user` when they differ, so a new user, and every other user after an update, is brought up to date at their next login.
 
@@ -129,13 +129,13 @@ It shows no menus and never touches your look: accent colour and theme, wallpape
 
 ## AI agents
 
-Kinobu integrates Claude Code, Codex and Antigravity CLI, installed or not, so an agent you install later is ready too.
+Kinobu integrates one agent for now, Claude Code, installed or not, so it is ready if you install it later. Other agents will come once this integration is complete.
 
-- **The skill.** A fixed description of the system in six guides (the system and its safety rules, software, desktop, shortcuts, hardware, agents), linked into each agent's skills folder. Hardware is never written down: the skill tells agents to check it live.
-- **The note.** A short block in each agent's global instructions (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`): load the skill before changing the system, work step by step and wait for your go-ahead, work freely inside your folder and ask before `sudo`, and save tokens.
-- **The `kinobu-system` subagent.** A read-only investigator the agents can call for diagnoses that need many commands; it returns a short report (cause, fix, check, what needs `sudo`).
+- **The skill.** A fixed description of the system in six guides (the system and its safety rules, software, desktop, shortcuts, hardware, agents), linked into Claude Code's skills folder (`~/.claude/skills`). Hardware is never written down: the skill tells agents to check it live.
+- **The note.** A short block in the agent's global instructions (`~/.claude/CLAUDE.md`): load the skill before changing the system, work step by step and wait for your go-ahead, work freely inside your folder and ask before `sudo`, and save tokens.
+- **The `kinobu-system` subagent.** A read-only investigator the agent can call for diagnoses that need many commands; it returns a short report (cause, fix, check, what needs `sudo`).
 - **Notifications.** GNOME notices when an agent finished (tasks of 20 s or more), waits for you or stopped on an error, with a sound; clicking one brings back the agent's terminal.
-- **The approval window.** When Claude Code or Codex needs a permission, Kinobu's window asks with Allow, In terminal and Deny. No button starts with the keyboard focus and nothing counts in its first moment on screen, so a key you were typing never answers. Closing it, Esc, "In terminal" or no answer in 45 s leave the question in the agent's terminal: nothing is approved on its own.
+- **The approval window.** When Claude Code needs a permission, Kinobu's window asks with Allow, In terminal and Deny. No button starts with the keyboard focus and nothing counts in its first moment on screen, so a key you were typing never answers. Closing it, Esc, "In terminal" or no answer in 45 s leave the question in the agent's terminal: nothing is approved on its own.
 
 Kinobu never changes the agents' own permission settings.
 
@@ -143,7 +143,7 @@ Kinobu never changes the agents' own permission settings.
 
 Press **Super+Shift+Space**, speak, and it answers aloud and keeps listening. It listens through Handy, thinks with a small model of your agent in a tiny context of its own, can search the web, read the computer with read-only commands and open apps, and hands real work to your agent in a terminal. Its voices run on your computer: Kokoro, Piper and, with a dedicated graphics card, Qwen3-TTS on Vulkan.
 
-For now Zen only talks to Claude Code; Codex and Antigravity CLI are planned.
+Zen talks to Claude Code.
 
 ## Keyboard shortcuts
 
@@ -214,7 +214,7 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 | `~/.oh-my-bash/`, `~/.local/share/fonts/NerdFonts/` | Oh My Bash and the Nerd Font |
 | `~/.config/fastfetch/config.jsonc` | The system summary (kept if you removed the `Managed by Kinobu` line) |
 | `~/.config/gtk-4.0/kinobu.css`, `~/.config/gtk-3.0/kinobu.css` | App colours, imported from a block in each `gtk.css` |
-| `~/.claude/`, `~/.codex/`, `~/.gemini/`, `~/.agents/skills/` | The skill link, the note, the subagent and the hooks of each agent |
+| `~/.claude/` | The skill link, the note, the subagent and the hooks of Claude Code |
 | `~/.config/kinobu/` | The default agent, your version, Zen's settings |
 | `~/.local/share/kinobu/zen/` | Zen's voices and models |
 | `~/.local/state/kinobu/` | One log per run and the GNOME settings before each run (last 10) |
@@ -236,7 +236,7 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 | All GNOME settings | `dconf load / < ~/.local/state/kinobu/dconf-<date>.ini`, then log out and in |
 | Shell changes | Remove the `kinobu` block from `~/.bashrc` and `rm -rf ~/.oh-my-bash` |
 | App colours | Remove the `kinobu` block from `~/.config/gtk-4.0/gtk.css` and `gtk-3.0/gtk.css` |
-| Agent context and notifications | Remove the `kinobu` links, blocks and hook entries in each agent's folder |
+| Agent context and notifications | Remove the `kinobu` link, block and hook entries in `~/.claude/` |
 | Optimised packages | `sudo rm /etc/apt/apt.conf.d/99enable-amd64v3` |
 | Kinobu itself | `sudo rm -rf /usr/local/share/kinobu /usr/local/bin/kinobu* /etc/xdg/autostart/kinobu-user.desktop` |
 

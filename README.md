@@ -33,7 +33,7 @@ The logo is a trunk seen from above: the thick outer ring is the base, the inner
 ## What you get
 
 - **A desktop you already know.** A dock at the bottom, four workspaces, shortcuts that are easy to guess and a cheat sheet on **Super+K**.
-- **AI agents, integrated.** Claude Code, Codex and Antigravity CLI open with **Super+Shift+Enter**, know this system through Kinobu's skill, can ask a read-only investigator for help and notify you when they finish or need your permission.
+- **AI agents, integrated.** Claude Code opens with **Super+Shift+Enter**, knows this system through Kinobu's skill, can ask a read-only investigator for help and notifies you when it finishes or needs your permission. More agents will follow once this one is complete.
 - **Talk to your computer.** **Zen** (Super+Shift+Space) listens, answers aloud with voices that run on your computer and hands real work to your agent. **Handy** (Super+Space) types what you dictate.
 - **Easy to follow.** A quick check of your computer, menus to choose your software and a clean screen that shows each step, made for people who are new to the terminal.
 - **For every user of the computer.** Kinobu installs itself once for the whole system; each user gets their own part at their first login.

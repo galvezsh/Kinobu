@@ -29,7 +29,7 @@ Read the matching guide before starting:
 
 Investigations that need many commands or long outputs (logs, hardware, drivers, services, why
 something fails) fill your context. If your tool has the read-only `kinobu-system` subagent
-(Claude Code, Codex, Antigravity), hand them to it and keep only its short
+(Claude Code), hand them to it and keep only its short
 report; for one or two quick commands, run them yourself. The user may also ask for it by name.
 The report format and the fix-and-check loop are in [agents.md](agents.md).
 

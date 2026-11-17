@@ -5,7 +5,7 @@
 #   done        the agent finished: notifies when the task took KINOBU_NOTIFY_MIN_SECONDS or more
 #   failed      the turn ended on an error (API, usage limit): always notifies
 #   waiting     the agent waits for the user
-#   permission  approval (Claude Code, Codex): Kinobu's window with Allow, Deny and "In terminal"
+#   permission  approval (Claude Code): Kinobu's window with Allow, Deny and "In terminal"
 #               (GNOME 50 shows no buttons in notifications). Closing it, "In terminal" or no
 #               answer in time leave the decision to the agent's own prompt in the terminal
 # One notice per turn and session: a new one replaces the last, and "waiting" after a
@@ -38,14 +38,14 @@ t() {
 }
 
 case $agent in
-    claude) name="Claude Code" ;; codex) name="Codex" ;; agy) name="Antigravity" ;;
+    claude) name="Claude Code" ;;
     *) name=$agent ;;
 esac
-dir=$(field '.cwd // .workspace_roots[0] // .workspacePaths[0]')
+dir=$(field '.cwd')
 project=${dir:+${dir%/}}; project=${project##*/}
 # The notice header shows the agent; the title, the project folder
 title=${project:-$name}
-session=$(field '.session_id // .conversation_id // .conversationId')
+session=$(field '.session_id')
 mark="$state/${agent}-${session:-default}"
 
 # The app the agent runs in, from the environment it passes to its hooks: clicking a notice
@@ -72,12 +72,6 @@ short() {
     printf '%s' "$text"
 }
 
-# Agents that need an answer on stdout even when they have nothing to decide
-reply_neutral() {
-    case "$agent:$event" in
-        agy:waiting) echo '{"decision": "allow"}' ;;
-    esac
-}
 
 # A short sound from the desktop's sound theme, in the background; silent with Do Not Disturb
 chime() {
@@ -169,5 +163,4 @@ case $event in
         fi
         ;;
 esac
-reply_neutral
 exit 0

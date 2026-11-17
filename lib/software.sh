@@ -10,7 +10,7 @@ declare -A MENU_TITLE=([apps]="Applications" [dev]="Development" [ai]="AI agents
 declare -A MENU_TEXT=(
     [apps]="Everyday apps. Firefox always stays installed; the first browser you pick here becomes the default one."
     [dev]="Editors and IDEs. Python, Node.js, the GraalVM JDK and the build tools are always installed."
-    [ai]="Coding agents that $APP_NAME integrates into the system. The first one you pick opens with Super+Shift+Enter."
+    [ai]="The coding agent that $APP_NAME integrates into the system. It opens with Super+Shift+Enter."
     [extra]="Containers, virtual machines, local AI and office suites."
 )
 SOFTWARE=(
@@ -48,8 +48,6 @@ SOFTWARE=(
     "dev|datagrip|DataGrip|databases|off|snap:datagrip --classic"
     "ai|-|Coding agents"
     "ai|claude|Claude Code|Anthropic|on"
-    "ai|codex|Codex|OpenAI|off"
-    "ai|agy|Antigravity CLI|Google|off"
     "extra|-|Containers and virtual machines"
     "extra|docker|Docker Engine|containers (used with sudo docker)|off|apt:docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
     "extra|virtmanager|virt-manager|virtual machines with KVM|off|apt:virt-manager qemu-system-x86 libvirt-daemon-system ovmf swtpm-tools qemu-utils"
@@ -60,7 +58,7 @@ SOFTWARE=(
     "extra|libreoffice|LibreOffice|Writer, Calc, Impress|off|apt:libreoffice libreoffice-gnome libreoffice-style-yaru"
     "extra|onlyoffice|OnlyOffice|suite that looks like Microsoft Office|off|snap:onlyoffice-desktopeditors"
 )
-AI_TOOLS=(claude codex agy ollama lmstudio)   # installed by the ai block; the rest by apps
+AI_TOOLS=(claude ollama lmstudio)   # installed by the ai block; the rest by apps
 
 in_list() { [[ " $2 " == *" $1 "* ]]; }             # in_list WORD "a b c"
 planned() { in_list "$1" "${PLAN[*]}"; }            # is this block going to run?

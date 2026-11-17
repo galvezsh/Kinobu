@@ -52,7 +52,7 @@ out=$(run "@Press Enter" "$ENTER" "@Applications" "$ENTER" "@Development" "$ENTE
 plan=$(after "Your software" "$out")
 check "the preselected software is taken"   has "$plan" "Google Chrome, Mission Center"
 check "only Claude Code is preselected"     has "$plan" "Claude Code"
-check "Codex and Antigravity are not"        lacks "$plan" "Codex"
+check "the removed agents are not offered"  lacks "$out" "Antigravity CLI"
 check "nothing extra is preselected"        has "$plan" "nothing selected"
 check "no shell errors on screen"           lacks "$out" "kinobu/lib/"
 check "no shell errors (any path)"          lacks "${out,,}" "/lib/software.sh"
@@ -108,12 +108,11 @@ else
         LOG=$(mktemp) TMP_DIR=$(mktemp -d)
         has_cmd() { return 1; }; is_installed() { return 1; }      # nothing is installed yet
         install_zen() { :; }
-        PLAN=(ai) CHOSEN=(claude codex agy ollama lmstudio)
+        PLAN=(ai) CHOSEN=(claude ollama lmstudio)
         install_ai_tools; printf "%s\n" "${NEXT_STEPS[@]}"' 2>&1)
     done_cmds=$(<"$record")
     check "ai: runs every chosen installer"     has "$done_cmds" "claude.ai/install.sh"
-    check "ai: Codex too"                       has "$done_cmds" "chatgpt.com/codex"
-    check "ai: Antigravity CLI too"             has "$done_cmds" "antigravity.google"
+    check "ai: no installer for removed agents" lacks "$done_cmds" "chatgpt.com/codex"
     check "ai: Ollama too"                      has "$done_cmds" "ollama.com"
     check "ai: LM Studio from its .deb"         has "$done_cmds" "lmstudio.ai"
     check "ai: uv always"                       has "$done_cmds" "astral.sh/uv"
@@ -124,7 +123,7 @@ else
         LOG=$(mktemp) TMP_DIR=$(mktemp -d)
         has_cmd() { return 1; }; install_zen() { :; }
         PLAN=(ai) CHOSEN=(claude); install_ai_tools' 2>&1)
-    check "ai: only what was chosen"            lacks "$(<"$record")" "codex"
+    check "ai: only what was chosen"            lacks "$(<"$record")" "ollama"
     rm -rf "$home" "$record" "$profile" "$prefix" "$real_config/dconf/kinobutest"
 fi
 
@@ -174,10 +173,10 @@ else
     check ".bashrc gets the Kinobu block"       grep -q ">>> kinobu >>>" "$home/.bashrc"
     check "fastfetch config points to the system logo" grep -q "$share/data/fastfetch-logo.txt" "$home/.config/fastfetch/config.jsonc"
     check "the skill is linked into Claude Code" test "$(readlink "$home/.claude/skills/kinobu")" = "$share/skills/kinobu"
-    check "the note is in the agents' instructions" grep -q "kinobu:begin" "$home/.claude/CLAUDE.md" "$home/.codex/AGENTS.md" "$home/.gemini/GEMINI.md"
-    check "the subagent for the three agents"   test -s "$home/.claude/agents/kinobu-system.md" -a -s "$home/.codex/agents/kinobu-system.toml" -a -s "$home/.gemini/config/agents/kinobu-system/agent.md"
+    check "the note is in the agent's instructions" grep -q "kinobu:begin" "$home/.claude/CLAUDE.md"
+    check "the subagent for Claude Code"        test -s "$home/.claude/agents/kinobu-system.md"
     check "Claude Code's hooks call the system notifier" test "$(jq -r '.hooks.Stop[0].hooks[0].command' "$home/.claude/settings.json")" = "$prefix/bin/kinobu-notify claude done"
-    check "nothing for the removed agents"      test ! -e "$home/.cursor" -a ! -e "$home/.hermes" -a ! -e "$home/.config/opencode"
+    check "nothing for the removed agents"      test ! -e "$home/.cursor" -a ! -e "$home/.hermes" -a ! -e "$home/.config/opencode" -a ! -e "$home/.codex" -a ! -e "$home/.gemini" -a ! -e "$home/.agents"
     check "the calculator is pinned in the dock" has "$(isolated /org/gnome/shell/favorite-apps)" "org.gnome.Calculator.desktop"
     check "the three folders open the app grid" has "$(isolated /org/gnome/shell/app-picker-layout)" "[{'System': <{'position': <0>}>, 'Settings': <{'position': <1>}>, 'Utilities': <{'position': <2>}>"
     check "the Settings folder has a translated name" test -s "$home/.local/share/desktop-directories/Kinobu-Settings.directory"

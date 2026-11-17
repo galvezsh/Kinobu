@@ -86,7 +86,7 @@ TTS_ENV = [UV, "run", "-q", "--no-project", "--python", "3.12", "--with", "kokor
 SENTENCE = re.compile(r"(.+?[.!?…:;])(\s+|$)", re.S)
 CLOSE = re.compile(r"\[\[\s*close\s*\]\]", re.I)
 DELEGATE = re.compile(r"\[\[\s*delegate:\s*(.+?)\]\]", re.S | re.I)
-AGENT_NAMES = {"claude": "Claude Code", "codex": "Codex", "agy": "Antigravity"}
+AGENT_NAMES = {"claude": "Claude Code"}
 
 CSS = """
 .kinobu-voice .kinobu-status { font-weight: 600; letter-spacing: 0.02em; }
@@ -337,8 +337,8 @@ ABOUT_KINOBU = (
     "Linux). The desktop: a dock at the bottom, 4 workspaces with their own wallpaper, a top bar "
     "with the clock, the weather, the clipboard and the notifications. The Super key is the "
     "Windows key; Super+K shows every shortcut on screen (the cheat sheet), Super+A shows all "
-    "apps. The AI agents (Claude Code, Codex and others) open in a terminal with "
-    "Super+Shift+Enter, know the system through Kinobu's skill and notify when they finish or "
+    "apps. The AI agent (Claude Code) opens in a terminal with "
+    "Super+Shift+Enter, knows the system through Kinobu's skill and notifies when it finishes or "
     "need permission. Handy types what you dictate (Super+Space) and you, Zen, are the voice to "
     "talk to the computer (Super+Shift+Space). 'bash kinobu.sh --update' keeps Ubuntu, the apps "
     "and Kinobu up to date without touching the user's look. Many people here come from Windows "

@@ -17,12 +17,13 @@ Kinobu is the successor of Orkestr OS, rebuilt from scratch. It does the same jo
 - **Modes**: no option shows the help; `--install`, `--update`, `--manual` (choose the blocks in a list), `--check` and `--user`.
 - **Python as a system base**: `pip`, `venv` and the `python` command are always installed.
 - **Tests in the repository**: `bash tests/run.sh` covers the command line, the check, the menus and a whole simulated setup, update and second user.
+- **A design for themes** in `docs/themes.md` (not built yet): families of one or two variants that change the mode, the accent, the app colours in depth, the icons, the cursor, the window buttons, the wallpapers and the terminal.
 - **New branding**: the rings logo, the wordmark with the rings as its O, and a fastfetch summary with a tagline that changes on every run and follows your accent colour.
 
 ### Changed
 
-- **Agents**: Claude Code (the only one preselected), Codex and Antigravity CLI. Cursor CLI, opencode and Hermes Agent are no longer installed or integrated; Cursor stays as an editor.
-- **Catalogue**: 39 choices in four menus. GNOME Boxes and MKVToolNix are gone and virt-manager sits next to Docker.
+- **Agents**: only Claude Code, until its integration is complete; other agents will be added one by one. Codex and Antigravity CLI were integrated during 0.1 and taken out again (installer, skill link, note, subagent and hooks). Cursor CLI, opencode and Hermes Agent are not installed or integrated either; Cursor and the Antigravity IDE stay as editors.
+- **Catalogue**: 33 choices in four menus. GNOME Boxes and MKVToolNix are gone and virt-manager sits next to Docker.
 - **The voice assistant is called Zen** (it was Axis); it is the same app.
 - **An agent's installer that fails no longer stops the setup**: Kinobu warns and goes on. Installers are downloaded to a file and then run, never piped straight from the internet.
 - **Weather**: the city comes from the time zone chosen when Ubuntu was installed; location services are not used and no city is fixed in the script.

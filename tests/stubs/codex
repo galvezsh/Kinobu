@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-# Test double: does nothing.
-echo "codex $*" >>"${KINOBU_TEST_SUDO:-/dev/null}"
-exit 0

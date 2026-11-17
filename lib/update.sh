@@ -51,8 +51,7 @@ update_ai_tools() {
         step "$(software_name "$id")"
         case $id in
             claude) if run claude update; then ok "Up to date"; else warn "Claude Code could not be updated (it updates itself too)"; fi ;;
-            agy) ok "It updates itself" ;;
-            *)  # Codex and Ollama: the installer is also the updater (settings are kept)
+            *)  # Ollama: the installer is also the updater (settings are kept)
                 if run_installer "$url" "$shell"; then ok "Up to date"; else warn "$(software_name "$id") could not be updated"; fi ;;
         esac
     done

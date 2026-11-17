@@ -37,6 +37,7 @@ It is the successor of **Orkestr OS**, rebuilt from scratch in November 2026: th
 | `tools/logo.py` | Draws the vector logo: `assets/logo{,-small}{,-light}.svg` |
 | `assets/` | The README banner and the logo |
 | `tests/` | `run.sh`, `pty-run.py`, `approve-focus.py` and `stubs/` |
+| `docs/` | Designs of what is not built yet: `themes.md` |
 | `README.md`, `GUIDE.md`, `ROADMAP.md`, `CHANGELOG.md` | Human documentation. Update the changelog with every change and keep the roadmap in line |
 | `CLAUDE.md` | `@AGENTS.md` |
 
@@ -73,7 +74,7 @@ It is the successor of **Orkestr OS**, rebuilt from scratch in November 2026: th
 | Form | A script, not a `.deb` or an ISO | Kinobu is a layer over Ubuntu, not a distribution; a script is easy to read, change and extend |
 | Two layers | Own programs in `/usr/local`, personal files in `$HOME`, `kinobu --user` and a login entry | Other users of the computer get Kinobu and its updates (as Omarchy 4 does with `/usr/share`, `/etc/skel` and per-user migrations). No numbered migrations: the blocks can be repeated, so re-applying the user's part is enough |
 | System files and agents | Hooks only read and run them; no special permission | And an agent cannot edit the window that approves its own commands |
-| Agents | Claude Code (preselected), Codex, Antigravity CLI | The author dropped the less popular ones; each agent costs an installer, skill, note, subagent and hooks. Cursor stays as a plain editor |
+| Agents | Only Claude Code for now (preselected); Codex and Antigravity CLI later | One agent complete before the next: each costs an installer, skill, note, subagent, hooks and tests. The code keeps one list per agent (`AGENT_TOOLS` and the maps in `lib/context.sh`) so others can be added back. Cursor and the Antigravity IDE stay as plain editors |
 | Modes | No option shows the help; `--install`, `--update`, `--manual`, `--check`, `--user`; no `--yes` | An explicit choice for people new to the terminal |
 | One terminal | The check, the menus and the setup in the same window | A second window was tried on paper and dropped: sudo does not carry over and closing it would cut apt |
 | Quiet screen | Command output in the log, one live line on screen | The author wants it visual, not a wall of text |
@@ -81,7 +82,7 @@ It is the successor of **Orkestr OS**, rebuilt from scratch in November 2026: th
 | Weather | City from the time zone (`zone1970.tab` + libgweather) | No location services (privacy), no city fixed in the script |
 | App grid | A `.directory` file gives the Settings folder a translated name; arranged at the end of the run | The folders mixed languages and did not stay first in Orkestr. The second part rests on a guess (GNOME rewriting the layout while apps install): not confirmed |
 | Approval window | No button has the initial focus; nothing counts for 0.8 s | The window takes the keyboard on purpose; in Orkestr the focus landed on Allow |
-| Voice assistant | Orkestr's app as it is, named **Zen** for now; its voices stay per user for now | The author will rework it later; other agents (Codex, Antigravity CLI) are wanted |
+| Voice assistant | Orkestr's app as it is, named **Zen** for now; its voices stay per user for now | The author will rework it later; other agents will follow the agents' own order |
 | Look | Orkestr's for now (Yaru purple, dark, Tokyo Night); no wallpapers included | Themes will replace it (see the roadmap); Orkestr's wallpapers are copyrighted |
 | Always installed | Python (`pip`, `venv`, `python`), Node.js, GraalVM, the GNOME apps, Handy | The author's choice of a professional base |
 | Versions | 0.1 while in development, 1.0 when published; fruit names from 1.0 | A tree that grows bears fruit |
@@ -90,7 +91,7 @@ It is the successor of **Orkestr OS**, rebuilt from scratch in November 2026: th
 
 `bash tests/run.sh` must stay green, ShellCheck included (`uvx --from shellcheck-py shellcheck -x -S style`).
 
-- **Stubs** (`tests/stubs/`, first in `PATH`): `sudo` (records the command, runs nothing), `curl` (writes `: stub` to `-o` files), `git`, `systemctl`, `gnome-extensions`, `xdg-settings`, `pkill`, `pgrep`, `setsid`, `fc-list`, `claude`, `codex`, `uv`.
+- **Stubs** (`tests/stubs/`, first in `PATH`): `sudo` (records the command, runs nothing), `curl` (writes `: stub` to `-o` files), `git`, `systemctl`, `gnome-extensions`, `xdg-settings`, `pkill`, `pgrep`, `setsid`, `fc-list`, `claude`, `uv`.
 - **Fake home** (`HOME=$(mktemp -d)`) and **its own prefix** (`KINOBU_PREFIX`).
 - **Its own dconf database**: `DCONF_PROFILE=<file with "user-db:kinobutest">` **and** `XDG_CONFIG_HOME=<the real ~/.config>`. Without both, gsettings writes the real settings. Delete `~/.config/dconf/kinobutest` afterwards; **never run `dconf reset -f /`** to clean up.
 - **Any test that runs blocks must have all three.** A test written when only two blocks existed ran every later block against the real settings database until it was isolated.
@@ -101,7 +102,7 @@ It is the successor of **Orkestr OS**, rebuilt from scratch in November 2026: th
 
 ## 8. Verified facts
 
-Carried over from Orkestr (October–November 2026); re-check when they may have changed.
+Carried over from Orkestr (October–November 2026); re-check when they may have changed. The Codex and Antigravity CLI facts are kept for when they are integrated again.
 
 - **Installers**: Claude Code `https://claude.ai/install.sh`; Codex `https://chatgpt.com/codex/install.sh` (`CODEX_NON_INTERACTIVE=true`); Antigravity CLI `https://antigravity.google/cli/install.sh` (binary `agy`); Ollama `https://ollama.com/install.sh`; LM Studio `https://lmstudio.ai/download/latest/linux/x64?format=deb` (package `lm-studio`); uv `https://astral.sh/uv/install.sh`. All install in `~/.local/bin` except Ollama and LM Studio.
 - **Skills folders**: Claude Code `~/.claude/skills`; Codex `~/.agents/skills` (legacy `~/.codex/skills`); Antigravity `~/.gemini/config/skills`. **Global instructions**: `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`.

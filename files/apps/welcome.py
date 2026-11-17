@@ -25,7 +25,7 @@ lang = language()
 TEXT = texts("welcome", lang)                    # i18n/<language>.json, section "welcome"
 
 # Coding agents Kinobu can install: (binary, name)
-AGENTS = [("claude", "Claude Code"), ("codex", "Codex"), ("agy", "Antigravity")]
+AGENTS = [("claude", "Claude Code")]
 
 # Shortcut rows: (group, accelerators, text key). Kept in line with SHORTCUTS.
 SHORTCUTS = [

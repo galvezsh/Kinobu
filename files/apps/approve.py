@@ -1,5 +1,5 @@
 # Kinobu approval window. Written by Kinobu: rewritten on every run.
-# kinobu-notify opens it when Claude Code or Codex asks for a permission. It prints "allow" or
+# kinobu-notify opens it when Claude Code asks for a permission. It prints "allow" or
 # "deny"; closing it, Esc, "In terminal" or the countdown print nothing, so the agent's own
 # prompt in the terminal decides. Every text comes translated from kinobu-notify.
 import argparse

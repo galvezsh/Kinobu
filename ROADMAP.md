@@ -16,18 +16,15 @@ Everything so far has only run in simulation (a fake home folder, a separate GNO
 
 ## Agent integration
 
-In this order: Claude Code, then Codex, then Antigravity CLI.
+One agent first: Claude Code, complete, before any other is added.
 
 - [x] Claude Code: hooks, notices and the approval window checked with the real tool from a read-only folder.
 - [ ] Claude Code: the skill and the `kinobu-system` subagent in a real session.
-- [ ] Codex: skill, note, subagent, hooks and the approval window (it needs `codex login` and `/hooks`).
-- [ ] Antigravity CLI: skill, note, subagent and hooks.
 
 ## Zen, the voice assistant
 
 - [x] Installs, prepares its voices and starts (checked with the models already on the author's computer).
 - [ ] A whole conversation, and the real download of the models (about 450 MB, 2 GB with Qwen3-TTS).
-- [ ] Other agents besides Claude Code, each in its headless mode: Codex first (`codex exec --json`, `resume`), then Antigravity CLI, for people who have no Claude Code session.
 - [ ] Two separate settings: **Zen's agent** (the small model that answers) and **delegate to** (the agent that opens for real work).
 - [ ] Its final name.
 
@@ -38,7 +35,8 @@ In this order: Claude Code, then Codex, then Antigravity CLI.
 
 ## Later
 
-- **Themes.** A theme is a folder with its colours and wallpapers; templates turn it into the accent, the app colours, the terminal palette and fastfetch. Factory themes in the system (today's look and Everforest), the user's own in `~/.config/kinobu/themes`, and an app to choose and create them.
+- **Themes.** A theme is a folder with its colours and wallpapers; the `kinobu-theme` engine turns it into the mode, the accent, the app colours, the icons, the wallpapers and the terminal palette. Factory themes in the system (Kinobu on Everforest, Tokyo Night, Catppuccin, Dracula, Nord, Gruvbox, Rosé Pine, Windows, macOS), the user's own in `~/.config/kinobu/themes`, and an app to choose and create them. Design and phases: [docs/themes.md](docs/themes.md).
+- **More agents**, once Claude Code is complete: Codex, then Antigravity CLI (installer, skill, note, subagent, hooks, the approval window and Zen in their headless modes). They were integrated in 0.1 and taken out to finish one agent first; the facts found for them are in AGENTS.md §8.
 - **DaVinci Resolve** in the Media creation menu: it is not in APT, snap or the store and needs its own setup.
 - **Version names.** From 1.0 on, each major version is named after a fruit (`Kinobu v1.0 (Yuzu)`).
 - Zen: more languages, a private mode with a local model, and interrupting it while it speaks.

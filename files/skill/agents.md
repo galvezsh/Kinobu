@@ -1,28 +1,23 @@
 <!-- Managed by Kinobu: rewritten on every run and --update. Do not edit it, changes are lost: add your own skills next to this one. -->
 # AI tools
 
-Check which ones are installed with `command -v claude codex agy ollama`.
+Check which ones are installed with `command -v claude ollama`.
 The default agent (Super+Shift+Enter, like Super+Enter for the terminal) is the path stored in `~/.config/kinobu/agent`.
 
 | Tool | Binary | Config | Global instructions | Update |
 |---|---|---|---|---|
 | Claude Code | `~/.local/bin/claude` | `~/.claude/` | `~/.claude/CLAUDE.md` | automatic, or `claude update` |
-| Codex | `~/.local/bin/codex` | `~/.codex/config.toml` | `~/.codex/AGENTS.md` | re-run its installer |
-| Antigravity CLI | `~/.local/bin/agy` | `~/.gemini/` | `~/.gemini/GEMINI.md` | automatic |
 
-Skills: `~/.agents/skills/` (Codex), `~/.claude/skills/` (Claude Code) and
-`~/.gemini/config/skills/` (Antigravity). This skill is a symlink
-there; add your own skills as normal folders next to it.
+Skills: `~/.claude/skills/`. This skill is a symlink there; add your own skills as normal folders next to it.
 
-Each agent's global instructions file holds a short Kinobu note (this system, how to work with
+The agent's global instructions file holds a short Kinobu note (this system, how to work with
 the user, saving tokens) between `<!-- kinobu:begin -->` and `<!-- kinobu:end -->`. Kinobu
 rewrites that block on every run; anything outside it is the user's. Kinobu does not change the
 agents' own permission settings: each tool keeps its defaults.
 
 ## The kinobu-system subagent
 
-A read-only investigator of this computer, installed for Claude Code (`~/.claude/agents/`),
-Codex (`~/.codex/agents/`) and Antigravity (`~/.gemini/config/agents/`). It runs the many commands a diagnosis needs in its own context and returns a
+A read-only investigator of this computer, installed for Claude Code (`~/.claude/agents/`). It runs the many commands a diagnosis needs in its own context and returns a
 short report (Cause, Fix, Check, If it still fails, Needs sudo), so your conversation keeps only
 the summary. It never changes anything and never runs `sudo`.
 
@@ -50,16 +45,15 @@ with `! sudo …`) and pass the output back to the subagent.
 
 ## Notifications
 
-Kinobu adds its own entries to every agent's hooks (next to other tools' hooks), so the
+Kinobu adds its own entries to the agent's hooks (next to other tools' hooks), so the
 desktop shows a notification, with a short sound, when a task finished (only when it took 20 s
 or more by default), the agent waits for the user, or a Claude Code turn stops on an error
 ("usage limit reached" for rate limits). The header names the agent, the title is the project
-folder, and a click brings back the agent's terminal. When Claude Code or Codex needs an approval,
+folder, and a click brings back the agent's terminal. When Claude Code needs an approval,
 Kinobu's window asks with Allow, "In terminal" and Deny; closing it, "In terminal" or no answer in 45 s
 (default) leaves the decision to the agent's own prompt in the terminal. The notifier is
 `@NOTIFIER@`; entries that run it are rewritten on every Kinobu run, other
-tools' entries are kept. Files: `~/.claude/settings.json`, `~/.codex/hooks.json` (Codex runs
-them once trusted with `/hooks`) and `~/.gemini/config/hooks.json`.
+tools' entries are kept. File: `~/.claude/settings.json`.
 
 You can also notify the user yourself, for example when a long job ends or you need them while
 they may be away from the terminal (once per event, never in loops):
