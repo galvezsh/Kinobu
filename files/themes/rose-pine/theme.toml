@@ -1,0 +1,82 @@
+# Rosé Pine (MIT): all natural pine, faux fur and a bit of soho vibes. Moon's muted text and Dawn's
+# text are a touch stronger than the original, for contrast
+# Dawn Bright: worked out by Kinobu from the theme's own palettes, for more contrast (or less glare)
+name = "Rosé Pine"
+description = "Muted and elegant: rose, gold and pine on a soft night."
+author = "Kinobu, on Rosé Pine (MIT)"
+gnome_accent = "pink"
+icons = "Papirus"
+cursor = { dark = "phinger-cursors-dark", light = "phinger-cursors-light" }
+button_layout = "appmenu:minimize,maximize,close"
+wallhaven = "pink flowers"                # Seasons' "For this theme" search on Wallhaven (in English)
+# Its four wallpapers, from Wallhaven: downloaded by the user when the theme is applied
+wallpapers = ["wallhaven:3z86od", "wallhaven:7pyqqy", "wallhaven:x8zqlo", "wallhaven:rq3d3j"]
+intensity = 1
+
+# The palettes, in the order Seasons shows them (the first is the default). Each one is dark
+# or light; "pair" is the palette of the other mode the dark-style switch moves to.
+
+[palettes.main]
+name = "Rosé Pine"
+mode = "dark"
+pair = "dawn"
+terminal = "Rosé Pine"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#EBBCBA"
+background = "#191724"
+view = "#1F1D2E"
+sidebar = "#1F1D2E"
+card = "#26233A"
+foreground = "#E0DEF4"
+muted = "#908CAA"
+success = "#9CCFD8"
+warning = "#F6C177"
+error = "#EB6F92"
+
+[palettes.moon]
+name = "Moon"
+mode = "dark"
+pair = "dawn"
+terminal = "Rosé Pine Moon"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#EA9A97"
+background = "#232136"
+view = "#2A273F"
+sidebar = "#2A273F"
+card = "#393552"
+foreground = "#E0DEF4"
+muted = "#A6A2C2"
+success = "#9CCFD8"
+warning = "#F6C177"
+error = "#EB6F92"
+
+[palettes.dawn]
+name = "Dawn"
+mode = "light"
+pair = "main"
+terminal = "Rosé Pine Dawn"         # a palette of Ptyxis (its light side when it has two)
+accent = "#B4637A"
+background = "#FAF4ED"
+view = "#FFFAF3"
+sidebar = "#F2E9E1"
+card = "#FFFDF9"
+foreground = "#464169"
+muted = "#625E7E"
+success = "#286983"
+warning = "#B6741F"
+error = "#B4637A"
+
+[palettes.dawn-bright]
+name = "Dawn Bright"
+mode = "light"
+pair = "main"
+terminal = "Rosé Pine Dawn"         # a palette of Ptyxis (its light side when it has two)
+terminal_background = "#FFFEFC"
+accent = "#B4637A"
+background = "#FDFAF7"
+view = "#FFFEFC"
+sidebar = "#F8F3EE"
+card = "#FFFFFE"
+foreground = "#312D4A"
+muted = "#504D67"
+success = "#286983"
+warning = "#B6741F"
+error = "#B4637A"

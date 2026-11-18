@@ -1,0 +1,97 @@
+# Tokyo Night (enkia, folke; MIT): city lights at night. Day's text is darker than the original,
+# for contrast
+name = "Tokyo Night"
+description = "Neon blues and purples of the city at night."
+author = "Kinobu, on Tokyo Night by enkia and folke (MIT)"
+gnome_accent = "blue"
+icons = "Papirus"
+cursor = "Bibata-Modern-Classic"
+button_layout = "appmenu:minimize,maximize,close"
+wallhaven = "neon city"                # Seasons' "For this theme" search on Wallhaven (in English)
+wallhaven_colour = "333399"          # one of Wallhaven's colours
+# Its four wallpapers, from Wallhaven: downloaded by the user when the theme is applied
+wallpapers = ["wallhaven:md3vjm", "wallhaven:83do1o", "wallhaven:4l3pmr", "wallhaven:2evx9g"]
+intensity = 1
+
+# The palettes, in the order Seasons shows them (the first is the default). Each one is dark
+# or light; "pair" is the palette of the other mode the dark-style switch moves to.
+
+[palettes.night]
+name = "Night"
+mode = "dark"
+pair = "day"
+terminal = "Tokyo Night"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#7AA2F7"
+background = "#1A1B26"
+view = "#16161E"
+sidebar = "#16161E"
+card = "#24283B"
+foreground = "#C0CAF5"
+muted = "#A9B1D6"
+success = "#9ECE6A"
+warning = "#E0AF68"
+error = "#F7768E"
+
+[palettes.storm]
+name = "Storm"
+mode = "dark"
+pair = "day"
+terminal = "Tokyo Night Storm"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#7AA2F7"
+background = "#24283B"
+view = "#1F2335"
+sidebar = "#1F2335"
+card = "#292E42"
+foreground = "#C0CAF5"
+muted = "#A9B1D6"
+success = "#9ECE6A"
+warning = "#E0AF68"
+error = "#F7768E"
+
+[palettes.moon]
+name = "Moon"
+mode = "dark"
+pair = "day"
+terminal = "Tokyo Night Moon"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#82AAFF"
+background = "#222436"
+view = "#1E2030"
+sidebar = "#1E2030"
+card = "#2F334D"
+foreground = "#C8D3F5"
+muted = "#A9B8E8"
+success = "#C3E88D"
+warning = "#FFC777"
+error = "#FF757F"
+
+[palettes.day]
+name = "Day"
+mode = "light"
+pair = "night"
+terminal = "Tokyo Night Day"         # a palette of Ptyxis (its light side when it has two)
+accent = "#2E7DE9"
+background = "#E1E2E7"
+view = "#E9E9ED"
+sidebar = "#D6D8E1"
+card = "#F2F2F5"
+foreground = "#1F3A7A"
+muted = "#43507F"
+success = "#587539"
+warning = "#8C6C3E"
+error = "#C4204F"
+
+[palettes.light]
+name = "Light"
+mode = "light"
+pair = "storm"
+terminal = "Tokyo Night Light"         # a palette of Ptyxis (its light side when it has two)
+accent = "#34548A"
+background = "#D5D6DB"
+view = "#E6E7ED"
+sidebar = "#CBCCD1"
+card = "#E9E9EC"
+foreground = "#2C3350"
+muted = "#4C505E"
+success = "#485E30"
+warning = "#8F5E15"
+error = "#8C4351"

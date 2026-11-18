@@ -1,0 +1,90 @@
+# Kinobu's own theme: a calm forest for the tree, on Everforest's colours (sainnhe, MIT),
+# with more contrast than Everforest itself: brighter text and warmer, less green greys
+# Birch: worked out by Kinobu from the theme's own palettes, for more contrast (or less glare)
+name = "Kinobu"
+description = "A calm forest: soft greens on warm grey, easy to read."
+author = "Kinobu, on Everforest by sainnhe (MIT)"
+gnome_accent = "green"
+icons = "Yaru"
+cursor = "Yaru"
+button_layout = "appmenu:minimize,maximize,close"
+wallhaven = "forest"                # Seasons' "For this theme" search on Wallhaven (in English)
+wallhaven_colour = "336600"          # one of Wallhaven's colours
+# Its four wallpapers, from Wallhaven: downloaded by the user when the theme is applied
+wallpapers = ["wallhaven:3zgdd3", "wallhaven:rrpp6m", "wallhaven:5wk153", "wallhaven:399d26"]
+intensity = 1
+
+# The palettes, in the order Seasons shows them (the first is the default). Each one is dark
+# or light; "pair" is the palette of the other mode the dark-style switch moves to.
+
+[palettes.forest]
+name = "Forest"
+mode = "dark"
+pair = "meadow"
+terminal = "Everforest"         # a palette of Ptyxis (its dark side when it has two)
+terminal_background = "#1E2326"
+terminal_foreground = "#E6DECB"
+accent = "#A7C080"
+background = "#232A2E"
+view = "#1E2326"
+sidebar = "#272F33"
+card = "#2E373C"
+foreground = "#E6DECB"
+muted = "#A8B3A8"
+success = "#A7C080"
+warning = "#DBBC7F"
+error = "#E67E80"
+
+[palettes.night]
+name = "Night"
+mode = "dark"
+pair = "birch"
+terminal = "Everforest"         # a palette of Ptyxis (its dark side when it has two)
+terminal_background = "#121517"
+terminal_foreground = "#E6DECB"
+accent = "#A7C080"
+background = "#171B1D"
+view = "#121517"
+sidebar = "#1C2124"
+card = "#232A2D"
+foreground = "#E6DECB"
+muted = "#A3ADA3"
+success = "#A7C080"
+warning = "#DBBC7F"
+error = "#E67E80"
+
+[palettes.meadow]
+name = "Meadow"
+mode = "light"
+pair = "forest"
+terminal = "Everforest"         # a palette of Ptyxis (its light side when it has two)
+terminal_background = "#FAF9F3"
+terminal_foreground = "#262D24"
+accent = "#4E7A1E"
+background = "#F2F0E6"
+view = "#FAF9F3"
+sidebar = "#EAE7DA"
+card = "#FFFFFF"
+foreground = "#262D24"
+muted = "#545E52"
+success = "#4E7A1E"
+warning = "#8A6300"
+error = "#B8312E"
+
+[palettes.birch]
+name = "Birch"
+mode = "light"
+pair = "night"
+terminal = "Everforest"         # a palette of Ptyxis (its light side when it has two)
+terminal_background = "#FEFEFC"
+terminal_foreground = "#1B2019"
+accent = "#4E7A1E"
+background = "#F7F6F1"
+view = "#FEFEFC"
+sidebar = "#EEECE3"
+card = "#FFFFFF"
+foreground = "#1B2019"
+muted = "#454D43"
+success = "#4E7A1E"
+warning = "#8A6300"
+error = "#B8312E"

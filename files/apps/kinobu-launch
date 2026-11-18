@@ -43,15 +43,18 @@ case ${1:-} in
         exec python3 "@PROGRAMS_DIR@/keys.py" ;;
     welcome)
         exec python3 "@PROGRAMS_DIR@/welcome.py" ;;
-    zen)
-        # Zen, the voice assistant; a second press brings back the open window
-        exec python3 "@PROGRAMS_DIR@/zen.py" ;;
+    themes)
+        # Seasons; kinobu-launch themes icons|cursors|fonts|wallpapers opens on that section
+        exec python3 "@PROGRAMS_DIR@/seasons.py" ${2:+--page "$2"} ;;
+    voice)
+        # Willow, the voice assistant; a second press brings back the open window
+        exec python3 "@PROGRAMS_DIR@/voice.py" ;;
     user-setup)
         # Run at every login: a user who is new, or behind the installed version, gets their part
         if [[ "$(cat "@SYSTEM_DIR@/version" 2>/dev/null)" != "$(cat "$HOME/.config/kinobu/version" 2>/dev/null)" ]]; then
             terminal "@BIN_DIR@/kinobu" --user
         fi ;;
     *)
-        echo "Usage: kinobu-launch terminal|files|browser|monitor|agent|dictation|emoji|keys|welcome|zen|user-setup" >&2
+        echo "Usage: kinobu-launch terminal|files|browser|monitor|agent|dictation|emoji|keys|welcome|voice|themes|user-setup" >&2
         exit 1 ;;
 esac

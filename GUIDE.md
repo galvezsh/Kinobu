@@ -2,7 +2,7 @@
 
 How Kinobu works inside: the modes, the blocks, where everything is installed, the agents' integration, the files it touches and how to undo things. For what Kinobu is and why it exists, start with the [README](README.md).
 
-> Kinobu 0.1 is in development and has only been run in simulation. This guide describes what the code does; see the [Roadmap](ROADMAP.md) for what is not verified yet.
+> Kinobu 0.2 is in development: installed and updated on its author's computer, otherwise run in simulation. This guide describes what the code does; see the [Roadmap](ROADMAP.md) for what is not verified yet.
 
 ## Contents
 
@@ -13,8 +13,9 @@ How Kinobu works inside: the modes, the blocks, where everything is installed, t
 - [Software you can choose](#software-you-can-choose)
 - [Two layers: the system and each user](#two-layers-the-system-and-each-user)
 - [Updating](#updating)
+- [Kinobu's apps](#kinobus-apps)
 - [AI agents](#ai-agents)
-- [Zen, the voice assistant](#zen-the-voice-assistant)
+- [Willow, the voice assistant](#willow-the-voice-assistant)
 - [Keyboard shortcuts](#keyboard-shortcuts)
 - [How the code is organised](#how-the-code-is-organised)
 - [Configuration](#configuration)
@@ -64,15 +65,15 @@ They run in this order. `--update` runs the ones marked, with the function in th
 |---|---|---|
 | `apt` | Turns on Ubuntu's x86-64-v3 package builds when the processor supports them | — |
 | `apps` | Adds the software sources of the chosen apps only, updates Ubuntu, installs the base tools and your apps (APT, snap, vendor `.deb`), Handy and the GraalVM JDK, removes what a desktop does not need and sets the default browser | Updates Ubuntu, the snaps, Handy and Java |
-| `ai` | Installs the chosen agents and local AI tools with their official installers, `uv` and Zen; the first chosen agent opens with Super+Shift+Enter | Updates the tools that are installed and Zen |
+| `ai` | Installs the chosen agents and local AI tools with their official installers, `uv` and Willow; the first chosen agent opens with Super+Shift+Enter | Updates the tools that are installed and Willow |
 | `drivers` | Installs the drivers Ubuntu recommends for the hardware | — |
 | `services` | Lets `ydotool` type dictated text, turns off ModemManager (unless there is a mobile modem) and the OpenVPN system service | — |
 | `user` | Oh My Bash, the Nerd Font, Kinobu's block in `~/.bashrc`, the fastfetch summary, the Ptyxis palette and the terminal fonts of VS Code and the JetBrains IDEs | The `~/.bashrc` block and fastfetch |
-| `desktop` | GNOME extensions, theme, clock, weather (the city of your time zone), four workspaces, power settings, dock, Geary in the background, the app grid and the GTK app colours | Only the app colours |
+| `desktop` | GNOME extensions, clock, weather (the city of your time zone), four workspaces, power settings, dock, Geary in the background, the app grid, and the look: Seasons, the themes and their icon and cursor packs, then your theme (Kinobu for a new user) | The themes and their packs; your look is kept |
 | `shortcuts` | The launcher, the shortcut table, the Super+K cheat sheet and the welcome tour | The same: Kinobu's shortcuts always win |
 | `context` | The system skill, the read-only subagent, the note and the agent's notifications | The same |
 
-Always installed: Python (`pip`, `venv`, the `python` command), Node.js, build tools, the GraalVM JDK, Git and GitHub CLI, ripgrep, fd, fastfetch, WireGuard, the GNOME apps (Contacts, Calendar, Weather, Clocks, Calculator, Tweaks, Characters, Geary), Handy and Zen. Firefox always stays.
+Always installed: Python (`pip`, `venv`, the `python` command), Node.js, build tools, the GraalVM JDK, Git and GitHub CLI, ripgrep, fd, fastfetch, WireGuard, the GNOME apps (Contacts, Calendar, Weather, Clocks, Calculator, Characters, Geary), the themes' icons, cursors and fonts (Papirus, Numix Circle, elementary, Kora; Bibata, Breeze, Phinger, Catppuccin, Nordzy, macOS and WhiteSur cursors; Inter, JetBrains Mono), Handy and Willow. Firefox always stays.
 
 ## Software you can choose
 
@@ -104,15 +105,18 @@ What is the same for everybody lives in the system; what is personal lives in ea
 | `bin/kinobu` | Runs the installed copy of Kinobu |
 | `bin/kinobu-launch` | Run by the app shortcuts |
 | `bin/kinobu-notify` | Run by the agents' hooks |
-| `share/kinobu/programs/` | The cheat sheet, the welcome tour, the approval window, the notices and Zen |
+| `bin/kinobu-theme` | The theme engine (Seasons uses it; agents and scripts too) |
+| `share/kinobu/programs/` | Kinobu's apps (Trail, Sprout, Gate, Echo's notices, Willow, Seasons) and the theme engine |
+| `share/kinobu/themes/` | The factory themes |
 | `share/kinobu/skills/` | The system skill |
 | `share/kinobu/i18n/` | Every text of Kinobu's windows and notices, one file per language |
-| `share/kinobu/data/` | The shortcut table, and the fastfetch logo and taglines |
+| `share/kinobu/data/` | The shortcut table, the fastfetch logo and taglines, and the themes' templates |
 | `share/kinobu/src/` | A copy of Kinobu itself |
 | `share/kinobu/version` | The installed version |
+| `share/icons/` | Icon and cursor packs that are not in Ubuntu's archive (the others come with APT) |
 | `/etc/xdg/autostart/kinobu-user.desktop` | Runs at every login (see below) |
 
-**Each user**, without a password: Kinobu's block in `~/.bashrc`, the fastfetch config, the GNOME settings and shortcuts, the agent itself with its link to the skill, the note, the subagent and the hooks; and Zen's voices and settings.
+**Each user**, without a password: Kinobu's block in `~/.bashrc`, the fastfetch config, the GNOME settings and shortcuts, the agent itself with its link to the skill, the note, the subagent and the hooks; their look (`~/.config/kinobu/look.toml`); and Willow's voices and settings.
 
 **Another user.** `kinobu --user` gives a user their part: the first time it lets them choose their agents and applies the desktop; later it only refreshes Kinobu's own files and keeps their look. The login entry compares the user's version (`~/.config/kinobu/version`) with the system's and opens a terminal with `kinobu --user` when they differ, so a new user, and every other user after an update, is brought up to date at their next login.
 
@@ -125,7 +129,20 @@ cd kinobu && git pull
 bash kinobu.sh --update
 ```
 
-It shows no menus and never touches your look: accent colour and theme, wallpapers, terminal palette and font, dock, weather, power settings and extensions stay as you left them. Kinobu never goes back: a copy older than the installed version refuses to run.
+It shows no menus and never touches your look: your theme and what you picked in Seasons (`~/.config/kinobu/look.toml`), your terminal font, dock, weather, power settings and extensions stay as you left them; the themes themselves may improve. Kinobu never goes back: a copy older than the installed version refuses to run.
+
+## Kinobu's apps
+
+Each app has a name you see, the same in every language, and technical names underneath: the app ID that GNOME uses to tie a window to its icon, and the command that shortcuts, hooks, scripts and agents run. Only the visible name is a brand; the technical names say what the app does, so an agent understands them without explanations and a visible name can change without breaking anything.
+
+| Name | What it is | App ID | Command |
+|---|---|---|---|
+| **Sprout** | The welcome tour (Super+F1; not in the app grid) | `os.kinobu.Welcome` | `kinobu-launch welcome` |
+| **Trail** | The keyboard shortcuts on screen (Super+K) | `os.kinobu.Keys` | `kinobu-launch keys` |
+| **Echo** | The agents' notifications (no window of its own) | — | `kinobu-notify` |
+| **Gate** | The approval window for the agents' permissions | `os.kinobu.Approve` | opened by `kinobu-notify` |
+| **Willow** | The voice assistant | `os.kinobu.Voice` | `kinobu-launch voice` |
+| **Seasons** | Themes with their palettes (each dark or light), icons, cursors, fonts and wallpapers, each with a "Follow the theme" switch, and wallpapers from Wallhaven (see [docs/themes.md](docs/themes.md)) | `os.kinobu.Themes` | `kinobu-launch themes`; the engine is `kinobu-theme` |
 
 ## AI agents
 
@@ -133,17 +150,26 @@ Kinobu integrates one agent for now, Claude Code, installed or not, so it is rea
 
 - **The skill.** A fixed description of the system in six guides (the system and its safety rules, software, desktop, shortcuts, hardware, agents), linked into Claude Code's skills folder (`~/.claude/skills`). Hardware is never written down: the skill tells agents to check it live.
 - **The note.** A short block in the agent's global instructions (`~/.claude/CLAUDE.md`): load the skill before changing the system, work step by step and wait for your go-ahead, work freely inside your folder and ask before `sudo`, and save tokens.
-- **The `kinobu-system` subagent.** A read-only investigator the agent can call for diagnoses that need many commands; it returns a short report (cause, fix, check, what needs `sudo`).
-- **Notifications.** GNOME notices when an agent finished (tasks of 20 s or more), waits for you or stopped on an error, with a sound; clicking one brings back the agent's terminal.
-- **The approval window.** When Claude Code needs a permission, Kinobu's window asks with Allow, In terminal and Deny. No button starts with the keyboard focus and nothing counts in its first moment on screen, so a key you were typing never answers. Closing it, Esc, "In terminal" or no answer in 45 s leave the question in the agent's terminal: nothing is approved on its own.
+- **Kinobu Agent (`kinobu-agent`), the system subagent.** A read-only investigator the agent can call for diagnoses that need many commands; it returns a short report (cause, fix, check, what needs `sudo`).
+- **Echo, the notifications.** GNOME notices when an agent finished (tasks of 20 s or more), waits for you or stopped on an error, with a sound; clicking one brings back the agent's terminal.
+- **Gate, the approval window.** When Claude Code needs a permission, Gate asks with Allow, In terminal and Deny. No button starts with the keyboard focus and nothing counts in its first moment on screen, so a key you were typing never answers. Closing it, Esc, "In terminal" or no answer in 45 s leave the question in the agent's terminal: nothing is approved on its own. "In terminal" also takes you to that terminal, on whatever workspace it is. In Claude Code's auto mode Gate waits a few seconds first, so it only opens when the automatic check leaves the decision to you.
 
 Kinobu never changes the agents' own permission settings.
 
-## Zen, the voice assistant
+## Willow, the voice assistant
 
-Press **Super+Shift+Space**, speak, and it answers aloud and keeps listening. It listens through Handy, thinks with a small model of your agent in a tiny context of its own, can search the web, read the computer with read-only commands and open apps, and hands real work to your agent in a terminal. Its voices run on your computer: Kokoro, Piper and, with a dedicated graphics card, Qwen3-TTS on Vulkan.
+Press **Super+Shift+Space**, speak, and it answers aloud and keeps listening. It listens through Handy and thinks with Claude Code in a tiny context of its own, at the power chosen in its settings: **Quick** (Haiku at low effort, the default), **Smart** (Haiku at high effort) or **Strong** (Sonnet at medium effort, slower and about 20 times dearer per token). It talks like a friendly, direct mate with a touch of humour; its settings take an optional line on how you want it to talk. It keeps nothing about you between talks. Its voices run on your computer: Kokoro, Piper and, with a dedicated graphics card, Qwen3-TTS on Vulkan.
 
-Zen talks to Claude Code.
+What it can do:
+
+- **Answer and look things up**: the web, and the computer with read-only commands.
+- **Act, safely**: volume, microphone, brightness, night light, Do Not Disturb, dark or light mode, the theme, music, a page of Settings, Wi-Fi, Bluetooth, reminders and timers. All through `kinobu-do`, the only command that lets it change anything (`kinobu-do help` lists its actions; you can use it too).
+- **See your screen** when you ask ("what does this message mean?"). The first time, GNOME asks whether apps may take screenshots: choose Allow. The picture stays in Willow's private folder.
+- **Know this computer**: it reads Kinobu's skill only when it is unsure, so it costs nothing the rest of the time.
+- **Check things in the background**: for something that needs more care but changes nothing, it asks a stronger model (Sonnet) without opening any window and tells you with a notification when it is ready.
+- **Hand over real work**: changing the system, files or code opens Claude Code in a terminal with the task already written.
+
+Each turn costs a fraction of a cent (on a Claude subscription it counts towards its usage instead).
 
 ## Keyboard shortcuts
 
@@ -155,8 +181,9 @@ Press **Super+K** to see them on screen. The letter is the first letter of the a
 | Super + Shift + Enter | AI agent in a terminal |
 | Super + E / B | Files / web browser |
 | Super + Space | Dictation (Handy) |
-| Super + Shift + Space | Talk to Zen |
-| Super + K | The shortcut list |
+| Super + Shift + Space | Talk to Willow |
+| Super + K | The shortcut list (Trail) |
+| Super + F1 | Help: the welcome tour (Sprout) |
 | Super + Q / F / H / D | Close / full screen / minimise / show desktop |
 | Super + N / M / V | Notifications / quick settings / clipboard history |
 | Super + Alt + K / A | Mute the microphone / the sound |
@@ -175,8 +202,9 @@ lib/
   software.sh      the catalogue and the menus
   core.sh          messages, the log, running commands, files, apt, sudo, the run itself
   apps.sh          blocks apt and apps
-  ai.sh            block ai and Zen
+  ai.sh            block ai and Willow
   drivers.sh  services.sh  user.sh  desktop.sh  shortcuts.sh  context.sh
+  look.sh          the themes, Seasons and their packs (part of block desktop)
   update.sh        --update
 files/             everything Kinobu installs as a file; @NAME@ marks are filled by render
 tools/             branding.py draws the rings and the wordmark for the terminal and the README
@@ -194,9 +222,11 @@ Each file in `lib/` starts with its own configuration, then its functions. Block
 | `kinobu.sh` | Name, version, supported Ubuntu, free space needed, install prefix |
 | `lib/software.sh` | `SOFTWARE`: what the menus offer, one line per app (`menu\|id\|name\|description\|on/off\|source`) |
 | `lib/apps.sh` | Packages always installed, packages removed, software sources, GraalVM, Handy settings |
-| `lib/ai.sh` | The agents' installers and Zen's voices |
-| `lib/user.sh` | Oh My Bash, the Nerd Font, the terminal palette |
-| `lib/desktop.sh` | Extensions, accent, power times, workspaces, dock, app grid |
+| `lib/ai.sh` | The agents' installers and Willow's voices |
+| `lib/user.sh` | Oh My Bash, the Nerd Font, the terminal font |
+| `lib/desktop.sh` | Extensions, power times, workspaces, dock, app grid |
+| `lib/look.sh` | `LOOK_THEME` (the first theme), `LOOK_PACKS` (icon and cursor packs with their versions and checksums) |
+| `files/themes/` | The factory themes, one `theme.toml` each ([docs/themes.md](docs/themes.md)) |
 | `lib/shortcuts.sh` | `SHORTCUTS` and the GNOME defaults freed for them |
 | `lib/context.sh` | Notifications on or off, the approval window, sounds and waiting times |
 
@@ -213,10 +243,12 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 | `~/.bashrc` | A block between `# >>> kinobu >>>` and `# <<< kinobu <<<` (backup `~/.bashrc.kinobu.bak`) |
 | `~/.oh-my-bash/`, `~/.local/share/fonts/NerdFonts/` | Oh My Bash and the Nerd Font |
 | `~/.config/fastfetch/config.jsonc` | The system summary (kept if you removed the `Managed by Kinobu` line) |
-| `~/.config/gtk-4.0/kinobu.css`, `~/.config/gtk-3.0/kinobu.css` | App colours, imported from a block in each `gtk.css` |
+| `~/.config/kinobu/look.toml` | Your look: the theme and what you picked in Seasons (never changed by updates) |
+| `~/.config/gtk-4.0/kinobu.css`, `~/.config/gtk-3.0/kinobu.css` | The theme's app colours, imported from a block in each `gtk.css` |
+| `~/.local/share/icons/<pack>`, `~/.icons/default` | Links to the icons and cursor in use, for sandboxed and older apps |
 | `~/.claude/` | The skill link, the note, the subagent and the hooks of Claude Code |
-| `~/.config/kinobu/` | The default agent, your version, Zen's settings |
-| `~/.local/share/kinobu/zen/` | Zen's voices and models |
+| `~/.config/kinobu/` | The default agent, your version, Willow's settings |
+| `~/.local/share/kinobu/voice/` | Willow's voices and models |
 | `~/.local/state/kinobu/` | One log per run and the GNOME settings before each run (last 10) |
 | GNOME settings (dconf) | Theme, clock, weather, workspaces, power, extensions, shortcuts, dock, app grid |
 

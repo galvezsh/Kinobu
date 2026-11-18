@@ -141,6 +141,10 @@ case $event in
         notify normal "💬 $title" "$(short "${message:-$(t waiting)}")"
         ;;
     permission)
+        # In Claude Code's auto mode a classifier approves most requests by itself within a second
+        # or two, and then cancels this hook: wait a moment first, so Gate only opens for the ones
+        # that really need the user (it flashed on every command before)
+        if [[ "$(field '.permission_mode')" == auto ]]; then sleep "${KINOBU_NOTIFY_AUTO_WAIT:-4}"; fi
         tool=$(field '.tool_name')
         detail=$(field '.tool_input.command // .tool_input.file_path // .tool_input.url // .tool_input.description')
         what=$(short "${tool:-Tool}${detail:+: $detail}" 400)
@@ -152,7 +156,7 @@ case $event in
             answer=$(python3 "$window" --agent "$name" --project "$project" --tool "${tool:-Tool}" \
                 --detail "$(short "$detail" 600)" --timeout "$wait_seconds" --title "$(t approval)" \
                 --question "$(t needs)" --allow "$(t allow)" --deny "$(t deny)" \
-                --terminal "$(t terminal)" --countdown "$(t countdown)" 2>/dev/null)
+                --terminal "$(t terminal)" --countdown "$(t countdown)" --terminal-app "$(terminal_app)" 2>/dev/null)
             if [[ $answer == allow ]]; then
                 echo '{"hookSpecificOutput": {"hookEventName": "PermissionRequest", "decision": {"behavior": "allow"}}}'
             elif [[ $answer == deny ]]; then

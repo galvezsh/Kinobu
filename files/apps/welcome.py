@@ -41,8 +41,9 @@ SHORTCUTS = [
     ("kinobu", "<Super>b", "sc.web_browser"),
     ("kinobu", "<Super><Shift>Return", "sc.ai_agent"),
     ("kinobu", "<Super>space", "sc.voice_dictation"),
-    ("kinobu", "<Super><Shift>space", "sc.talk_to_zen"),
+    ("kinobu", "<Super><Shift>space", "sc.talk_to_voice"),
     ("kinobu", "<Super>k", "sc.all_shortcuts"),
+    ("kinobu", "<Super>F1", "sc.help"),
 ]
 
 # Text about 18 % larger than libadwaita's (title 181 %/136 % compact, body 100 %, subtitle 83 %);
@@ -159,7 +160,7 @@ def build(app):
                                               Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     voice = t("p5.voice") if has("handy") else ""
-    voice += t("p5.zen")
+    voice += t("p5.assistant")
     pages = [
         page("computer-symbolic", t("p1.title"), t("p1.body")),
         page("starred-symbolic", t("p2.title"), t("p2.body")),
@@ -180,10 +181,10 @@ def build(app):
     bar.set_center_widget(Adw.CarouselIndicatorDots(carousel=carousel))
     bar.set_end_widget(forward)
 
-    win = Adw.ApplicationWindow(application=app, title="Kinobu",
+    win = Adw.ApplicationWindow(application=app, title="Sprout",
                                 default_width=680, default_height=760)
     view = Adw.ToolbarView()
-    header = Adw.HeaderBar(title_widget=Adw.WindowTitle(title="Kinobu", subtitle=t("welcome")))
+    header = Adw.HeaderBar(title_widget=Adw.WindowTitle(title="Sprout", subtitle=t("welcome")))
     probe = Gtk.Label(css_classes=["kinobu-accent"], visible=False)
     header.pack_end(probe)
     view.add_top_bar(header)

@@ -11,7 +11,7 @@ title = gettext.translation("gtk40", fallback=True).gettext("Keyboard Shortcuts"
 
 
 def build(app):
-    win = Adw.ApplicationWindow(application=app, title="Kinobu · " + title,
+    win = Adw.ApplicationWindow(application=app, title="Trail · " + title,
                                 default_width=640, default_height=760)
     page = Adw.PreferencesPage()
     groups = {}

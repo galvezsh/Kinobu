@@ -15,7 +15,7 @@ the user, saving tokens) between `<!-- kinobu:begin -->` and `<!-- kinobu:end --
 rewrites that block on every run; anything outside it is the user's. Kinobu does not change the
 agents' own permission settings: each tool keeps its defaults.
 
-## The kinobu-system subagent
+## Kinobu Agent, the read-only system subagent
 
 A read-only investigator of this computer, installed for Claude Code (`~/.claude/agents/`). It runs the many commands a diagnosis needs in its own context and returns a
 short report (Cause, Fix, Check, If it still fails, Needs sudo), so your conversation keeps only
@@ -24,7 +24,7 @@ the summary. It never changes anything and never runs `sudo`.
 Use it for system questions or problems that need many commands or long outputs (why something
 fails, hardware and drivers, logs, disk usage); for one quick command, just run it. Then:
 
-1. Delegate the question to `kinobu-system`.
+1. Delegate the question to `kinobu-agent`.
 2. Show the user the Fix and wait for their go-ahead.
 3. Apply it yourself.
 4. Run the Check yourself (one to three short commands).
@@ -50,8 +50,10 @@ desktop shows a notification, with a short sound, when a task finished (only whe
 or more by default), the agent waits for the user, or a Claude Code turn stops on an error
 ("usage limit reached" for rate limits). The header names the agent, the title is the project
 folder, and a click brings back the agent's terminal. When Claude Code needs an approval,
-Kinobu's window asks with Allow, "In terminal" and Deny; closing it, "In terminal" or no answer in 45 s
-(default) leaves the decision to the agent's own prompt in the terminal. The notifier is
+Kinobu's window (Gate) asks with Allow, "In terminal" and Deny; closing it, "In terminal" or no
+answer in 45 s (default) leaves the decision to the agent's own prompt in the terminal, and "In
+terminal" also brings that terminal to the front. In auto mode Gate waits a few seconds, so it
+only opens when the automatic check leaves the decision to the user. The notifier is
 `@NOTIFIER@`; entries that run it are rewritten on every Kinobu run, other
 tools' entries are kept. File: `~/.claude/settings.json`.
 
@@ -69,10 +71,16 @@ Write the text in the user's language. Never put personal data (e-mail, tokens) 
 
 Node.js (`npx -y <package>`) and uv (`uvx <package>`) are available for MCP servers.
 
-## Zen, the voice assistant
+## Willow, the voice assistant
 
-Zen (Super+Shift+Space) runs the default agent headless with a small, cheap model and a tiny
+Willow (Super+Shift+Space) runs the default agent headless with a small, cheap model and a tiny
 prompt of its own: none of the agent's settings, hooks, MCP servers, skills or memory. For now
 only Claude Code (`claude -p --model haiku`); other agents are planned. It may read the system
-with an allow-list of read-only commands, search the web and open apps, pages or folders; for
-real work it shows a card that opens this agent in a terminal with the task already written.
+with an allow-list of read-only commands, search the web, open apps, pages or folders, take the
+safe actions of `kinobu-do` (`kinobu-do help`), look at the screen when asked (`kinobu-do
+screenshot`, through GNOME's screenshot portal), and read this skill when unsure; it keeps nothing about the
+user between talks. Checks that change nothing run in the
+background on Sonnet at medium effort, with a notification when done; for real work it shows a
+card that opens this agent in a terminal with the task already written. Its settings are in `~/.config/kinobu/voice.json`:
+`power` (`quick` Haiku low effort, `smart` Haiku high, `strong` Sonnet medium) and `persona` (an
+optional line on how to talk), both also in Willow's settings window.

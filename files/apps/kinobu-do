@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+# kinobu-do: the safe actions Willow (and anyone) may take on this computer. Written by Kinobu:
+# rewritten on every run and --update. Each action is small and reversible and needs no
+# password; the voice assistant is allowed this command and nothing else that changes things.
+# Usage: kinobu-do <action> [arguments]   (kinobu-do help lists them)
+set -u
+export LC_ALL=C.UTF-8
+LANG_CODE=${LANG%%_*}
+CACHE="$HOME/.cache/kinobu/willow"
+THEME="@BIN_DIR@/kinobu-theme"
+LAUNCHER="@BIN_DIR@/kinobu-launch"
+SCREENSHOT="@PROGRAMS_DIR@/kinobu_screenshot.py"
+PANELS="applications background bluetooth color display keyboard mouse multitasking network wifi notifications online-accounts power printers privacy search sharing sound system ubuntu universal-access wacom wellbeing"
+
+say() { printf '%s\n' "$*"; }
+fail() { printf 'Error: %s\n' "$*"; exit 1; }
+is_number() { [[ $1 =~ ^[0-9]{1,3}$ ]]; }
+one_line() {   # one line, no spaces around it, at most $2 characters (200)
+    local s
+    s=$(printf '%s' "$1" | tr '\n\t' '  ')
+    s=${s#"${s%%[![:space:]]*}"}
+    s=${s%"${s##*[![:space:]]}"}
+    printf '%s' "${s:0:${2:-200}}"
+}
+need() { command -v "$1" >/dev/null || fail "$1 is not installed (run the Kinobu setup again)"; }
+on_off() { case ${1:-} in on|off) ;; *) fail "say on or off" ;; esac; }
+
+usage() {
+    cat <<'EOF'
+kinobu-do volume up|down|mute|unmute|0-150    the speakers
+kinobu-do mic mute|unmute                     the microphone
+kinobu-do brightness up|down|1-100            the screen (laptops)
+kinobu-do night-light on|off                  warmer colours at night
+kinobu-do dnd on|off                          Do Not Disturb (no notification banners)
+kinobu-do style dark|light                    dark or light mode (the theme's palette for it)
+kinobu-do theme ID [PALETTE|dark|light] | themes   change the theme / list them and their palettes
+kinobu-do seasons [icons|cursors|fonts|wallpapers]   open Seasons
+kinobu-do media play|pause|toggle|next|previous|status
+kinobu-do settings PANEL                      open a page of Settings (kinobu-do settings list)
+kinobu-do wifi on|off | bluetooth on|off
+kinobu-do remind MINUTES TEXT | remind list | remind cancel
+kinobu-do screenshot                          the screen, as a picture Willow can look at
+kinobu-do status                              volume, brightness, mode, theme, Wi-Fi...
+EOF
+}
+
+volume() {
+    local target=@DEFAULT_AUDIO_SINK@
+    case ${1:-} in
+        up) wpctl set-volume -l 1.5 "$target" 10%+ ;;
+        down) wpctl set-volume "$target" 10%- ;;
+        mute) wpctl set-mute "$target" 1 ;;
+        unmute) wpctl set-mute "$target" 0 ;;
+        *) if ! is_number "${1:-x}" || (($1 > 150)); then fail "up, down, mute, unmute or 0-150"; fi
+           wpctl set-volume -l 1.5 "$target" "$(awk -v v="$1" 'BEGIN{printf "%.2f", v/100}')" ;;
+    esac
+    say "Volume: $(wpctl get-volume "$target" | awk '{printf "%d%%", $2*100} /MUTED/{printf " (muted)"}')"
+}
+
+brightness() {
+    need brightnessctl
+    brightnessctl -l -c backlight 2>/dev/null | grep -q backlight || fail "this screen has no brightness control (on a desktop, use the monitor's buttons)"
+    case ${1:-} in
+        up) brightnessctl -q -c backlight set 10%+ ;;
+        down) brightnessctl -q -c backlight set 10%- ;;
+        *) if ! is_number "${1:-x}" || (($1 < 1 || $1 > 100)); then fail "up, down or 1-100"; fi
+           brightnessctl -q -c backlight set "$1%" ;;
+    esac
+    say "Brightness: $(brightnessctl -c backlight -m | cut -d, -f4)"
+}
+
+style() {
+    case ${1:-} in dark|light) ;; *) fail "say dark or light" ;; esac
+    local current
+    current=$("$THEME" current 2>/dev/null | cut -d' ' -f1)
+    if [[ -n $current && $current != none ]] && "$THEME" set "$current" --mode "$1" >/dev/null 2>&1; then
+        say "Now $1 ($("$THEME" current | cut -d' ' -f1-2)). Open apps change when they open again."
+    else
+        gsettings set org.gnome.desktop.interface color-scheme "$([[ $1 == dark ]] && echo prefer-dark || echo prefer-light)"
+        say "Now $1."
+    fi
+}
+
+media() {
+    need playerctl
+    case ${1:-} in
+        play|pause) playerctl "$1" ;;
+        toggle) playerctl play-pause ;;
+        next|previous) playerctl "$1" ;;
+        status) ;;
+        *) fail "play, pause, toggle, next, previous or status" ;;
+    esac 2>/dev/null || fail "no music or video player is open"
+    sleep 0.3
+    say "$(playerctl status 2>/dev/null || echo Stopped): $(playerctl metadata --format '{{artist}} - {{title}}' 2>/dev/null)"
+}
+
+remind() {
+    case ${1:-} in
+        list)
+            local timers
+            timers=$(systemctl --user list-timers 'kinobu-remind-*' --no-legend 2>/dev/null)
+            if [[ -z $timers ]]; then say "No reminders."; return; fi
+            while read -r unit; do
+                say "$(systemctl --user show -p Description --value "${unit%.timer}.service" | sed 's/^Reminder: //') — $(systemctl --user show -p NextElapseUSecRealtime --value "$unit")"
+            done < <(awk '{for (i = 1; i <= NF; i++) if ($i ~ /^kinobu-remind-.*\.timer$/) print $i}' <<<"$timers")
+            return ;;
+        cancel)
+            systemctl --user stop 'kinobu-remind-*.timer' 2>/dev/null
+            say "Reminders cancelled."
+            return ;;
+    esac
+    local minutes=${1:-x} text
+    if ! is_number "$minutes" || ((minutes < 1 || minutes > 999)); then fail "remind MINUTES TEXT (1-999 minutes)"; fi
+    shift
+    text=$(one_line "$*")
+    [[ -n $text ]] || fail "what should I remind you of?"
+    local title=Reminder
+    if [[ $LANG_CODE == es ]]; then title=Recordatorio; fi
+    # shellcheck disable=SC2016  # $1 and $2 belong to the reminder's own shell
+    systemd-run --user --quiet --collect --on-active="${minutes}m" --unit="kinobu-remind-$(date +%s%N)" \
+        --description="Reminder: $text" /bin/sh -c \
+        'notify-send -a Willow -i os.kinobu.Voice -u critical "$1" "$2"; canberra-gtk-play --id=alarm-clock-elapsed >/dev/null 2>&1' \
+        _ "$title" "$text" || fail "the reminder could not be set"
+    say "Reminder in $minutes minutes: $text"
+}
+
+screenshot() {   # through the screenshot portal: GNOME asks the user once and remembers
+    mkdir -p "$CACHE"
+    chmod 700 "$CACHE"
+    local file="$CACHE/screen.png" out
+    rm -f "$file"
+    out=$(python3 "$SCREENSHOT" "$file" 2>&1)
+    [[ -s $file ]] || fail "${out#Error: }"
+    say "$file"
+}
+
+status() {
+    say "Volume: $(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null | awk '{printf "%d%%", $2*100} /MUTED/{printf " (muted)"}')"
+    say "Microphone: $(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ 2>/dev/null | grep -q MUTED && echo muted || echo on)"
+    if command -v brightnessctl >/dev/null && brightnessctl -l -c backlight 2>/dev/null | grep -q backlight; then
+        say "Brightness: $(brightnessctl -c backlight -m | cut -d, -f4)"
+    fi
+    say "Mode: $(gsettings get org.gnome.desktop.interface color-scheme | tr -d "'")"
+    say "Theme: $("$THEME" current 2>/dev/null || echo none)"
+    say "Night light: $(gsettings get org.gnome.settings-daemon.plugins.color night-light-enabled)"
+    say "Do Not Disturb: $([[ $(gsettings get org.gnome.desktop.notifications show-banners) == false ]] && echo on || echo off)"
+    say "Wi-Fi: $(nmcli radio wifi 2>/dev/null)"
+    say "Bluetooth: $(bluetoothctl show 2>/dev/null | awk '/Powered:/{print $2; exit}')"
+}
+
+case ${1:-help} in
+    volume) volume "${2:-}" ;;
+    mic) case ${2:-} in
+             mute) wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 1; say "Microphone muted." ;;
+             unmute) wpctl set-mute @DEFAULT_AUDIO_SOURCE@ 0; say "Microphone on." ;;
+             *) fail "mic mute or mic unmute" ;;
+         esac ;;
+    brightness) brightness "${2:-}" ;;
+    night-light) on_off "${2:-}"
+        gsettings set org.gnome.settings-daemon.plugins.color night-light-enabled "$([[ $2 == on ]] && echo true || echo false)"
+        say "Night light $2." ;;
+    dnd) on_off "${2:-}"
+        gsettings set org.gnome.desktop.notifications show-banners "$([[ $2 == on ]] && echo false || echo true)"
+        say "Do Not Disturb $2." ;;
+    style) style "${2:-}" ;;
+    theme) [[ -n ${2:-} ]] || fail "theme ID [PALETTE|dark|light] (kinobu-do themes lists them)"
+        case ${3:-} in
+            '') "$THEME" set "$2" 2>&1 | tail -n 3 ;;
+            dark|light) "$THEME" set "$2" --mode "$3" 2>&1 | tail -n 3 ;;
+            *) "$THEME" set "$2" --palette "$3" 2>&1 | tail -n 3 ;;
+        esac ;;
+    themes) "$THEME" list ;;
+    seasons) case ${2:-} in ''|themes|icons|cursors|fonts|wallpapers) ;; *) fail "icons, cursors, fonts or wallpapers" ;; esac
+        setsid "$LAUNCHER" themes ${2:+"$2"} </dev/null >/dev/null 2>&1 &
+        say "Seasons is open." ;;
+    media) media "${2:-}" ;;
+    settings) if [[ ${2:-} == list || -z ${2:-} ]]; then say "Pages: $PANELS"; exit 0; fi
+        [[ " $PANELS " == *" $2 "* ]] || fail "unknown page (kinobu-do settings list)"
+        setsid gnome-control-center "$2" </dev/null >/dev/null 2>&1 &
+        say "Settings is open on $2." ;;
+    wifi) on_off "${2:-}"; nmcli radio wifi "$2" && say "Wi-Fi $2." ;;
+    bluetooth) on_off "${2:-}"
+        if bluetoothctl power "$2" >/dev/null 2>&1; then say "Bluetooth $2."; else fail "no Bluetooth adapter answered"; fi ;;
+    remind) shift; remind "$@" ;;
+    screenshot) screenshot ;;
+    status) status ;;
+    help|-h|--help) usage ;;
+    *) usage; exit 1 ;;
+esac

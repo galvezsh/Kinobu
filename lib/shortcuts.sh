@@ -14,7 +14,7 @@ SHORTCUTS=(
     "Apps|<Super><Shift>Return|AI agent in a terminal|launch:agent"
     "Apps|<Primary><Shift>Escape|System monitor|launch:monitor"
     "Apps|<Super>space|Voice dictation (Handy)|launch:dictation"
-    "Apps|<Super><Shift>space|Talk to Zen (voice assistant)|launch:zen"
+    "Apps|<Super><Shift>space|Talk to Willow (voice assistant)|launch:voice"
     "Apps|<Super>period|Emoji and special characters|launch:emoji"
     "System|<Super>r <Alt>F2|Run a command|/org/gnome/desktop/wm/keybindings/panel-run-dialog"
     "System|<Super>i|Settings|/org/gnome/settings-daemon/plugins/media-keys/control-center"
@@ -26,6 +26,7 @@ SHORTCUTS=(
     "System|<Super><Shift>s Print|Screenshot|/org/gnome/shell/keybindings/show-screenshot-ui"
     "System|<Super>l|Lock screen|/org/gnome/settings-daemon/plugins/media-keys/screensaver"
     "System|<Super>k|Show this shortcut list|launch:keys"
+    "System|<Super>F1|Help: the welcome tour (Sprout)|launch:welcome"
     "System|<Super>|Activities overview|-"
     "System|<Super>a|All apps|-"
     "Windows|<Super>q <Alt>F4|Close window|/org/gnome/desktop/wm/keybindings/close"
@@ -58,6 +59,7 @@ SHORTCUTS=(
 # GNOME defaults that clash with the shortcuts above: "dconf key|new value"
 SHORTCUT_RELEASES=(
     "/org/gnome/shell/keybindings/focus-active-notification|@as []"       # was Super+N
+    "/org/gnome/settings-daemon/plugins/media-keys/help|@as []"          # GNOME Help, was Super+F1
     "/org/gnome/desktop/wm/keybindings/switch-input-source|['XF86Keyboard']"  # was Super+Space
     "/org/gnome/desktop/wm/keybindings/switch-input-source-backward|['<Shift>XF86Keyboard']"
     "/desktop/ibus/panel/emoji/hotkey|['<Super>semicolon']"               # IBus emoji typing, was Super+. too

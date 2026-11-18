@@ -1,21 +1,21 @@
 # shellcheck shell=bash
 # --update: brings a computer set up by an earlier version to this one without touching the
-# user's look (theme, accent, wallpapers, terminal palette and font, dock, weather, power and
-# extensions stay as they are).
+# user's look (their theme and picks in ~/.config/kinobu/look.toml, terminal font, dock,
+# weather, power and extensions stay as they are).
 
 # shellcheck disable=SC2034  # read by run_plan and confirm_start
 UPDATE_BLOCKS=(apps ai user desktop shortcuts context)
 # shellcheck disable=SC2034
 declare -A UPDATE_FN=(
     [apps]=update_applications [ai]=update_ai_tools [user]=update_user_files
-    [desktop]=install_gtk_styles [shortcuts]=configure_shortcuts [context]=install_context
+    [desktop]=update_look [shortcuts]=configure_shortcuts [context]=install_context
 )
 # shellcheck disable=SC2034
 declare -A UPDATE_DESC=(
     [apps]="Ubuntu, the Snap Store apps, Handy and Java; no new apps are added"
     [ai]="The AI tools that are installed and the voice assistant"
     [user]="$APP_NAME's part of the shell and the system summary (palette and fonts are kept)"
-    [desktop]="The app colours (theme, wallpapers and dock are kept)"
+    [desktop]="The themes, Seasons and their icons and cursors (your look is kept)"
     [shortcuts]="$APP_NAME's shortcuts, their cheat sheet and the welcome tour"
     [context]="What your AI agents know about this system, and their notifications"
 )
@@ -67,7 +67,7 @@ update_ai_tools() {
         warn "uv could not be updated"
     fi
 
-    install_zen
+    install_voice
 }
 
 # Rewrites the files Kinobu owns in the shell: the ~/.bashrc block, fastfetch and ydotool's retries.
@@ -76,4 +76,10 @@ update_user_files() {
     write_fastfetch
     step "Dictation typing (ydotool)"
     ydotool_retry
+}
+
+# The themes and their packs, then the user's own look applied again (kept as it is)
+update_look() {
+    install_look
+    apply_look
 }

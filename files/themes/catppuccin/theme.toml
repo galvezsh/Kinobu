@@ -1,0 +1,113 @@
+# Catppuccin (MIT): soothing pastels in four flavours, and Dracula and Alucard (Zeno Rocha, MIT)
+# blended with them: Dracula's purple and text on Catppuccin's calmer greys and status colours.
+# Frappé's text and Latte's are a touch stronger than the original, for contrast
+name = "Catppuccin"
+description = "Soothing pastels and purples: Catppuccin's flavours, with Dracula and Alucard."
+author = "Kinobu, on Catppuccin (MIT) and Dracula by Zeno Rocha (MIT)"
+gnome_accent = "purple"
+icons = "Papirus"
+cursor = { dark = "catppuccin-mocha-dark-cursors", light = "catppuccin-latte-light-cursors" }
+button_layout = "appmenu:minimize,maximize,close"
+wallhaven = "pastel"                # Seasons' "For this theme" search on Wallhaven (in English)
+# Its four wallpapers, from Wallhaven: downloaded by the user when the theme is applied
+wallpapers = ["wallhaven:5ymyz7", "wallhaven:d65ppm", "wallhaven:j3l5om", "wallhaven:mlzgz9"]
+intensity = 1
+
+# The palettes, in the order Seasons shows them (the first is the default). Each one is dark
+# or light; "pair" is the palette of the other mode the dark-style switch moves to.
+
+[palettes.mocha]
+name = "Mocha"
+mode = "dark"
+pair = "latte"
+terminal = "Catppuccin Mocha"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#CBA6F7"
+background = "#1E1E2E"
+view = "#181825"
+sidebar = "#181825"
+card = "#313244"
+foreground = "#CDD6F4"
+muted = "#A6ADC8"
+success = "#A6E3A1"
+warning = "#F9E2AF"
+error = "#F38BA8"
+
+[palettes.macchiato]
+name = "Macchiato"
+mode = "dark"
+pair = "latte"
+terminal = "Catppuccin Macchiato"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#C6A0F6"
+background = "#24273A"
+view = "#1E2030"
+sidebar = "#1E2030"
+card = "#363A4F"
+foreground = "#CAD3F5"
+muted = "#A5ADCB"
+success = "#A6DA95"
+warning = "#EED49F"
+error = "#ED8796"
+
+[palettes.frappe]
+name = "Frappé"
+mode = "dark"
+pair = "latte"
+terminal = "Catppuccin Frappé"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#CA9EE6"
+background = "#303446"
+view = "#292C3C"
+sidebar = "#292C3C"
+card = "#414559"
+foreground = "#D9E0F8"
+muted = "#A5ADCE"
+success = "#A6D189"
+warning = "#E5C890"
+error = "#E78284"
+
+[palettes.dracula]
+name = "Dracula"
+mode = "dark"
+pair = "alucard"
+terminal = "dracula"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#BD93F9"
+background = "#242633"
+view = "#1E1E2A"
+sidebar = "#1E1E2A"
+card = "#333545"
+foreground = "#F8F8F2"
+muted = "#A4ABCA"
+success = "#6EF288"
+warning = "#F4F298"
+error = "#FB6872"
+
+[palettes.latte]
+name = "Latte"
+mode = "light"
+pair = "mocha"
+terminal = "Catppuccin Latte"         # a palette of Ptyxis (its light side when it has two)
+accent = "#8839EF"
+background = "#EFF1F5"
+view = "#FFFFFF"
+sidebar = "#E6E9EF"
+card = "#F7F8FA"
+foreground = "#3A3C52"
+muted = "#5C5F75"
+success = "#40A02B"
+warning = "#DF8E1D"
+error = "#D20F39"
+
+[palettes.alucard]
+name = "Alucard"
+mode = "light"
+pair = "dracula"
+terminal = "dracula"         # a palette of Ptyxis (its light side when it has two)
+accent = "#644AC9"
+background = "#F3F1E8"
+view = "#FFFCF1"
+sidebar = "#EBE8DB"
+card = "#FDFCF6"
+foreground = "#27282E"
+muted = "#615E55"
+success = "#217F14"
+warning = "#9F7817"
+error = "#CD2D2E"

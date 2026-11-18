@@ -1,0 +1,82 @@
+# Gruvbox (morhetz, MIT): retro groove, warm and earthy
+name = "Gruvbox"
+description = "Retro groove: warm, earthy colours with plenty of contrast."
+author = "Kinobu, on Gruvbox by morhetz (MIT)"
+gnome_accent = "orange"
+icons = "Papirus"
+cursor = "Bibata-Modern-Amber"
+button_layout = "appmenu:minimize,maximize,close"
+wallhaven = "autumn"                # Seasons' "For this theme" search on Wallhaven (in English)
+wallhaven_colour = "996633"          # one of Wallhaven's colours
+# Its four wallpapers, from Wallhaven: downloaded by the user when the theme is applied
+wallpapers = ["wallhaven:8oev1j", "wallhaven:lm5w9r", "wallhaven:vgor6p", "wallhaven:dpv8lj"]
+intensity = 1
+
+# The palettes, in the order Seasons shows them (the first is the default). Each one is dark
+# or light; "pair" is the palette of the other mode the dark-style switch moves to.
+
+[palettes.dark]
+name = "Dark"
+mode = "dark"
+pair = "light"
+terminal = "Gruvbox"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#FE8019"
+background = "#282828"
+view = "#1D2021"
+sidebar = "#32302F"
+card = "#3C3836"
+foreground = "#EBDBB2"
+muted = "#BDAE93"
+success = "#B8BB26"
+warning = "#FABD2F"
+error = "#FB4934"
+
+[palettes.dark-hard]
+name = "Dark Hard"
+mode = "dark"
+pair = "light-hard"
+terminal = "Gruvbox"         # a palette of Ptyxis (its dark side when it has two)
+terminal_background = "#1D2021"
+accent = "#FE8019"
+background = "#1D2021"
+view = "#161819"
+sidebar = "#282828"
+card = "#32302F"
+foreground = "#EBDBB2"
+muted = "#BDAE93"
+success = "#B8BB26"
+warning = "#FABD2F"
+error = "#FB4934"
+
+[palettes.light]
+name = "Light"
+mode = "light"
+pair = "dark"
+terminal = "Gruvbox"         # a palette of Ptyxis (its light side when it has two)
+accent = "#AF3A03"
+background = "#F2E5BC"
+view = "#FBF1C7"
+sidebar = "#EBDBB2"
+card = "#F9F5D7"
+foreground = "#3C3836"
+muted = "#665C54"
+success = "#79740E"
+warning = "#B57614"
+error = "#9D0006"
+
+[palettes.light-hard]
+name = "Light Hard"
+mode = "light"
+pair = "dark-hard"
+terminal = "Gruvbox"         # a palette of Ptyxis (its light side when it has two)
+terminal_background = "#F9F5D7"
+accent = "#AF3A03"
+background = "#F9F5D7"
+view = "#FBF8E3"
+sidebar = "#F2E5BC"
+card = "#FFFDF0"
+foreground = "#3C3836"
+muted = "#665C54"
+success = "#79740E"
+warning = "#B57614"
+error = "#9D0006"

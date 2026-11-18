@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Willow
+Comment=Talk to your computer: Willow listens, answers aloud and hands bigger jobs to your agent
+Comment[es]=Habla con tu ordenador: Willow te escucha, responde en voz alta y delega lo grande en tu agente
+Exec=python3 @PROGRAMS_DIR@/voice.py
+Icon=os.kinobu.Voice
+Terminal=false
+Categories=GNOME;GTK;Utility;
+Keywords=Kinobu;Willow;Voice;Assistant;Talk;AI;
+Keywords[es]=Kinobu;Willow;Voz;Asistente;Hablar;IA;
+StartupNotify=true
+StartupWMClass=os.kinobu.Voice

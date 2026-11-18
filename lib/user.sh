@@ -17,7 +17,6 @@ NERD_FONT_SHA256="abcbf48bb68e2dd09d43dc0ea04f6878cc8ee46334a9f9ce52b51e06f31aa0
 NERD_FONT_FILES="UbuntuSansMonoNerdFontMono-*.ttf"
 NERD_FONT_FAMILY="UbuntuSansMono Nerd Font Mono"
 TERMINAL_FONT_SIZE=11
-TERMINAL_PALETTE="Tokyo Night"       # Ptyxis colour palette, matches the wallpapers
 # Snaps of JetBrains-based IDEs whose terminal gets the Nerd Font (the installed ones)
 JETBRAINS_IDES=(intellij-idea pycharm webstorm clion goland rider phpstorm rubymine rustrover datagrip android-studio)
 
@@ -70,8 +69,7 @@ configure_user() {
             gsettings set org.gnome.Ptyxis profile-uuids "['$uuid']"
             gsettings set org.gnome.Ptyxis default-profile-uuid "'$uuid'"
         fi
-        gsettings set "org.gnome.Ptyxis.Profile:/org/gnome/Ptyxis/Profiles/$uuid/" palette "'$TERMINAL_PALETTE'"
-        ok "$NERD_FONT_FAMILY $TERMINAL_FONT_SIZE, $TERMINAL_PALETTE palette"
+        ok "$NERD_FONT_FAMILY $TERMINAL_FONT_SIZE (the colours come from the theme)"
     fi
 
     step "Terminal font: VS Code"

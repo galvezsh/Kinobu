@@ -3,7 +3,7 @@
 #
 #   Kinobu — the agentic Ubuntu desktop
 #
-#   Version : 0.1 (in development)
+#   Version : 0.2 (in development)
 #   Author  : Alberto Gálvez (agalvezsh)
 #   License : AGPL-3.0-or-later (see LICENSE)
 #
@@ -26,14 +26,14 @@ set -Eeuo pipefail
 # =============================================================================
 APP_NAME="Kinobu"
 APP_ID="kinobu"
-APP_VERSION="0.1"
+APP_VERSION="0.2"
 SUPPORTED_UBUNTU="26.04"
 MIN_FREE_GB=25                              # free space the full setup needs on /
 DISCRETE_GPU='NVIDIA|Radeon (RX|Pro)|Arc'   # lspci names of dedicated graphics cards
 PREFIX="${KINOBU_PREFIX:-/usr/local}"       # where Kinobu installs itself for every user
 SYSTEM_DIR="$PREFIX/share/$APP_ID"          # what every user shares: programs/, skills/, i18n/, data/, src/
-PROGRAMS_DIR="$SYSTEM_DIR/programs"         # Kinobu's own apps (cheat sheet, tour, approval window, Zen)
-BIN_DIR="$PREFIX/bin"                       # its commands: kinobu, kinobu-launch, kinobu-notify
+PROGRAMS_DIR="$SYSTEM_DIR/programs"         # Kinobu's own apps (Trail, Sprout, Gate, Willow, Seasons)
+BIN_DIR="$PREFIX/bin"                       # its commands: kinobu, kinobu-launch, kinobu-notify, kinobu-theme
 DATA_DIR="$HOME/.local/share/$APP_ID"       # each user's own data (the voice assistant's voices)
 
 # =============================================================================
@@ -66,6 +66,8 @@ source "$ROOT_DIR/lib/services.sh"
 source "$ROOT_DIR/lib/user.sh"
 # shellcheck source=lib/desktop.sh
 source "$ROOT_DIR/lib/desktop.sh"
+# shellcheck source=lib/look.sh
+source "$ROOT_DIR/lib/look.sh"
 # shellcheck source=lib/shortcuts.sh
 source "$ROOT_DIR/lib/shortcuts.sh"
 # shellcheck source=lib/context.sh

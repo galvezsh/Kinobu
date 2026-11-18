@@ -54,12 +54,12 @@ install_context() {
     if $AGENT_NOTIFICATIONS; then install_agent_hooks; fi
 }
 
-# Installs the read-only kinobu-system subagent for every agent that has custom subagents,
+# Installs the read-only kinobu-agent subagent for every agent that has custom subagents,
 # installed or not: one text (files/subagents/instructions.md) in each tool's own format.
 # In Claude Code it runs in auto mode: it only reads, so it does not stop
 # for approvals (an author's exception to "Kinobu never changes the agents' permissions").
 install_subagents() {
-    step "Read-only system subagent (kinobu-system)"
+    step "Read-only system subagent (kinobu-agent)"
     local description instructions tool dest
     # It reads the system logs without sudo through the adm group (Ubuntu's log readers, not
     # root-equivalent). The first user is in it already; another admin is added once.
@@ -71,7 +71,7 @@ install_subagents() {
     description=$(render subagents/description.txt)
     instructions=$(render subagents/instructions.md SYSTEM_DIR PROGRAMS_DIR)
     local -A dests=(
-        [claude]="$HOME/.claude/agents/kinobu-system.md"
+        [claude]="$HOME/.claude/agents/kinobu-agent.md"
     )
     for tool in "${AGENT_TOOLS[@]}"; do
         dest=${dests[$tool]}
@@ -127,7 +127,7 @@ write_skill() {
         table+="| $group | $(pretty_all_keys "$accels") | $action |"$'\n'
     done
     put_file "$dir/SKILL.md" < <(render skill/SKILL.md APP_ID APP_NAME APP_VERSION JAVA_DIR WORKSPACES \
-        OMB_THEME NERD_FONT_FAMILY SYSTEM_DIR BIN_DIR)
+        OMB_THEME NERD_FONT_FAMILY SYSTEM_DIR BIN_DIR LAUNCHER NOTIFIER)
     put_file "$dir/shortcuts.md" < <(render skill/shortcuts.md APP_ID APP_NAME LAUNCHER TABLE="${table%$'\n'}")
     for guide in software desktop hardware agents; do
         put_file "$dir/$guide.md" < <(render "skill/$guide.md" SYSTEM_DIR PROGRAMS_DIR LAUNCHER NOTIFIER)

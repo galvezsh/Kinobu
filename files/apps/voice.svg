@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <!-- Zen icon: the living orb of Kinobu's voice assistant -->
+  <!-- Willow icon: the living orb of Kinobu's voice assistant -->
   <defs>
     <radialGradient id="halo" cx="64" cy="64" r="62" gradientUnits="userSpaceOnUse">
       <stop offset="0.55" stop-color="#3584e4" stop-opacity="0.45"/>

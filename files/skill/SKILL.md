@@ -20,15 +20,27 @@ check them live** with the commands in [hardware.md](hardware.md).
 Read the matching guide before starting:
 
 - [software.md](software.md): installing, removing and updating software, repositories, Docker
-- [desktop.md](desktop.md): GNOME settings, extensions, dock, theme, dictation, Zen (voice assistant)
+- [desktop.md](desktop.md): GNOME settings, extensions, dock, theme, dictation, Willow (voice assistant)
 - [shortcuts.md](shortcuts.md): keyboard shortcuts and workspaces
 - [hardware.md](hardware.md): commands to inspect hardware, drivers and disks
 - [agents.md](agents.md): the AI tools on this machine and where they keep their config
 
+## @APP_NAME@'s apps
+
+The user may call them by name. Open them with `@LAUNCHER@ <command>`:
+
+| Name | What it is | Command |
+|---|---|---|
+| Sprout | the welcome tour (Super+F1) | `welcome` |
+| Trail | the keyboard shortcuts on screen (Super+K) | `keys` |
+| Willow | the voice assistant (Super+Shift+Space) | `voice` |
+| Echo | the agents' notifications (no window; `@NOTIFIER@`) | — |
+| Gate | the window that approves an agent's permission request | — |
+
 ## Delegating system investigations
 
 Investigations that need many commands or long outputs (logs, hardware, drivers, services, why
-something fails) fill your context. If your tool has the read-only `kinobu-system` subagent
+something fails) fill your context. If your tool has the read-only `kinobu-agent` subagent
 (Claude Code), hand them to it and keep only its short
 report; for one or two quick commands, run them yourself. The user may also ask for it by name.
 The report format and the fix-and-check loop are in [agents.md](agents.md).

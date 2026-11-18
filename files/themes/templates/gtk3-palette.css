@@ -1,0 +1,34 @@
+/* Layer 1, the palette (@VARIANT@): GTK 3 has no CSS variables, so the theme's
+   named colours are replaced. GTK 3 has no light/dark media query either: the engine writes
+   the palette in use. */
+@define-color theme_bg_color @background@;
+@define-color theme_fg_color @foreground@;
+@define-color theme_base_color @view@;
+@define-color theme_text_color @foreground@;
+@define-color theme_selected_bg_color @accent@;
+@define-color theme_selected_fg_color @accent_fg@;
+@define-color theme_unfocused_bg_color @background@;
+@define-color theme_unfocused_fg_color @foreground@;
+@define-color theme_unfocused_base_color @view@;
+@define-color theme_unfocused_text_color @foreground@;
+@define-color theme_unfocused_selected_bg_color @accent@;
+@define-color theme_unfocused_selected_fg_color @accent_fg@;
+@define-color insensitive_fg_color @muted@;
+@define-color borders @shade_strong@;
+@define-color unfocused_borders @shade@;
+@define-color warning_color @warning_text@;
+@define-color error_color @error_text@;
+@define-color success_color @success_text@;
+@define-color accent_bg_color @accent@;
+@define-color accent_fg_color @accent_fg@;
+@define-color accent_color @accent_text@;
+@define-color window_bg_color @background@;
+@define-color window_fg_color @foreground@;
+@define-color view_bg_color @view@;
+@define-color view_fg_color @foreground@;
+@define-color headerbar_bg_color @headerbar@;
+@define-color headerbar_fg_color @foreground@;
+@define-color sidebar_bg_color @sidebar@;
+@define-color card_bg_color @card@;
+@define-color popover_bg_color @card@;
+@define-color dialog_bg_color @card@;

@@ -9,8 +9,8 @@
 
 Check what is installed: `dpkg -l | grep <name>`, `snap list`, `command -v <tool>`.
 
-Always installed by the setup: GNOME Contacts, Calendar, Weather, Clocks, Tweaks, Characters
-and Geary, plus Node.js, build-essential, GraalVM and the command line tools. The rest was
+Always installed by the setup: GNOME Contacts, Calendar, Weather, Clocks, Characters and Geary,
+the themes' icon, cursor and font packs (see desktop.md, Themes), plus Node.js, build-essential, GraalVM and the command line tools. The rest was
 chosen in menus at setup.
 
 ## Third-party repositories
@@ -50,21 +50,20 @@ GPU access inside containers needs the NVIDIA Container Toolkit as well.
 
 ## Virtual machines
 
-Offered at setup: GNOME Boxes (VMs run as the user: `virsh -c qemu:///session list --all`,
-disks in `~/.local/share/gnome-boxes/images/`) and virt-manager (system service:
-`virsh -c qemu:///system list --all`, disks in `/var/lib/libvirt/images/`, NAT network
-`default`). Both use QEMU with KVM. The user is kept out of the `libvirt` group on purpose
-(it is close to root), so virt-manager asks for the password. Check KVM with `ls -l /dev/kvm`.
-Never pass host disks or devices (USB, GPU) to a VM without asking the user. If Boxes says KVM
-is missing right after installing it, quit it fully (it keeps running in the background) or log
-out and in.
+Offered at setup: virt-manager (system service: `virsh -c qemu:///system list --all`, disks in
+`/var/lib/libvirt/images/`, NAT network `default`), with QEMU and KVM. Kinobu never adds the user
+to the `libvirt` group (it is close to root): when Ubuntu's libvirt packages add them during
+Kinobu's setup, Kinobu takes them out again, and virt-manager asks for the password. A membership
+the user had before is kept. Check with `id -nG` and `ls -l /dev/kvm`.
+Never pass host disks or devices (USB, GPU) to a VM without asking the user. If KVM is missing
+right after installing, log out and in.
 
 ## Java and IDEs
 
-Handy (voice dictation, always installed: Zen listens through it) is a `.deb` from its GitHub
+Handy (voice dictation, always installed: Willow listens through it) is a `.deb` from its GitHub
 releases and LM Studio a `.deb` from lmstudio.ai: they are not in any APT repository, so
 `apt upgrade` does not update them (LM Studio updates itself; `--update` installs the new Handy
-release). Zen's voices and models live in `~/.local/share/kinobu/zen/` (each user's own) and are refreshed by
+release). Willow's voices and models live in `~/.local/share/kinobu/voice/` (each user's own) and are refreshed by
 `--update` (Python packages through `uv`, Qwen3-TTS through llama.cpp's Vulkan build).
 
 GraalVM JDK lives in `/opt/java/` (`echo $JAVA_HOME`). The JetBrains IDEs, Antigravity IDE,

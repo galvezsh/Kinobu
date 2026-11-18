@@ -1,5 +1,5 @@
 [Desktop Entry]
 Type=Application
-Name=Kinobu Welcome
+Name=Sprout
 Exec=python3 @PROGRAMS_DIR@/welcome.py
 NoDisplay=true

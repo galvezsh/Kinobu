@@ -3,7 +3,7 @@
 Ubuntu desktop (GNOME on Wayland) set up with @APP_NAME@. Before changing the system,
 its desktop or its software, load the `@APP_ID@` skill. Never assume the hardware:
 check it live. To investigate the system with many commands, delegate to the read-only
-`kinobu-system` subagent if your tool has it (the skill explains the loop).
+`kinobu-agent` subagent if your tool has it (the skill explains the loop).
 
 ## How to work with the user
 - Step by step: for anything beyond a small change, explain the plan briefly and wait

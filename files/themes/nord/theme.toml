@@ -1,0 +1,82 @@
+# Nord (Arctic Ice Studio, MIT): an arctic, north-bluish palette
+# Polar Night Deep and Snow Storm Bright: worked out by Kinobu from the theme's own palettes, for more contrast (or less glare)
+name = "Nord"
+description = "Arctic and quiet: frosty blues on polar night."
+author = "Kinobu, on Nord by Arctic Ice Studio (MIT)"
+gnome_accent = "blue"
+icons = "Papirus"
+cursor = { dark = "Nordzy-cursors", light = "Nordzy-cursors-white" }
+button_layout = "appmenu:minimize,maximize,close"
+wallhaven = "snow mountains"                # Seasons' "For this theme" search on Wallhaven (in English)
+# Its four wallpapers, from Wallhaven: downloaded by the user when the theme is applied
+wallpapers = ["wallhaven:nmmvvk", "wallhaven:ey7prw", "wallhaven:3z2med", "wallhaven:nr7zq0"]
+intensity = 0.7
+
+# The palettes, in the order Seasons shows them (the first is the default). Each one is dark
+# or light; "pair" is the palette of the other mode the dark-style switch moves to.
+
+[palettes.polar-night]
+name = "Polar Night"
+mode = "dark"
+pair = "snow-storm"
+terminal = "nord"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#88C0D0"
+background = "#2E3440"
+view = "#292E39"
+sidebar = "#3B4252"
+card = "#3B4252"
+foreground = "#ECEFF4"
+muted = "#ABB4C4"
+success = "#A3BE8C"
+warning = "#EBCB8B"
+error = "#BF616A"
+
+[palettes.polar-night-deep]
+name = "Polar Night Deep"
+mode = "dark"
+pair = "snow-storm-bright"
+terminal = "nord"         # a palette of Ptyxis (its dark side when it has two)
+terminal_background = "#1B1E25"
+accent = "#88C0D0"
+background = "#1E222A"
+view = "#1B1E25"
+sidebar = "#262B35"
+card = "#2C313B"
+foreground = "#F2F4F7"
+muted = "#B8BFCD"
+success = "#A3BE8C"
+warning = "#EBCB8B"
+error = "#BF616A"
+
+[palettes.snow-storm]
+name = "Snow Storm"
+mode = "light"
+pair = "polar-night"
+terminal = "nord"         # a palette of Ptyxis (its light side when it has two)
+accent = "#5E81AC"
+background = "#E5E9F0"
+view = "#ECEFF4"
+sidebar = "#D8DEE9"
+card = "#F4F6F9"
+foreground = "#2E3440"
+muted = "#4C566A"
+success = "#4F7A3A"
+warning = "#9A6B12"
+error = "#A3434D"
+
+[palettes.snow-storm-bright]
+name = "Snow Storm Bright"
+mode = "light"
+pair = "polar-night-deep"
+terminal = "nord"         # a palette of Ptyxis (its light side when it has two)
+terminal_background = "#FAFBFC"
+accent = "#5E81AC"
+background = "#F3F5F8"
+view = "#FAFBFC"
+sidebar = "#EAEDF3"
+card = "#FDFEFE"
+foreground = "#20242D"
+muted = "#3E4757"
+success = "#4F7A3A"
+warning = "#9A6B12"
+error = "#A3434D"

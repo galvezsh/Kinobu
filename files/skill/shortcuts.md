@@ -11,7 +11,7 @@ Configured by @APP_NAME@. Super+K shows this list on screen.
 
 - App shortcuts are custom keybindings at
   `/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/@APP_ID@-N/` that run
-  `@LAUNCHER@ <terminal|files|browser|agent|monitor|dictation|emoji|keys|welcome|zen>`.
+  `@LAUNCHER@ <terminal|files|browser|agent|monitor|dictation|emoji|keys|welcome|voice>`.
 - The rest are GNOME keys such as `/org/gnome/desktop/wm/keybindings/close`.
 - @APP_NAME@ re-applies them on every run and `--update`, and they win: a GNOME key or one of
   the user's own custom shortcuts that uses the same keys loses them (the run warns about it).

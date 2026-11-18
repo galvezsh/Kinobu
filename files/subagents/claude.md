@@ -1,5 +1,5 @@
 ---
-name: kinobu-system
+name: kinobu-agent
 description: @DESCRIPTION@
 disallowedTools: Edit, Write, NotebookEdit
 model: inherit

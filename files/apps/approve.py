@@ -1,7 +1,7 @@
 # Kinobu approval window. Written by Kinobu: rewritten on every run.
 # kinobu-notify opens it when Claude Code asks for a permission. It prints "allow" or
 # "deny"; closing it, Esc, "In terminal" or the countdown print nothing, so the agent's own
-# prompt in the terminal decides. Every text comes translated from kinobu-notify.
+# prompt in the terminal decides. "In terminal" also brings that terminal to the front. Every text comes translated from kinobu-notify.
 import argparse
 import sys
 
@@ -31,7 +31,39 @@ def parse():
                  "countdown", "title"):
         p.add_argument("--" + name, default="")
     p.add_argument("--timeout", type=int, default=45)
+    p.add_argument("--terminal-app", default="")   # the agent's terminal (app id), for "In terminal"
     return p.parse_args()
+
+
+# Terminals that are GApplications: activated over D-Bus (as Echo's notices do)
+GAPPS = {"org.gnome.Ptyxis": "/org/gnome/Ptyxis", "org.gnome.Terminal": "/org/gnome/Terminal"}
+
+
+def go_to_terminal(app_id):
+    """Brings the agent's terminal to the front, on whatever workspace it is. The activation
+    token comes from this click, so GNOME lets the terminal take the focus."""
+    if not app_id:
+        return
+    try:
+        token = Gdk.Display.get_default().get_app_launch_context().get_startup_notify_id(None, []) or ""
+    except (GLib.Error, TypeError):
+        token = ""
+    data = {"activation-token": GLib.Variant("s", token), "desktop-startup-id": GLib.Variant("s", token)}
+    try:
+        if app_id in GAPPS:
+            Gio.bus_get_sync(Gio.BusType.SESSION).call_sync(
+                app_id, GAPPS[app_id], "org.freedesktop.Application", "Activate",
+                GLib.Variant("(a{sv})", (data,)), None, Gio.DBusCallFlags.NONE, 5000, None)
+        else:
+            info = Gio.DesktopAppInfo.new(f"{app_id}.desktop")
+            if info:
+                ctx = Gio.AppLaunchContext()
+                ctx.setenv("XDG_ACTIVATION_TOKEN", token)
+                ctx.setenv("DESKTOP_STARTUP_ID", token)
+                info.launch([], ctx)
+    except GLib.Error:
+        pass
+
 
 
 def build(app, args):
@@ -39,7 +71,7 @@ def build(app, args):
     provider.load_from_string(CSS)
     Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), provider,
                                               Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-    win = Adw.ApplicationWindow(application=app, title=f"Kinobu · {args.title}",
+    win = Adw.ApplicationWindow(application=app, title=f"Gate · {args.title}",
                                 default_width=540, resizable=False)
     win.add_css_class("kinobu-approve")    # added: css_classes= would drop "background"
     win.answer = ""
@@ -78,12 +110,12 @@ def build(app, args):
                                (args.terminal, "", "kinobu-terminal"),
                                (args.deny, "deny", "kinobu-deny")):
         button = Gtk.Button(label=label, css_classes=["pill", "kinobu-choice", css])
-        button.connect("clicked", lambda _b, a=answer: finish(a))
+        button.connect("clicked", lambda _b, a=answer, c=css: finish(a, c == "kinobu-terminal"))
         buttons.append(button)
     box.append(buttons)
 
     view = Adw.ToolbarView()
-    view.add_top_bar(Adw.HeaderBar(title_widget=Adw.WindowTitle(title="Kinobu",
+    view.add_top_bar(Adw.HeaderBar(title_widget=Adw.WindowTitle(title="Gate",
                                                                subtitle=args.title)))
     view.set_content(box)
     win.set_content(view)
@@ -93,10 +125,12 @@ def build(app, args):
     # do nothing until Tab chooses one), and nothing counts during the first moment on screen.
     ready = [False]
 
-    def finish(answer):
+    def finish(answer, to_terminal=False):
         if not ready[0]:
             return
         win.answer = answer
+        if to_terminal:
+            go_to_terminal(args.terminal_app)
         win.close()
 
     left = [max(args.timeout, 1)]

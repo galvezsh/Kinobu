@@ -1,0 +1,83 @@
+# Inspired by the look of Windows 11 (Fluent): no Microsoft wallpapers, logos or icons
+# Light Soft and Dark Deep: worked out by Kinobu from the theme's own palettes, for more contrast (or less glare)
+name = "Windows"
+description = "Clean and familiar, inspired by Windows 11: light greys and blue."
+author = "Kinobu"
+gnome_accent = "blue"
+icons = "Papirus"
+cursor = "Bibata-Modern-Ice"
+button_layout = "appmenu:minimize,maximize,close"
+wallhaven = "landscape"                # Seasons' "For this theme" search on Wallhaven (in English)
+wallhaven_colour = "0066cc"          # one of Wallhaven's colours
+# Its four wallpapers, from Wallhaven: downloaded by the user when the theme is applied
+wallpapers = ["wallhaven:72rd8e", "wallhaven:ex9gwo", "wallhaven:2yxp16", "wallhaven:6o2zqx"]
+intensity = 0.5
+interface_font = "Inter 11"        # close to Segoe UI and SF Pro, which are not free
+
+# The palettes, in the order Seasons shows them (the first is the default). Each one is dark
+# or light; "pair" is the palette of the other mode the dark-style switch moves to.
+
+[palettes.light]
+name = "Light"
+mode = "light"
+pair = "dark"
+terminal = "campbell"         # a palette of Ptyxis (its light side when it has two)
+accent = "#0067C0"
+background = "#F3F3F3"
+view = "#FFFFFF"
+sidebar = "#EEEEEE"
+card = "#FBFBFB"
+foreground = "#1A1A1A"
+muted = "#5D5D5D"
+success = "#0F7B0F"
+warning = "#9D5D00"
+error = "#C42B1C"
+
+[palettes.light-soft]
+name = "Light Soft"
+mode = "light"
+pair = "dark-deep"
+terminal = "campbell"         # a palette of Ptyxis (its light side when it has two)
+terminal_background = "#F3F4F6"
+accent = "#0067C0"
+background = "#EBECEE"
+view = "#F3F4F6"
+sidebar = "#E8E9EC"
+card = "#F3F4F5"
+foreground = "#1A1A1A"
+muted = "#5D5D5D"
+success = "#0F7B0F"
+warning = "#9D5D00"
+error = "#C42B1C"
+
+[palettes.dark]
+name = "Dark"
+mode = "dark"
+pair = "light"
+terminal = "campbell"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#4CC2FF"
+background = "#202020"
+view = "#272727"
+sidebar = "#1C1C1C"
+card = "#2B2B2B"
+foreground = "#FFFFFF"
+muted = "#C5C5C5"
+success = "#6CCB5F"
+warning = "#FCE100"
+error = "#FF99A4"
+
+[palettes.dark-deep]
+name = "Dark Deep"
+mode = "dark"
+pair = "light-soft"
+terminal = "campbell"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#4CC2FF"
+background = "#121212"
+view = "#151515"
+sidebar = "#0F0F0F"
+card = "#1F1F1F"
+foreground = "#FFFFFF"
+muted = "#CECECE"
+success = "#6CCB5F"
+warning = "#FCE100"
+error = "#FF99A4"

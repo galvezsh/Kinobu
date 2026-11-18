@@ -1,0 +1,62 @@
+  /* Layer 1, the palette: libadwaita's colour variables from the theme (@VARIANT@).
+     The engine fills the @MARKS@; what the theme does not give is derived here. */
+  --window-bg-color: @background@;
+  --window-fg-color: @foreground@;
+  --view-bg-color: @view@;
+  --view-fg-color: @foreground@;
+  --headerbar-bg-color: @headerbar@;
+  --headerbar-fg-color: @foreground@;
+  --headerbar-backdrop-color: @background@;
+  --headerbar-border-color: @foreground@;
+  --headerbar-shade-color: @shade@;
+  --headerbar-darker-shade-color: @shade_strong@;
+  --sidebar-bg-color: @sidebar@;
+  --sidebar-fg-color: @foreground@;
+  --sidebar-backdrop-color: @sidebar@;
+  --sidebar-border-color: @shade@;
+  --sidebar-shade-color: @shade@;
+  --secondary-sidebar-bg-color: @background@;
+  --secondary-sidebar-fg-color: @foreground@;
+  --secondary-sidebar-backdrop-color: @background@;
+  --secondary-sidebar-border-color: @shade@;
+  --secondary-sidebar-shade-color: @shade@;
+  --card-bg-color: @card@;
+  --card-fg-color: @foreground@;
+  --card-shade-color: @shade@;
+  --dialog-bg-color: @card@;
+  --dialog-fg-color: @foreground@;
+  --popover-bg-color: @card@;
+  --popover-fg-color: @foreground@;
+  --popover-shade-color: @shade@;
+  --thumbnail-bg-color: @card@;
+  --thumbnail-fg-color: @foreground@;
+  --overview-bg-color: @view@;
+  --overview-fg-color: @foreground@;
+  --shade-color: @shade@;
+  --scrollbar-outline-color: @shade_strong@;
+
+  --accent-bg-color: @accent@;
+  --accent-fg-color: @accent_fg@;
+  --accent-color: @accent_text@;
+  --destructive-bg-color: @error@;
+  --destructive-fg-color: @error_fg@;
+  --destructive-color: @error_text@;
+  --success-bg-color: @success@;
+  --success-fg-color: @success_fg@;
+  --success-color: @success_text@;
+  --warning-bg-color: @warning@;
+  --warning-fg-color: @warning_fg@;
+  --warning-color: @warning_text@;
+  --error-bg-color: @error@;
+  --error-fg-color: @error_fg@;
+  --error-color: @error_text@;
+
+  /* Ubuntu's libadwaita (Yaru) */
+  --yaru-accent-bg-color: @accent@;
+  --yaru-accent-color: @accent_text@;
+  --yaru-link-color: @accent_text@;
+  --yaru-link-visited-color: color-mix(in srgb, @accent_text@ 70%, @foreground@);
+
+  /* Kinobu's details (layer 2) read these */
+  --kinobu-intensity: @intensity@;
+  --kinobu-muted: @muted@;

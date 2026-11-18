@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Block "desktop": extensions, theme, weather, workspaces, wallpapers, dock, app grid and GTK styles.
+# Block "desktop": extensions, clock, weather, workspaces, dock, app grid and the look (lib/look.sh).
 
 # ---------------------------------------------------------------------------------------------
 # Configuration
@@ -29,9 +29,6 @@ SYSTEM_EXTENSIONS=(                 # shipped with Ubuntu / gnome-shell-extensio
 )
 
 # Desktop
-ACCENT="purple"                     # accent colour and Yaru-<accent>-dark theme (matches the wallpapers)
-# shellcheck disable=SC2034  # read by render (files/desktop/dconf.ini)
-COLOR_SCHEME="prefer-dark"          # prefer-dark | default
 IDLE_DELAY=300                      # seconds before the screen turns off (AC and battery)
 SLEEP_ON_AC=1800                    # seconds before suspending on AC power
 SLEEP_ON_BATTERY=900                # seconds before suspending on battery
@@ -47,20 +44,14 @@ FAVORITE_APPS=(                     # dock, only the ones that are installed
 # goes after them, where GNOME puts it. A folder only shows the listed apps that are installed.
 APP_FOLDERS=(                       # "id|name|translate the name|apps"
     "System|X-GNOME-Shell-System.directory|true|update-manager.desktop firmware-updater_firmware-updater.desktop desktop-security-center_desktop-security-center.desktop nvidia-settings.desktop org.gnome.DiskUtility.desktop org.gnome.baobab.desktop nm-connection-editor.desktop org.gnome.Logs.desktop org.gnome.Sysprof.desktop"
-    "Settings|Kinobu-Settings.directory|true|org.gnome.Settings.desktop org.gnome.tweaks.desktop org.gnome.Extensions.desktop"
+    "Settings|Kinobu-Settings.directory|true|org.gnome.Settings.desktop os.kinobu.Themes.desktop org.gnome.Extensions.desktop"
     "Utilities|X-GNOME-Shell-Utilities.directory|true|org.gnome.Papers.desktop org.gnome.Loupe.desktop org.gnome.Showtime.desktop org.gnome.Characters.desktop org.gnome.font-viewer.desktop gnome-language-selector.desktop org.gnome.seahorse.Application.desktop org.gnome.TextEditor.desktop"
 )
-APP_GRID_FIRST=(                    # after the folders, the installed ones in this order
-    os.kinobu.Welcome.desktop firefox_firefox.desktop snap-store_snap-store.desktop
-    org.gnome.Contacts.desktop org.gnome.Calendar.desktop org.gnome.Geary.desktop
-    org.gnome.Weather.desktop org.gnome.clocks.desktop
-)
-WALLPAPER_DIR="wallpapers"          # next to the script: 1.jpg, 2.png... one per workspace
 
 # ---------------------------------------------------------------------------------------------
 # Block: desktop
 # ---------------------------------------------------------------------------------------------
-# Installs and enables extensions, then applies theme, dock, workspaces and other settings
+# Installs and enables extensions, then applies the settings, the dock and the look
 configure_desktop() {
     step "GNOME extensions"
     local shell_major uuid url new=false
@@ -97,46 +88,19 @@ configure_desktop() {
     ok "$((${#SYSTEM_EXTENSIONS[@]} + ${#EGO_EXTENSIONS[@]})) extensions enabled"
     if $new; then need_reboot "new GNOME extensions (logging out is enough)"; fi
 
-    step "Theme, clock, weather, workspaces, power and files"
+    step "Clock, weather, workspaces, power and files"
     # The weather city comes from the time zone chosen when Ubuntu was installed (no location services)
     local settings
     WEATHER_LOCATION=$(weather_location)
-    settings=$(render desktop/dconf.ini ACCENT COLOR_SCHEME WORKSPACES IDLE_DELAY SLEEP_ON_AC \
+    settings=$(render desktop/dconf.ini WORKSPACES IDLE_DELAY SLEEP_ON_AC \
         SLEEP_ON_BATTERY WEATHER_LOCATION)
     if [[ -z $WEATHER_LOCATION ]]; then
         settings=$(grep -v -e '^locations=' -e '^automatic-location=' <<<"$settings")
         info "No city found for your time zone: choose one in the Weather app"
     fi
     dconf load / <<<"$settings"
-    ok "Yaru $ACCENT, 24 h clock, weather, $WORKSPACES fixed workspaces, dock at the bottom"
+    ok "24 h clock, weather, $WORKSPACES fixed workspaces, dock at the bottom"
     ok "Screen off after $((IDLE_DELAY / 60)) min; suspend after $((SLEEP_ON_AC / 60)) min on AC, $((SLEEP_ON_BATTERY / 60)) min on battery"
-
-    step "Wallpapers (one per workspace)"
-    local source_dir="$ROOT_DIR/$WALLPAPER_DIR" target_dir="$HOME/.local/share/backgrounds/$APP_ID"
-    local n file ext uris=() found=0
-    for ((n = 1; n <= WORKSPACES; n++)); do
-        file=""
-        for ext in jpg jpeg png webp; do
-            if [[ -f $source_dir/$n.$ext ]]; then file="$source_dir/$n.$ext"; break; fi
-        done
-        if [[ -z $file ]]; then uris+=(""); continue; fi
-        mkdir -p "$target_dir"
-        if ! cmp -s "$file" "$target_dir/${file##*/}"; then cp "$file" "$target_dir/"; fi
-        uris+=("file://$target_dir/${file##*/}")
-        found=$((found + 1))
-    done
-    if ((found == 0)); then
-        info "No images in ${source_dir/#$HOME/\~}: keeping the current wallpaper"
-    else
-        dconf_set /org/gnome/shell/extensions/workspace-wallpapers/workspace-wallpapers "$(to_gvariant "${uris[@]}")"
-        if [[ -n ${uris[0]} ]]; then
-            dconf_set /org/gnome/desktop/background/picture-uri "'${uris[0]}'"
-            dconf_set /org/gnome/desktop/background/picture-uri-dark "'${uris[0]}'"
-            dconf_set /org/gnome/desktop/background/picture-options "'zoom'"
-            dconf_set /org/gnome/desktop/screensaver/picture-uri "'${uris[0]}'"
-        fi
-        ok "$found of $WORKSPACES workspaces with their own wallpaper (the 1st is also the lock screen)"
-    fi
 
     step "Dock favourites"
     local app favorites=()
@@ -150,7 +114,8 @@ configure_desktop() {
 
     configure_geary
 
-    install_gtk_styles
+    install_look
+    apply_look
 }
 
 # The city of the system time zone in GNOME Weather's format, empty when it cannot be found.
@@ -196,16 +161,32 @@ configure_geary() {
     ok "Watches for new mail when closed and starts hidden at login (add your account in Online Accounts)"
 }
 
-# App grid: the APP_FOLDERS first, then the APP_GRID_FIRST apps that are installed. Folders the
-# user already has are kept, and apps not listed go after these, wherever GNOME puts them.
+# App grid: only the APP_FOLDERS first, with their apps; everything else stays where GNOME or the
+# user puts it. An app lives in one folder only, and GNOME removes a folder left with a single app:
+# Kinobu's apps are taken out of other folders first. Folders the user already has are kept.
 arrange_app_grid() {
     step "App grid"
-    local entry id name translate apps children=() layout="" pos=0 app ids=()
+    local entry id name translate apps app children=() layout="" pos=0 ids=() mine=() other current kept list
     local base=/org/gnome/desktop/app-folders/folders
     # The Settings folder is Kinobu's own: its name comes from a .directory file, so it is shown in
     # the desktop language like GNOME's System and Utilities
     put_user_file "$HOME/.local/share/desktop-directories/Kinobu-Settings.directory" < <(render desktop/settings.directory)
     mapfile -t children < <(from_gvariant "$(gsettings get org.gnome.desktop.app-folders folder-children)")
+    for entry in "${APP_FOLDERS[@]}"; do
+        IFS='|' read -r id _ _ apps <<<"$entry"
+        ids+=("$id")
+        read -ra list <<<"$apps"
+        mine+=("${list[@]}")
+    done
+    for other in "${children[@]}"; do
+        if has_line "$other" "$(printf '%s\n' "${ids[@]}")"; then continue; fi
+        mapfile -t current < <(from_gvariant "$(dconf read "$base/$other/apps" || true)")
+        kept=()
+        for app in "${current[@]}"; do
+            if [[ -n $app ]] && ! has_line "$app" "$(printf '%s\n' "${mine[@]}")"; then kept+=("$app"); fi
+        done
+        if ((${#kept[@]} != ${#current[@]})); then dconf_set "$base/$other/apps" "$(to_gvariant "${kept[@]}")"; fi
+    done
     for entry in "${APP_FOLDERS[@]}"; do
         IFS='|' read -r id name translate apps <<<"$entry"
         local -a list=()
@@ -215,39 +196,9 @@ arrange_app_grid() {
         dconf_set "$base/$id/apps" "$(to_gvariant "${list[@]}")"
         if ! has_line "$id" "$(printf '%s\n' "${children[@]}")"; then children+=("$id"); fi
         layout+="'$id': <{'position': <$pos>}>, "
-        pos=$((pos + 1)); ids+=("$id")
+        pos=$((pos + 1))
     done
     gsettings set org.gnome.desktop.app-folders folder-children "$(to_gvariant "${children[@]}")"
-    for app in "${APP_GRID_FIRST[@]}"; do
-        # The welcome tour's launcher is written later, by the shortcuts block
-        if [[ $app == os.kinobu.Welcome.desktop ]] || has_app "$app"; then
-            layout+="'$app': <{'position': <$pos>}>, "
-            pos=$((pos + 1))
-        fi
-    done
     gsettings set org.gnome.shell app-picker-layout "[{${layout%, }}]"
-    ok "Folders ${ids[*]} first, then $((pos - ${#ids[@]})) apps; the rest after them"
-}
-
-# Writes the GTK 4 and GTK 3 stylesheets (files/desktop/gtk4.css, gtk3.css) and imports them from
-# each gtk.css (managed block). Every colour comes from the theme, so they follow the accent and
-# light/dark mode; Ptyxis keeps its terminal palette.
-install_gtk_styles() {
-    step "GTK apps: accent-colour details (GTK 4 and GTK 3)"
-    local version gtk_dir css_changed
-    for version in 4.0 3.0; do
-        gtk_dir="$HOME/.config/gtk-$version"
-        put_user_file "$gtk_dir/$APP_ID.css" < <(render "desktop/gtk${version%.0}.css")
-        css_changed=$CHANGED
-        # Leftover of the Custom Accent Colors extension: its import fails once the file is gone
-        if [[ -f $gtk_dir/gtk.css && ! -f $gtk_dir/custom-accent.css ]] \
-            && grep -qF "CustomAccentExtension Start" "$gtk_dir/gtk.css"; then
-            sed -i '/CustomAccentExtension Start/,/CustomAccentExtension End/d' "$gtk_dir/gtk.css"
-            info "GTK $version: removed a broken import left by the Custom Accent Colors extension"
-        fi
-        put_block "$gtk_dir/gtk.css" "/* >>> $APP_ID >>> */" "/* <<< $APP_ID <<< */" "@import url(\"$APP_ID.css\");"
-        if $css_changed; then CHANGED=true; fi
-        report_changed "GTK $version: ~/.config/gtk-$version/$APP_ID.css" "GTK $version: already up to date"
-    done
-    info "Apps that are open pick it up when they restart"
+    ok "Folders ${ids[*]} first; the apps after them, where GNOME puts them"
 }

@@ -13,15 +13,15 @@ LMSTUDIO_URL="https://lmstudio.ai/download/latest/linux/x64?format=deb"   # the 
 UV_URL="https://astral.sh/uv/install.sh"
 AGENT_TOOLS=(claude)               # coding agents, in the order they become the default one
 
-# Zen, the voice assistant (always installed with Handy, which it listens through). Its voices
-# follow the desktop language (ZEN_PIPER; English for any other). Qwen3-TTS, its most natural
+# Willow, the voice assistant (always installed with Handy, which it listens through). Its voices
+# follow the desktop language (VOICE_PIPER; English for any other). Qwen3-TTS, its most natural
 # voice, runs in llama.cpp's Vulkan build (any GPU vendor) and is installed only with a dedicated
-# graphics card unless ZEN_QWEN says otherwise. The voice worker's Python packages and Qwen's
-# reference voices are set up by zen.py --prepare (files/apps/zen.py).
-ZEN_QWEN=auto                      # auto (with a dedicated graphics card) | yes | no
+# graphics card unless VOICE_QWEN says otherwise. The voice worker's Python packages and Qwen's
+# reference voices are set up by voice.py --prepare (files/apps/voice.py).
+VOICE_QWEN=auto                      # auto (with a dedicated graphics card) | yes | no
 KOKORO_URL="https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.1"
 PIPER_URL="https://huggingface.co/rhasspy/piper-voices/resolve/main"
-declare -A ZEN_PIPER=(             # Piper voices per language (only ones with a free licence)
+declare -A VOICE_PIPER=(             # Piper voices per language (only ones with a free licence)
     [es]="es/es_ES/davefx/medium/es_ES-davefx-medium"
     [en]="en/en_US/joe/medium/en_US-joe-medium en/en_US/kristin/medium/en_US-kristin-medium"
 )
@@ -86,20 +86,26 @@ install_ai_tools() {
         warn "uv could not be installed: see https://docs.astral.sh/uv/"
     fi
 
-    install_zen
+    install_voice
 
-    # The first chosen agent that is installed opens with Super+Shift+Enter
+    # The first chosen agent that is installed opens with Super+Shift+Enter; with none chosen, one
+    # that is already installed (unticking an agent means "do not install it", not "do not use it")
     step "Default agent"
     for tool in "${AGENT_TOOLS[@]}"; do
         if chosen "$tool" && path=$(command -v "$tool" 2>/dev/null); then agent=$tool; break; fi
     done
+    if [[ -z $agent ]]; then
+        for tool in "${AGENT_TOOLS[@]}"; do
+            if path=$(command -v "$tool" 2>/dev/null); then agent=$tool; break; fi
+        done
+    fi
     mkdir -p "$CONFIG_DIR"
     if [[ -n $agent ]]; then
         printf '%s\n' "$path" >"$CONFIG_DIR/agent"
         ok "$(software_name "$agent") (Super+Shift+Enter)"
     else
         rm -f "$CONFIG_DIR/agent"
-        info "No agent chosen: Super+Shift+Enter will have nothing to open"
+        info "No agent installed: Super+Shift+Enter will have nothing to open"
     fi
 }
 
@@ -112,36 +118,38 @@ fetch() {
     return 1
 }
 
-# True when Zen should get Qwen3-TTS: ZEN_QWEN=yes, or auto with a dedicated graphics card
-zen_qwen() {
+# True when Willow should get Qwen3-TTS: VOICE_QWEN=yes, or auto with a dedicated graphics card
+voice_qwen() {
     local gpus
-    case $ZEN_QWEN in yes) return 0 ;; no) return 1 ;; esac
+    case $VOICE_QWEN in yes) return 0 ;; no) return 1 ;; esac
     gpus=$(lspci 2>/dev/null | grep -E 'VGA|3D|Display' || true)
     [[ $gpus =~ $DISCRETE_GPU ]]
 }
 
-# Zen, the voice assistant: the app, its voice worker and icon, Kokoro, the Piper voices of the
+# Willow, the voice assistant: the app, its voice worker and icon, Kokoro, the Piper voices of the
 # desktop language and, with a dedicated graphics card, llama.cpp (Vulkan) and Qwen3-TTS. Then
-# zen.py --prepare installs the worker's Python packages (uv) and Qwen's reference voices.
+# voice.py --prepare installs the worker's Python packages (uv) and Qwen's reference voices.
 # Only what is missing is downloaded: about 450 MB the first time, 2 GB with Qwen3-TTS.
-install_zen() {
-    step "Zen (voice assistant, Super+Shift+Space)"
-    local models="$DATA_DIR/zen/models" llama="$DATA_DIR/zen/llama" lang voice pair qwen=false
+install_voice() {
+    step "Willow (voice assistant, Super+Shift+Space)"
+    local models="$DATA_DIR/voice/models" llama="$DATA_DIR/voice/llama" lang voice pair qwen=false
     local failed=false engine=kokoro
     lang=${LANG%%[_.]*}
-    if [[ -z ${ZEN_PIPER[$lang]:-} ]]; then lang=en; fi
+    if [[ -z ${VOICE_PIPER[$lang]:-} ]]; then lang=en; fi
     write_translations
-    put_file "$PROGRAMS_DIR/zen.py" < <(render apps/zen.py SYSTEM_DIR PROGRAMS_DIR)
-    put_file "$PROGRAMS_DIR/zen-tts.py" < <(render apps/zen-tts.py)
-    put_file "$PREFIX/share/icons/hicolor/scalable/apps/os.kinobu.Zen.svg" < <(render apps/zen.svg)
-    put_file "$PREFIX/share/applications/os.kinobu.Zen.desktop" < <(render apps/zen.desktop SYSTEM_DIR PROGRAMS_DIR)
+    put_file "$PROGRAMS_DIR/voice.py" < <(render apps/voice.py SYSTEM_DIR PROGRAMS_DIR)
+    put_file "$PROGRAMS_DIR/voice-tts.py" < <(render apps/voice-tts.py)
+    put_file "$BIN_DIR/kinobu-do" 0755 < <(render apps/kinobu-do BIN_DIR PROGRAMS_DIR)
+    put_file "$PROGRAMS_DIR/kinobu_screenshot.py" < <(render apps/kinobu_screenshot.py)
+    put_file "$PREFIX/share/icons/hicolor/scalable/apps/os.kinobu.Voice.svg" < <(render apps/voice.svg)
+    put_file "$PREFIX/share/applications/os.kinobu.Voice.desktop" < <(render apps/voice.desktop SYSTEM_DIR PROGRAMS_DIR)
     fetch "$KOKORO_URL/kokoro-v1.0.onnx" "$models/kokoro-v1.0.onnx" || failed=true
     fetch "$KOKORO_URL/voices-v1.0.bin" "$models/voices-v1.0.bin" || failed=true
-    for voice in ${ZEN_PIPER[$lang]}; do
+    for voice in ${VOICE_PIPER[$lang]}; do
         fetch "$PIPER_URL/$voice.onnx" "$models/${voice##*/}.onnx" || failed=true
         fetch "$PIPER_URL/$voice.onnx.json" "$models/${voice##*/}.onnx.json" || failed=true
     done
-    if zen_qwen; then
+    if voice_qwen; then
         qwen=true engine=qwen
         if [[ "$(cat "$llama/.build" 2>/dev/null)" != "$LLAMA_BUILD" ]]; then
             if download "https://github.com/ggml-org/llama.cpp/releases/download/$LLAMA_BUILD/llama-$LLAMA_BUILD-bin-ubuntu-vulkan-x64.tar.gz" "$TMP_DIR/llama.tar.gz"; then
@@ -159,13 +167,13 @@ install_zen() {
             fetch "$QWEN_URL/${pair%%:*}" "$models/${pair#*:}" || failed=true
         done
     fi
-    if ! run env PATH="$HOME/.local/bin:$PATH" python3 "$PROGRAMS_DIR/zen.py" --prepare; then failed=true; fi
+    if ! run env PATH="$HOME/.local/bin:$PATH" python3 "$PROGRAMS_DIR/voice.py" --prepare; then failed=true; fi
     # First install: the best voice this computer can run (Qwen3-TTS with a dedicated card)
-    if [[ ! -f $CONFIG_DIR/zen.json ]]; then
+    if [[ ! -f $CONFIG_DIR/voice.json ]]; then
         mkdir -p "$CONFIG_DIR"
-        printf '{\n  "engine": "%s"\n}\n' "$engine" >"$CONFIG_DIR/zen.json"
+        printf '{\n  "engine": "%s"\n}\n' "$engine" >"$CONFIG_DIR/voice.json"
     fi
-    if ! is_installed handy; then warn "Zen listens through Handy, which is not installed: run $APP_NAME again"; fi
-    if $failed; then warn "Zen: some voices could not be set up (bash kinobu.sh --update tries again)"
+    if ! is_installed handy; then warn "Willow listens through Handy, which is not installed: run $APP_NAME again"; fi
+    if $failed; then warn "Willow: some voices could not be set up (bash kinobu.sh --update tries again)"
     else ok "Ready in the app grid and on Super+Shift+Space (voices: $lang, Qwen3-TTS: $($qwen && echo yes || echo no))"; fi
 }

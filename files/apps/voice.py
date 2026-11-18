@@ -1,9 +1,11 @@
-# Zen, the voice assistant of Kinobu. It listens (PipeWire + Handy), answers with a tiny headless agent
-# (Haiku, no tools, a few hundred tokens a turn) and speaks the answer sentence by sentence
-# (zen-tts.py: Kokoro, Piper or Qwen3-TTS). It keeps listening; Esc closes it and the talk is forgotten.
+# Willow, the voice assistant of Kinobu. It listens (PipeWire + Handy), answers with a small headless
+# agent (Haiku at low effort by default, or more power from its settings: read-only commands, the
+# web, kinobu-do's safe actions, a look at the screen, Kinobu's skill read on demand) and speaks the answer sentence by sentence (voice-tts.py:
+# Kokoro, Piper or Qwen3-TTS). Quick checks that need more care run in the background on a stronger
+# model; real work goes to the full agent in a terminal. Esc closes it and the talk is forgotten.
 # The microphone follows the system's mute (Super+Alt+K); with the sound muted it answers in text.
-# Settings (engine, voice, listening mode, the persona's manner) live in ~/.config/kinobu/zen.json.
-# Not wired into kinobu.sh yet: run it with  python3 zen.py   (or --demo for a scripted show)
+# Settings (engine, voice, listening mode, power, an optional manner) live in ~/.config/kinobu/voice.json.
+# Not wired into kinobu.sh yet: run it with  python3 voice.py   (or --demo for a scripted show)
 import argparse
 import colorsys
 import json
@@ -31,9 +33,9 @@ from gi.repository import Adw, Gdk, Gio, GLib, Graphene, Gsk, Gtk  # noqa: E402
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # kinobu_i18n lives next to it
 from kinobu_i18n import language, texts  # noqa: E402
 
-APP_ID = "os.kinobu.Zen"
-CONFIG = os.path.join(GLib.get_user_config_dir(), "kinobu", "zen.json")
-SAMPLES = os.path.join(GLib.get_user_data_dir(), "kinobu", "zen", "samples")
+APP_ID = "os.kinobu.Voice"
+CONFIG = os.path.join(GLib.get_user_config_dir(), "kinobu", "voice.json")
+SAMPLES = os.path.join(GLib.get_user_data_dir(), "kinobu", "voice", "samples")
 
 # Voice engines, lightest first: id -> (name, tier key, [(voice id, label key)])
 # Voices: (id, label key, f/m, language). Each language shows its own, English for the rest; Qwen3-TTS
@@ -53,7 +55,7 @@ QWEN_REFS = {"es": {"kinobu": "ef_dora", "santa": "em_santa"},
              "en": {"kinobu": "af_heart", "santa": "am_michael"}}
 # Personal voices for Qwen3-TTS: <id>.wav (5-15 s of clear speech) + <id>.json {"name", "gender"}.
 # They stay on this computer; Kinobu ships none.
-PERSONAL = os.path.join(GLib.get_user_data_dir(), "kinobu", "zen", "voices")
+PERSONAL = os.path.join(GLib.get_user_data_dir(), "kinobu", "voice", "voices")
 # Read-only commands the assistant may run on its own to answer about this computer. Anything
 # else is refused automatically and becomes a hand-over to the full agent.
 READ_ONLY = ["lspci", "lsusb", "lscpu", "lsblk", "lsmod", "modinfo", "free", "df", "du -sh", "uptime",
@@ -69,19 +71,31 @@ READ_ONLY = ["lspci", "lsusb", "lscpu", "lsblk", "lsmod", "modinfo", "free", "df
              "ls", "grep", "head", "tail -n", "wc", "sort", "uniq"]
 # The only actions beyond reading: open an installed app, a web page in the default browser, a folder
 OPENERS = ["gtk-launch", "nautilus --new-window", "xdg-open"]   # rules match whole words, not URL prefixes
+SKILL_DIR = "@SYSTEM_DIR@/skills/kinobu"        # read only when Willow is unsure, never loaded up front
+SCREEN_DIR = os.path.join(GLib.get_user_cache_dir(), "kinobu", "willow")   # kinobu-do screenshot
 # Folders outside $HOME it may read (Claude Code asks for anything outside the working folder)
-READ_DIRS = ["/usr/share/applications", "/var/lib/snapd/desktop/applications", "/var/log", "/etc"]
-ALLOWED = ["WebSearch", "WebFetch"] + [f"Bash({c}:*)" for c in READ_ONLY + OPENERS]
-DEFAULTS = {"engine": "kokoro", "voice": "em_santa", "continuous": True, "model": "haiku",
+READ_DIRS = ["/usr/share/applications", "/var/lib/snapd/desktop/applications", "/var/log", "/etc",
+             SKILL_DIR]
+# Read: only the skill and the last screenshot ("//" is an absolute path in Claude Code's rules)
+READ_FILES = [f"Read(/{SKILL_DIR}/**)", f"Read(/{SCREEN_DIR}/**)"]
+LOOKING = ["WebSearch", "WebFetch"] + [f"Bash({c}:*)" for c in READ_ONLY] + READ_FILES
+# Willow itself may also open things and take kinobu-do's safe actions; background jobs only look
+ALLOWED = LOOKING + [f"Bash({c}:*)" for c in OPENERS] + ["Bash(kinobu-do:*)"]
+# How much thinking Willow puts into an answer: (model, effort). Quick suits every day; the others
+# take longer and use more (Sonnet costs about 20 times what Haiku does per token).
+POWERS = {"quick": ("haiku", "low"), "smart": ("haiku", "high"), "strong": ("sonnet", "medium")}
+DEFAULTS = {"engine": "kokoro", "voice": "em_santa", "continuous": True, "power": "quick",
+            "background_model": "sonnet", "background_effort": "medium",
             "persona": "", "idle_close": 60}
+BACKGROUND = re.compile(r"\[\[\s*background:\s*(.+?)\]\]", re.S | re.I)
 HERE = os.path.dirname(os.path.abspath(__file__))
-MODELS = os.path.join(GLib.get_user_data_dir(), "kinobu", "zen", "models")
-LLAMA = os.path.join(GLib.get_user_data_dir(), "kinobu", "zen", "llama")     # only with Qwen3-TTS
+MODELS = os.path.join(GLib.get_user_data_dir(), "kinobu", "voice", "models")
+LLAMA = os.path.join(GLib.get_user_data_dir(), "kinobu", "voice", "llama")     # only with Qwen3-TTS
 UV = shutil.which("uv") or os.path.expanduser("~/.local/bin/uv")
 # The speech worker runs in its own Python (uv caches it): Kokoro and Piper with their models loaded
 TTS_ENV = [UV, "run", "-q", "--no-project", "--python", "3.12", "--with", "kokoro-onnx==0.6.1",
            "--with", "piper-tts==1.8.0", "--with", "soundfile", "python",
-           os.path.join(HERE, "zen-tts.py"), MODELS,
+           os.path.join(HERE, "voice-tts.py"), MODELS,
            LLAMA]
 SENTENCE = re.compile(r"(.+?[.!?…:;])(\s+|$)", re.S)
 CLOSE = re.compile(r"\[\[\s*close\s*\]\]", re.I)
@@ -110,7 +124,7 @@ CSS = """
 """
 
 LANG = language()
-TEXTS = texts("zen", LANG)                     # i18n/<language>.json, section "zen"
+TEXTS = texts("voice", LANG)                     # i18n/<language>.json, section "voice"
 LANGUAGE_NAMES = {"en": "English", "es": "Spanish", "fr": "French", "de": "German", "it": "Italian",
                   "pt": "Portuguese"}
 
@@ -156,6 +170,8 @@ def load_config():
         pass
     if config["engine"] not in ENGINES:
         config["engine"] = DEFAULTS["engine"]
+    if config["power"] not in POWERS:
+        config["power"] = DEFAULTS["power"]
     ids = [v for v, _label in voices_for(config["engine"])]
     if config["voice"] not in ids:                     # e.g. a Spanish voice on an English desktop
         config["voice"] = ids[0]
@@ -325,7 +341,7 @@ def gender_note(voice):
     return "feminine" if female(voice) else "masculine"
 
 
-# What Zen knows about Kinobu, so it can guide people who have never used Linux
+# What Willow knows about Kinobu, so it can guide people who have never used Linux
 ABOUT_KINOBU = (
     "About this computer: Kinobu is a layer over Ubuntu 26.04 LTS (GNOME desktop) that sets up "
     "the system, the apps, several AI agents, the shortcuts and the look so that everything works "
@@ -339,7 +355,7 @@ ABOUT_KINOBU = (
     "Windows key; Super+K shows every shortcut on screen (the cheat sheet), Super+A shows all "
     "apps. The AI agent (Claude Code) opens in a terminal with "
     "Super+Shift+Enter, knows the system through Kinobu's skill and notifies when it finishes or "
-    "need permission. Handy types what you dictate (Super+Space) and you, Zen, are the voice to "
+    "need permission. Handy types what you dictate (Super+Space) and you, Willow, are the voice to "
     "talk to the computer (Super+Shift+Space). 'bash kinobu.sh --update' keeps Ubuntu, the apps "
     "and Kinobu up to date without touching the user's look. Many people here come from Windows "
     "or macOS and have never used Linux: guide them calmly, in plain, natural words, one step at "
@@ -360,7 +376,7 @@ def shortcuts_text():
 
 
 def system_prompt(config):
-    """Zen's whole context: who it is, Kinobu and its shortcuts, how to talk, its tools, when to
+    """Willow's whole context: who it is, Kinobu and its shortcuts, how to talk, its tools, when to
     delegate. The stable part goes first and the time last, so it caches across conversations."""
     now = datetime.now().astimezone()
     language = LANGUAGE_NAMES.get(LANG, "the user's language")
@@ -368,7 +384,12 @@ def system_prompt(config):
             f"{t('app')}, use it when you introduce yourself, whatever voice you speak with. The user "
             "talks to you by voice and hears you through text-to-speech. "
             + ABOUT_KINOBU + shortcuts_text() +
-            "Answer spoken and warm, in one to three short sentences (a little more when you guide "
+            "Your manner: warm, direct and friendly, with charisma and a light sense of humour, like a "
+            "good friend who knows computers well: relaxed and natural, never stiff or servile. A quick "
+            "joke now and then is welcome, but the useful answer always comes first. "
+            + (f"The user asked you to talk like this, which wins over the manner above: {config['persona'][:500]}. "
+               if config.get("persona", "").strip() else "") +
+            "Answer spoken, in one to three short sentences (a little more when you guide "
             "someone step by step): no Markdown, lists, emojis, code or file paths unless asked; say "
             "numbers, times and key names the way people say them. "
             "Tools: WebSearch and WebFetch for quick facts from the internet, and Bash limited to "
@@ -380,9 +401,25 @@ def system_prompt(config):
             "/var/lib/snapd/desktop/applications or ~/.local/share/applications), a web page or a web "
             "search in the default browser with xdg-open and an https:// address (searches: "
             "https://duckduckgo.com/?q=...), and a folder with nautilus --new-window <folder>. "
-            "Anything else is refused: you cannot change the system. Never "
-            "pretend you checked something you did not. For real work (fixing or changing the system, "
-            "files, code, projects, installing, long research), say in one short sentence that you "
+            "Actions: the only thing that changes the computer is kinobu-do (run kinobu-do help when "
+            "unsure): volume, microphone, brightness, night light, Do Not Disturb, dark or light mode, "
+            "the theme, Seasons, music (play, pause, next), a page of Settings, Wi-Fi, Bluetooth, "
+            "reminders and timers (kinobu-do remind MINUTES TEXT), and status. Do what the user asks "
+            "right away and confirm in a few words; ask first only before turning Wi-Fi or Bluetooth "
+            "off. The screen: when the user asks about something they are looking at (a message, a "
+            "window, what to click), run kinobu-do screenshot and Read the picture it prints, then "
+            "explain; never look at the screen unless they ask. The first time, GNOME asks the user "
+            "whether apps may take screenshots: tell them to choose Allow if they want you to see it. "
+            "You keep nothing about the user between talks and never ask for personal details such as "
+            "their name. This computer in detail: if you "
+            f"are unsure how something works here, Read {SKILL_DIR}/SKILL.md and then only the guide "
+            "you need; never read them for small talk. Anything else is refused. Never pretend you "
+            "checked something you did not. Checks that need more care than a few commands but change "
+            "nothing (investigating a problem, comparing options, reading long pages): say in one short "
+            "sentence that you will look into it in the background and tell them when it is ready, "
+            "then end with a last line exactly like [[background: the task, written clearly, with what "
+            "you found]]. For real work (fixing or changing the system, "
+            "files, code, projects, installing), say in one short sentence that you "
             f"will hand it to {agent_name()}, then end with a last line exactly like "
             "[[delegate: the task, written clearly for the agent, with what you found]]. Do not "
             "delegate small talk or what you can answer yourself. When the user wants to end the "
@@ -391,6 +428,17 @@ def system_prompt(config):
             f"Answer in {language}. Your voice now is {'a woman' if female(config['voice']) else 'a man'}'s: "
             f"in languages with grammatical gender, always speak of yourself in the "
             f"{gender_note(config['voice'])} form. Now: {now:%A %d %B %Y, %H:%M %Z}.")
+
+
+def background_prompt():
+    language = LANGUAGE_NAMES.get(LANG, "the user's language")
+    return ("You do quick checks for Willow, the voice assistant of Kinobu (Ubuntu 26.04 with GNOME). "
+            "You can read the computer with read-only commands, read Kinobu's guides in "
+            f"{SKILL_DIR} and use the web; you cannot change anything. Be efficient: the fewest "
+            "commands and pages that answer well. Then answer for someone who has never used Linux, "
+            f"in {language}, in two to four short sentences that will be read aloud: no Markdown, "
+            "lists or code. If the answer needs a change to the system, say what would be needed and "
+            "that Willow can hand it to the full agent.")
 
 
 def muted(target):
@@ -479,17 +527,20 @@ class Listener(threading.Thread):
 
 
 class Agent:
-    """One headless agent process for the whole talk, with the tiny prompt above and no tools,
-    so each turn costs a few hundred tokens. The answer arrives in pieces (on_delta)."""
+    """One headless agent process for the whole talk, at the power chosen in the settings (Haiku at
+    low effort by default) with the prompt above and a few narrow tools, so a turn costs a fraction
+    of a cent. The answer arrives in pieces (on_delta)."""
 
     def __init__(self, config, on_delta, on_done, on_tool):
         self.on_delta, self.on_done, self.on_tool, self.proc = on_delta, on_done, on_tool, None
         path = agent_path()
         if not path or os.path.basename(path) != "claude":     # other agents: later
             return
-        args = [path, "-p", "--model", config["model"], "--input-format", "stream-json",
+        model, effort = POWERS[config["power"]]
+        args = [path, "-p", "--model", model, "--effort", effort,
+                "--input-format", "stream-json",
                 "--output-format", "stream-json", "--include-partial-messages", "--verbose",
-                "--system-prompt", system_prompt(config), "--tools", "Bash,WebSearch,WebFetch",
+                "--system-prompt", system_prompt(config), "--tools", "Bash,WebSearch,WebFetch,Read",
                 "--allowedTools", *ALLOWED, "--add-dir", *READ_DIRS,
                 "--strict-mcp-config", "--disable-slash-commands",
                 "--setting-sources", "", "--no-session-persistence"]
@@ -540,8 +591,40 @@ class Agent:
             self.proc.terminate()
 
 
+class Background:
+    """A quick check on a stronger model (Sonnet, medium effort), without a window or a saved
+    session: it may only look (read-only commands, the guides, the web). on_done gets the spoken
+    answer, or None when it failed."""
+
+    def __init__(self, config, task, on_done):
+        path = agent_path()
+        if not path or os.path.basename(path) != "claude":
+            GLib.idle_add(on_done, None)
+            return
+        args = [path, "-p", task, "--model", config["background_model"],
+                "--effort", config["background_effort"], "--output-format", "json",
+                "--system-prompt", background_prompt(), "--tools", "Bash,WebSearch,WebFetch,Read",
+                "--allowedTools", *LOOKING, "--add-dir", *READ_DIRS,
+                "--strict-mcp-config", "--disable-slash-commands",
+                "--setting-sources", "", "--no-session-persistence"]
+
+        def work():
+            answer = None
+            try:
+                out = subprocess.run(args, capture_output=True, text=True, timeout=600,
+                                     cwd=os.path.expanduser("~"),
+                                     env={**os.environ, "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"})
+                result = json.loads(out.stdout or "{}")
+                if not result.get("is_error"):
+                    answer = (result.get("result") or "").strip() or None
+            except (OSError, subprocess.TimeoutExpired, ValueError):
+                pass
+            GLib.idle_add(on_done, answer)
+        threading.Thread(target=work, daemon=True).start()
+
+
 class Speaker:
-    """Turns sentences into speech in order (the zen-tts.py worker, kept running) and plays
+    """Turns sentences into speech in order (the voice-tts.py worker, kept running) and plays
     them one after another. A new turn (stop) drops whatever the last one left queued."""
 
     def __init__(self, folder, on_play, on_idle):
@@ -788,7 +871,7 @@ class VoiceWindow(Adw.ApplicationWindow):
 
     # ---- real mode ----------------------------------------------------------------------
     def start_engine(self):
-        self.real, self.tmp = True, tempfile.mkdtemp(prefix="kinobu-zen-")
+        self.real, self.tmp = True, tempfile.mkdtemp(prefix="kinobu-voice-")
         self.env, self.env_start, self.answer, self.spoken = [], 0.0, "", 0
         self.answer_label, self.turn_done, self.last_activity = None, True, time.monotonic()
         self.listener = Listener(self.on_utterance, self.tmp)
@@ -870,7 +953,7 @@ class VoiceWindow(Adw.ApplicationWindow):
         self.set_state("thinking")
 
     def visible(self):
-        """The answer without the [[delegate: …]] line, which is for the app, not for you."""
+        """The answer without the [[delegate: …]] or [[background: …]] line, which is for the app."""
         cut = self.answer.find("[[")
         return (self.answer if cut < 0 else self.answer[:cut]).strip()
 
@@ -917,6 +1000,10 @@ class VoiceWindow(Adw.ApplicationWindow):
         task = DELEGATE.search(self.answer)
         if task:
             self.card(agent_name(), "~", task.group(1).strip(), self.launch_agent)
+        job = BACKGROUND.search(self.answer)
+        if job and not getattr(self, "background_busy", False):
+            self.background_busy = True
+            Background(self.config, job.group(1).strip(), self.on_background)
         if self.sound_muted and self.answer:
             self.hint.set_label(t("sound_off"))
             self.hint.set_visible(True)
@@ -928,7 +1015,23 @@ class VoiceWindow(Adw.ApplicationWindow):
 
     def on_tool(self, name):
         if self.busy and not self.turn_done:
-            self.status.set_label(t("using_web" if name.startswith("Web") else "using_bash"))
+            self.status.set_label(t("using_web" if name.startswith("Web") else
+                                    "using_read" if name == "Read" else "using_bash"))
+
+    def on_background(self, answer):
+        """A background check finished: a notice (the window may be closed by now), and if the
+        window is still open, the answer in the talk, spoken."""
+        self.background_busy = False
+        title = t("background_done") if answer else t("background_failed")
+        try:
+            subprocess.Popen(["notify-send", "-a", t("app"), "-i", APP_ID, title, (answer or "")[:400]])
+        except OSError:
+            pass
+        if answer and self.get_visible():
+            self.bubble(t("app"), answer, False)
+            if not self.sound_muted:
+                for sentence in re.split(r"(?<=[.!?])\s+", answer):
+                    self.queue_sentence(sentence)
 
     def on_play(self, env):
         self.env, self.env_start = env, time.monotonic()
@@ -939,6 +1042,8 @@ class VoiceWindow(Adw.ApplicationWindow):
 
     def finish_turn(self):
         self.busy, self.env = False, []
+        if getattr(self, "restart_pending", False):
+            self.restart_agent()
         if getattr(self, "closing", False):                 # "goodbye": close once it has spoken
             self.later(0.8, self.close)
             return
@@ -1046,6 +1151,19 @@ class VoiceWindow(Adw.ApplicationWindow):
             return True
         return False
 
+    def restart_agent(self):
+        """A new power or manner: a new agent from the next question on (the talk starts afresh)."""
+        if not self.real:
+            return
+        if self.busy:                                   # after the answer in progress
+            self.restart_pending = True
+            return
+        self.restart_pending = False
+        self.agent.stop()
+        self.agent = Agent(self.config, self.on_delta, self.on_done, self.on_tool)
+        self.hint.set_label(t("restarted"))
+        self.hint.set_visible(True)
+
     # ---- settings -----------------------------------------------------------------------
     def show_settings(self):
         page = Adw.PreferencesPage()
@@ -1062,8 +1180,28 @@ class VoiceWindow(Adw.ApplicationWindow):
         talk = Adw.PreferencesGroup(title=t("talk_group"))
         keep = Adw.SwitchRow(title=t("continuous"), active=self.continuous)
         talk.add(keep)
+        power_ids = list(POWERS)
+        power_row = Adw.ComboRow(title=t("power"), model=Gtk.StringList.new([t(f"power_{p}") for p in power_ids]))
+        power_row.set_selected(power_ids.index(self.config["power"]))
+        power_row.set_subtitle(t(f"power_{self.config['power']}_note"))
+        talk.add(power_row)
+        manner = Adw.EntryRow(title=t("manner"), text=self.config.get("persona", ""), show_apply_button=True)
+        talk.add(manner)
         page.add(voices)
         page.add(talk)
+
+        def power_changed(*_):
+            power = power_ids[power_row.get_selected()]
+            power_row.set_subtitle(t(f"power_{power}_note"))
+            if power != self.config["power"]:
+                self.config["power"] = power
+                save_config(self.config)
+                self.restart_agent()
+
+        def manner_changed(*_):
+            self.config["persona"] = manner.get_text().strip()[:500]
+            save_config(self.config)
+            self.restart_agent()
 
         def fill_voices(*_):
             engine = engine_ids[engine_row.get_selected()]
@@ -1104,7 +1242,9 @@ class VoiceWindow(Adw.ApplicationWindow):
         voice_row.connect("notify::selected", changed)
         listen.connect("clicked", play)
         keep.connect("notify::active", keep_listening)
-        dialog = Adw.PreferencesDialog(title=t("settings").rstrip("…"), content_width=460)
+        power_row.connect("notify::selected", power_changed)
+        manner.connect("apply", manner_changed)
+        dialog = Adw.PreferencesDialog(title=t("settings").rstrip("…"), content_width=540)
         dialog.add(page)
         dialog.present(self)
 
@@ -1115,7 +1255,7 @@ def prepare():
     jobs = [{"warm": "kokoro"}]
     if os.path.isdir(LLAMA):
         for lang, refs in QWEN_REFS.items():
-            text = texts("zen", lang).get("ref_text", "")
+            text = texts("voice", lang).get("ref_text", "")
             for voice, kokoro_voice in refs.items():
                 out = os.path.join(MODELS, f"qwen-ref-{voice}-{lang}.wav")
                 if not os.path.isfile(out):

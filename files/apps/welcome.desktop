@@ -1,13 +1,14 @@
 [Desktop Entry]
 Type=Application
-Name=Kinobu Welcome
-Name[es]=Bienvenida a Kinobu
+Name=Sprout
 Comment=A quick tour of Kinobu
 Comment[es]=Un tour rápido por Kinobu
 Exec=python3 @PROGRAMS_DIR@/welcome.py
 Icon=start-here
 Terminal=false
 Categories=GNOME;GTK;Utility;
-Keywords=Kinobu;Welcome;Tour;Help;
-Keywords[es]=Kinobu;Bienvenida;Tour;Ayuda;
+Keywords=Kinobu;Sprout;Welcome;Tour;Help;
+Keywords[es]=Kinobu;Sprout;Bienvenida;Tour;Ayuda;
 StartupNotify=true
+# Opened with Super+F1 (and once after the setup), so it stays out of the app grid
+NoDisplay=true

@@ -1,0 +1,82 @@
+# Inspired by the look of macOS: no Apple wallpapers, logos or icons
+# Light Soft and Dark Deep: worked out by Kinobu from the theme's own palettes, for more contrast (or less glare)
+name = "macOS"
+description = "Bright and polished, inspired by macOS: window buttons on the left."
+author = "Kinobu"
+gnome_accent = "blue"
+icons = "kora"
+cursor = { light = "macOS", dark = "macOS-White" }
+button_layout = "close,minimize,maximize:appmenu"
+wallhaven = "mountains lake"                # Seasons' "For this theme" search on Wallhaven (in English)
+# Its four wallpapers, from Wallhaven: downloaded by the user when the theme is applied
+wallpapers = ["wallhaven:j3qq15", "wallhaven:zm6qmw", "wallhaven:57o619", "wallhaven:9mq26d"]
+intensity = 0.5
+interface_font = "Inter 11"        # close to Segoe UI and SF Pro, which are not free
+
+# The palettes, in the order Seasons shows them (the first is the default). Each one is dark
+# or light; "pair" is the palette of the other mode the dark-style switch moves to.
+
+[palettes.light]
+name = "Light"
+mode = "light"
+pair = "dark"
+terminal = "Terminal Basic"         # a palette of Ptyxis (its light side when it has two)
+accent = "#007AFF"
+background = "#ECECEC"
+view = "#FFFFFF"
+sidebar = "#E3E3E6"
+card = "#FFFFFF"
+foreground = "#1D1D1F"
+muted = "#616166"
+success = "#1E8E3E"
+warning = "#B25E00"
+error = "#D70015"
+
+[palettes.light-soft]
+name = "Light Soft"
+mode = "light"
+pair = "dark-deep"
+terminal = "Terminal Basic"         # a palette of Ptyxis (its light side when it has two)
+terminal_background = "#F4F3F1"
+accent = "#007AFF"
+background = "#E9E8E5"
+view = "#F4F3F1"
+sidebar = "#E5E4E2"
+card = "#F6F6F4"
+foreground = "#1D1D1F"
+muted = "#616166"
+success = "#1E8E3E"
+warning = "#B25E00"
+error = "#D70015"
+
+[palettes.dark]
+name = "Dark"
+mode = "dark"
+pair = "light"
+terminal = "Pro"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#0A84FF"
+background = "#2A2A2C"
+view = "#1E1E1E"
+sidebar = "#323234"
+card = "#3A3A3C"
+foreground = "#F5F5F7"
+muted = "#A1A1A6"
+success = "#30D158"
+warning = "#FF9F0A"
+error = "#FF453A"
+
+[palettes.dark-deep]
+name = "Dark Deep"
+mode = "dark"
+pair = "light-soft"
+terminal = "Pro"         # a palette of Ptyxis (its dark side when it has two)
+accent = "#0A84FF"
+background = "#171718"
+view = "#101010"
+sidebar = "#1B1B1D"
+card = "#262627"
+foreground = "#F8F8F9"
+muted = "#AFAFB3"
+success = "#30D158"
+warning = "#FF9F0A"
+error = "#FF453A"

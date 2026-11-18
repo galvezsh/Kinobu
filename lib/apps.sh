@@ -12,11 +12,16 @@ APT_PACKAGES=(
     # Development: build tools, Node.js and Python as a system-wide base
     build-essential nodejs npm python3-pip python3-venv python-is-python3
     # GNOME apps (they sync with Google, Microsoft... through Settings > Online Accounts)
-    gnome-contacts gnome-calendar gnome-weather gnome-clocks gnome-calculator gnome-tweaks gnome-characters geary
+    gnome-contacts gnome-calendar gnome-weather gnome-clocks gnome-calculator gnome-characters geary
     # GNOME extensions support
     gnome-shell-extensions gnome-shell-ubuntu-extensions gnome-browser-connector
     # System helpers: VPN, AppImages, graphics info, typing on Wayland
     wireguard libfuse2t64 vulkan-tools mesa-utils ydotool
+    # What Willow's safe actions use (kinobu-do): music players and screen brightness
+    playerctl brightnessctl
+    # The themes' icons, cursors and fonts from Ubuntu (Seasons; the others are in lib/look.sh)
+    papirus-icon-theme numix-icon-theme-circle elementary-icon-theme bibata-cursor-theme breeze-cursor-theme
+    fonts-inter fonts-jetbrains-mono
     # GTK 4 and libadwaita from Python: Kinobu's own windows
     python3-gi gir1.2-gtk-4.0 gir1.2-adw-1
 )
@@ -53,6 +58,7 @@ HANDY_SETTINGS='{
   "start_hidden": true,
   "autostart_enabled": true
 }'
+HANDY_WORDS='["Willow", "Kinobu", "Seasons"]'   # names Handy should hear right; added to the user's own
 
 # ---------------------------------------------------------------------------------------------
 # Block: apt
@@ -229,8 +235,9 @@ configure_handy() {
     if [[ -z $lang || $lang == C || $lang == POSIX ]]; then lang=auto; fi
     if pgrep -x handy >/dev/null; then running=true; pkill -x handy || true; sleep 1; fi
     # shellcheck disable=SC2016  # $s and $lang are jq variables
-    edit_json "$store" '.settings = ((.settings // {}) + $s + {selected_language: $lang})' \
-        --argjson s "$HANDY_SETTINGS" --arg lang "$lang"
+    edit_json "$store" '.settings = ((.settings // {}) + $s + {selected_language: $lang})
+        | .settings.custom_words = ((.settings.custom_words // []) + $words | unique)' \
+        --argjson s "$HANDY_SETTINGS" --arg lang "$lang" --argjson words "$HANDY_WORDS"
     if $running; then (setsid handy </dev/null >/dev/null 2>&1 &); fi
     report_changed "Set up: types what you say, starts hidden with the computer, language $lang" "Already set up"
 }

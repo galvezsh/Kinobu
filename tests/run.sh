@@ -2,6 +2,7 @@
 # Kinobu's tests: syntax, lint, the command line and the block picker. Nothing touches the system.
 set -uo pipefail
 cd "$(dirname "$(readlink -f "$0")")/.." || exit 1
+export KINOBU_NO_DOWNLOAD=1   # the themes' wallpapers are not downloaded from Wallhaven in the tests
 fails=0
 check() { if "${@:2}"; then echo "  ✔ $1"; else echo "  ✖ $1"; fails=$((fails + 1)); fi; }
 has()   { [[ $1 == *"$2"* ]]; }
@@ -10,21 +11,22 @@ lacks() { [[ -n $1 && $1 != *"$2"* ]]; }
 echo "Syntax and lint"
 check "bash -n" bash -n kinobu.sh lib/*.sh tests/run.sh
 if command -v shellcheck >/dev/null; then
-    check "shellcheck" shellcheck -x -S style kinobu.sh lib/*.sh tests/run.sh
+    check "shellcheck" shellcheck -x -S style kinobu.sh lib/*.sh tests/run.sh tests/themes-apply.sh files/apps/kinobu-do
 elif command -v uvx >/dev/null; then
-    check "shellcheck (uvx)" uvx --quiet --from shellcheck-py shellcheck -x -S style kinobu.sh lib/*.sh tests/run.sh
+    check "shellcheck (uvx)" uvx --quiet --from shellcheck-py shellcheck -x -S style kinobu.sh lib/*.sh tests/run.sh tests/themes-apply.sh files/apps/kinobu-do
 else
     echo "  · shellcheck not available, skipped"
 fi
 
 check "installed Python files compile" python3 -m py_compile files/apps/*.py files/agents/*.py tools/*.py
-check "installed scripts parse" bash -n files/apps/kinobu-launch files/agents/kinobu-notify files/shell/bashrc.sh
+check "installed scripts parse" bash -n files/apps/kinobu-launch files/apps/kinobu-do files/agents/kinobu-notify files/shell/bashrc.sh
 # shellcheck disable=SC2016  # the checks below run their own shell
 check "translations are valid JSON" bash -c 'for f in files/i18n/*.json; do jq -e . "$f" >/dev/null || exit 1; done'
 check "nothing still says Orkestr" bash -c '! grep -rIqi orkestr kinobu.sh lib files tools'
 check "no removed agent left" bash -c '! grep -rIqiE "opencode|hermes|cursor-agent" kinobu.sh lib files/skill files/agents files/subagents files/apps'
 
-if [[ -n ${WAYLAND_DISPLAY:-}${DISPLAY:-} ]]; then
+# Opens the real Gate for a moment on the desktop: only when asked, so it never surprises anyone
+if [[ ${KINOBU_TEST_WINDOWS:-} == 1 && -n ${WAYLAND_DISPLAY:-}${DISPLAY:-} ]]; then
     check "approval window: no button starts with the keyboard focus" has "$(timeout 20 python3 tests/approve-focus.py files/apps/approve.py 2>/dev/null)" "focus: NoneType"
 fi
 
@@ -40,7 +42,7 @@ out=$(bash kinobu.sh --check 2>&1);    check "prints the requirements"    has "$
 out=$(XDG_CURRENT_DESKTOP=none bash kinobu.sh --install 2>&1); code=$?
 check "a missing requirement stops the setup" test "$code" -eq 1
 check "and says what to do" has "$out" "Open a terminal inside the GNOME desktop"
-out=$(HOME=$(mktemp -d) bash kinobu.sh --update 2>&1)
+out=$(HOME=$(mktemp -d) KINOBU_PREFIX=$(mktemp -d) bash kinobu.sh --update 2>&1)
 check "--update refuses a computer not set up" has "$out" "was not set up"
 
 ENTER=$'\r' DOWN=$'\x1b[B'
@@ -107,7 +109,7 @@ else
         set -Eeuo pipefail; source ./kinobu.sh; ui_init
         LOG=$(mktemp) TMP_DIR=$(mktemp -d)
         has_cmd() { return 1; }; is_installed() { return 1; }      # nothing is installed yet
-        install_zen() { :; }
+        install_voice() { :; }
         PLAN=(ai) CHOSEN=(claude ollama lmstudio)
         install_ai_tools; printf "%s\n" "${NEXT_STEPS[@]}"' 2>&1)
     done_cmds=$(<"$record")
@@ -121,9 +123,15 @@ else
     out=$(HOME=$home KINOBU_PREFIX=$prefix PATH=$stubs:$PATH KINOBU_TEST_SUDO=$record bash -c '
         set -Eeuo pipefail; source ./kinobu.sh; ui_init
         LOG=$(mktemp) TMP_DIR=$(mktemp -d)
-        has_cmd() { return 1; }; install_zen() { :; }
+        has_cmd() { return 1; }; install_voice() { :; }
         PLAN=(ai) CHOSEN=(claude); install_ai_tools' 2>&1)
     check "ai: only what was chosen"            lacks "$(<"$record")" "ollama"
+    out=$(HOME=$home KINOBU_PREFIX=$prefix PATH=$stubs:$PATH KINOBU_TEST_SUDO=$record bash -c '
+        set -Eeuo pipefail; source ./kinobu.sh; ui_init
+        LOG=$(mktemp) TMP_DIR=$(mktemp -d)
+        install_voice() { :; }
+        PLAN=(ai) CHOSEN=(); install_ai_tools' 2>&1)
+    check "ai: an installed agent opens even if unticked" test "$(cat "$home/.config/kinobu/agent" 2>/dev/null)" = "$stubs/claude"
     rm -rf "$home" "$record" "$profile" "$prefix" "$real_config/dconf/kinobutest"
 fi
 
@@ -136,12 +144,13 @@ else
     share=$prefix/share/kinobu
     echo "user-db:kinobutest" >"$profile"
     rm -f "$real_config/dconf/kinobutest"
-    real_before=$(dconf read /org/gnome/desktop/wm/keybindings/close; dconf read /org/gnome/shell/favorite-apps)
+    look_keys() { for k in gtk-theme icon-theme cursor-theme accent-color color-scheme font-name; do dconf read "/org/gnome/desktop/interface/$k"; done; dconf read /org/gnome/desktop/wm/preferences/button-layout; }
+    real_before=$(dconf read /org/gnome/desktop/wm/keybindings/close; dconf read /org/gnome/shell/favorite-apps; look_keys)
     whole() {   # whole install|update|user [HOME]: every block; sudo and the voice assistant are left out
         HOME=${2:-$home} KINOBU_PREFIX=$prefix XDG_CONFIG_HOME=$real_config DCONF_PROFILE=$profile PATH=$stubs:$PATH KINOBU_TEST_SUDO=$record NO_COLOR=1 bash -c '
             set -Eeuo pipefail; source ./kinobu.sh; ui_init
             trap "on_error \$LINENO" ERR; trap cleanup EXIT
-            sudo_start() { :; }; install_zen() { :; }
+            sudo_start() { :; }; install_voice() { :; }
             ACTION=$1 CHOSEN=(chrome missioncenter vscode intellij pycharm claude) HAS_V3=true WELCOME="" RUN_KIND=setup
             case $ACTION in
                 update) RUN_KIND=update; PLAN=("${UPDATE_BLOCKS[@]}") ;;
@@ -154,6 +163,7 @@ else
     }
     isolated() { DCONF_PROFILE=$profile dconf read "$1"; }
     out=$(whole install)
+    if [[ $out != *"✔ Done"* ]]; then printf '%s\n' "$out" | tail -n 25 >&2; fi
     check "every block runs to the end"         has "$out" "✔ Done"
     check "no block is skipped"                 lacks "$out" "not written yet"
     echo " System (shared by every user)"
@@ -161,11 +171,13 @@ else
     check "the launcher and the notifier"       test -x "$prefix/bin/kinobu-launch" -a -x "$prefix/bin/kinobu-notify"
     check "cheat sheet, tour, approval window"  test -s "$share/programs/keys.py" -a -s "$share/programs/welcome.py" -a -s "$share/programs/approve.py" -a -s "$share/programs/kinobu-notice.py"
     check "translations and the skill"          test -s "$share/i18n/es.json" -a -s "$share/skills/kinobu/SKILL.md"
-    check "a tidy system folder"                test "$(find "$share" -mindepth 1 -maxdepth 1 -printf "%f\n" | sort | tr "\n" " ")" = "data i18n programs skills src version "
+    check "Seasons, the theme engine and the themes" test -s "$share/programs/seasons.py" -a -s "$share/programs/kinobu_wallhaven.py" -a -x "$prefix/bin/kinobu-theme" -a -s "$share/themes/kinobu/theme.toml" -a -s "$prefix/share/applications/os.kinobu.Themes.desktop"
+    check "the engine knows where the system is" grep -q "SYSTEM_DIR = \"$share\"" "$share/programs/kinobu_theme.py"
+    check "a tidy system folder"                test "$(find "$share" -mindepth 1 -maxdepth 1 -printf "%f\n" | sort | tr "\n" " ")" = "data i18n programs skills src themes version "
     check "the login entry for other users"     grep -q "kinobu-launch user-setup" "$prefix/etc/xdg/autostart/kinobu-user.desktop"
     check "the installed version"               test "$(cat "$share/version")" = "$(bash kinobu.sh -v | cut -d" " -f2)"
     # shellcheck disable=SC2016
-    check "no template mark left unfilled"      bash -c '! grep -rIqE "@[A-Z_]{3,}@" "$1/bin" "$1/share/kinobu" --exclude-dir=src' _ "$prefix"
+    check "no template mark left unfilled"      bash -c '! grep -rIqE "@[A-Z_]{3,}@" "$1/bin" "$1/share/kinobu" --exclude-dir=src --exclude-dir=theme-templates' _ "$prefix"
     check "its Python files compile"            python3 -m py_compile "$share"/programs/*.py
     check "its scripts parse"                   bash -n "$prefix/bin/kinobu-launch" "$prefix/bin/kinobu-notify"
     check "nothing of Kinobu's programs in HOME" test ! -e "$home/.local/bin/kinobu-launch" -a ! -e "$home/.local/share/kinobu/keys.py"
@@ -174,23 +186,40 @@ else
     check "fastfetch config points to the system logo" grep -q "$share/data/fastfetch-logo.txt" "$home/.config/fastfetch/config.jsonc"
     check "the skill is linked into Claude Code" test "$(readlink "$home/.claude/skills/kinobu")" = "$share/skills/kinobu"
     check "the note is in the agent's instructions" grep -q "kinobu:begin" "$home/.claude/CLAUDE.md"
-    check "the subagent for Claude Code"        test -s "$home/.claude/agents/kinobu-system.md"
+    check "the subagent for Claude Code"        test -s "$home/.claude/agents/kinobu-agent.md"
     check "Claude Code's hooks call the system notifier" test "$(jq -r '.hooks.Stop[0].hooks[0].command' "$home/.claude/settings.json")" = "$prefix/bin/kinobu-notify claude done"
     check "nothing for the removed agents"      test ! -e "$home/.cursor" -a ! -e "$home/.hermes" -a ! -e "$home/.config/opencode" -a ! -e "$home/.codex" -a ! -e "$home/.gemini" -a ! -e "$home/.agents"
     check "the calculator is pinned in the dock" has "$(isolated /org/gnome/shell/favorite-apps)" "org.gnome.Calculator.desktop"
     check "the three folders open the app grid" has "$(isolated /org/gnome/shell/app-picker-layout)" "[{'System': <{'position': <0>}>, 'Settings': <{'position': <1>}>, 'Utilities': <{'position': <2>}>"
+    check "only the folders are placed, not the apps" lacks "$(isolated /org/gnome/shell/app-picker-layout)" "<3>"
+    keys=$(DCONF_PROFILE=$profile dconf dump /org/gnome/settings-daemon/plugins/media-keys/)
+    check "Super+F1 opens the welcome tour"     has "$keys" "binding='<Super>F1'
+command='$prefix/bin/kinobu-launch welcome'"
+    check "GNOME's Help shortcut is released"   has "$keys" "help=@as []"
+    check "the tour is not in the app grid"     grep -q '^NoDisplay=true' "$prefix/share/applications/os.kinobu.Welcome.desktop"
+    check "the dock's Show Apps button gets Kinobu's logo" test -s "$prefix/share/icons/Yaru/scalable/actions/view-app-grid-ubuntu-symbolic.svg" -a -s "$prefix/share/icons/hicolor/scalable/actions/view-app-grid-ubuntu-symbolic.svg"
     check "the Settings folder has a translated name" test -s "$home/.local/share/desktop-directories/Kinobu-Settings.directory"
     check "the weather city comes from the time zone" has "$(isolated /org/gnome/shell/weather/locations)" "uint32"
     check "shortcuts run the system launcher"   has "$(isolated /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/kinobu-0/command)" "$prefix/bin/kinobu-launch terminal"
     check "the user's version is recorded"      test "$(cat "$home/.config/kinobu/version")" = "$(cat "$share/version")"
+    echo " The look"
+    check "a new user starts with the Kinobu theme" grep -q '^theme = "kinobu"' "$home/.config/kinobu/look.toml"
+    check "the apps get the theme's colours"    grep -q "prefers-color-scheme" "$home/.config/gtk-4.0/kinobu.css"
+    check "GNOME's accent follows the theme"    has "$(isolated /org/gnome/desktop/interface/accent-color)" "green"
+    # shellcheck disable=SC2016  # the check runs its own shell
+    check "a pack that fails its checksum is not installed" bash -c '[[ $1 == *"did not match its checksum"* && ! -e $2/share/icons/kora ]]' _ "$out" "$prefix"
+    check "GNOME Tweaks is not installed"       lacks "$(<"$record")" "gnome-tweaks"
     echo " Again, and --update"
     out=$(whole install)
     check "a second run works"                  has "$out" "✔ Done"
     check "and duplicates nothing in .bashrc"   test "$(grep -c ">>> kinobu >>>" "$home/.bashrc")" -eq 1
     check "nor in the hooks"                    test "$(jq '.hooks.Stop | length' "$home/.claude/settings.json")" -eq 1
     check "the tour opens only the first time"  lacks "$out" "welcome tour is open"
+    HOME=$home XDG_CONFIG_HOME=$real_config DCONF_PROFILE=$profile python3 -I "$share/programs/kinobu_theme.py" set nord >/dev/null 2>&1
     out=$(whole update)
     check "--update runs to the end"            has "$out" "✔ Done"
+    # shellcheck disable=SC2016  # the check runs its own shell
+    check "--update keeps the theme you chose"  bash -c '[[ $(grep "^theme" "$1") == "theme = \"nord\"" ]]' _ "$home/.config/kinobu/look.toml"
     check "--update leaves the look alone"      lacks "$out" "Dock favourites"
     echo " Another user of the same computer (--user)"
     other=$(mktemp -d)
@@ -206,12 +235,120 @@ else
     check "the shortcuts"                       has "$(isolated /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/kinobu-0/command)" "kinobu-launch terminal"
     check "and is marked as up to date"         test "$(cat "$other/.config/kinobu/version")" = "$(cat "$share/version")"
     check "the welcome tour opens for them"     has "$out" "welcome tour"
+    check "and their own look, the Kinobu theme" grep -q '^theme = "kinobu"' "$other/.config/kinobu/look.toml"
     out=$(whole user "$other")
     check "later it only refreshes (look kept)" lacks "$out" "Dock favourites"
-    real_after=$(dconf read /org/gnome/desktop/wm/keybindings/close; dconf read /org/gnome/shell/favorite-apps)
+    real_after=$(dconf read /org/gnome/desktop/wm/keybindings/close; dconf read /org/gnome/shell/favorite-apps; look_keys)
     check "the real GNOME settings were not touched" test "$real_before" = "$real_after"
     rm -rf "$home" "$other" "$record" "$profile" "$prefix" "$real_config/dconf/kinobutest"
 fi
+
+echo "Gate, the approval window (a stand-in window, no sound)"
+gate=$(mktemp -d); mkdir -p "$gate/programs"
+printf '#!/usr/bin/env python3\nimport os\nopen(os.environ["MARK"], "w").close()\n' >"$gate/programs/approve.py"
+sed -e "s|@PROGRAMS_DIR@|$gate/programs|g; s|@SYSTEM_DIR@|$gate|g; s|@WAIT@|45|; s|@MIN@|20|; s|@APPROVALS@|dialog|; s|@SOUND@|false|" \
+    files/agents/kinobu-notify >"$gate/notify"
+ask() {   # ask MODE SECONDS: a permission request the agent cancels after SECONDS
+    MARK=$gate/$1 WAYLAND_DISPLAY=test XDG_RUNTIME_DIR=$gate timeout "$2" bash "$gate/notify" claude permission \
+        <<<"{\"permission_mode\": \"$1\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"ls\"}, \"session_id\": \"t\"}" >/dev/null 2>&1
+}
+ask auto 1.5; ask default 1.5
+check "auto mode: Gate waits, so a request approved at once never shows it" test ! -e "$gate/auto"
+check "other modes: Gate opens straight away"         test -e "$gate/default"
+rm -rf "$gate"
+
+echo "Willow's safe actions (kinobu-do, in a fake home: nothing of the desktop is changed)"
+kd_home=$(mktemp -d)
+kd() { HOME=$kd_home bash files/apps/kinobu-do "$@" 2>&1; }
+# shellcheck disable=SC2016  # the check runs its own shell
+check "it keeps nothing about the user"               bash -c '[[ $(HOME=$1 bash files/apps/kinobu-do remember x) != Remembered* && ! -e $1/.config/kinobu/willow.md ]]' _ "$kd_home"
+# shellcheck disable=SC2016  # the check runs its own shell
+check "values out of range are refused"                bash -c '[[ $(HOME=$1 bash files/apps/kinobu-do volume 300) == Error:* && $(HOME=$1 bash files/apps/kinobu-do remind 0 x) == Error:* ]]' _ "$kd_home"
+check "only known Settings pages open"                 has "$(kd settings nothing)" "unknown page"
+check "an unknown action shows the help"               has "$(kd fly)" "kinobu-do remind MINUTES TEXT"
+rm -rf "$kd_home"
+
+echo "Themes (kinobu-theme and Seasons)"
+check "every factory theme is valid and reads well (contrast)" bash -c "python3 -I files/apps/kinobu_theme.py validate --strict >/dev/null"
+# shellcheck disable=SC2016  # the check runs its own shell
+# shellcheck disable=SC2016  # the check runs its own shell
+check "the GTK 3 stylesheet uses only colours GTK 3 reads" bash -c '! python3 -I files/apps/kinobu_theme.py css kinobu --gtk3 | grep -qE "rgba?\([0-9.]+ [0-9.]+ [0-9.]+"'
+# shellcheck disable=SC2016  # the check runs its own shell
+check "a palette and its pair share one stylesheet" bash -c '[[ $(python3 -I files/apps/kinobu_theme.py css kinobu | grep -c "prefers-color-scheme") -ge 3 ]]'
+# shellcheck disable=SC2016  # the check runs its own Python
+# shellcheck disable=SC2016  # the check runs its own Python
+check "Seasons has every text in every language" python3 -I -c '
+import json, glob, sys
+en = set(json.load(open("files/i18n/en.json"))["seasons"])
+for f in glob.glob("files/i18n/*.json"):
+    if set(json.load(open(f)).get("seasons", {})) != en: sys.exit(f)'
+# shellcheck disable=SC2016  # the check runs its own Python
+check "every factory theme has four Wallhaven wallpapers and a description in every language" python3 -I -c '
+import sys, json, glob, os; sys.path.insert(0, "files/apps"); import kinobu_theme as k
+texts = [json.load(open(f))["seasons"] for f in glob.glob("files/i18n/*.json")]
+for tid in os.listdir("files/themes"):
+    if tid == "templates": continue
+    t = k.load(tid)
+    assert len(k.theme_wallhaven(t, "dark")) == 4, tid
+    assert all(f"theme.{tid}" in s for s in texts), tid'
+check "no translation file repeats a key" python3 -I -c '
+import json, glob, sys
+def pairs(p):
+    keys = [k for k, _ in p]
+    if len(keys) != len(set(keys)): sys.exit(1)
+    return dict(p)
+for f in glob.glob("files/i18n/*.json"): json.load(open(f), object_pairs_hook=pairs)'
+# shellcheck disable=SC2016  # the check runs its own Python
+check "Wallhaven: every category, safe and wide pictures are asked for and kept" python3 -I -c '
+import sys, json; sys.path.insert(0, "files/apps"); import kinobu_wallhaven as w
+asked = []
+def fake(url):
+    asked.append(url)
+    items = [{"id": "aaa111", "purity": "sfw", "path": "https://w.wallhaven.cc/full/aa/wallhaven-aaa111.jpg", "thumbs": {"large": "https://th.wallhaven.cc/lg/aa/aaa111.jpg"}, "resolution": "3840x2160"},
+             {"id": "bbb222", "purity": "sketchy", "path": "https://w.wallhaven.cc/full/bb/wallhaven-bbb222.jpg"},
+             {"id": "ccc333", "purity": "sfw", "path": "http://example.com/x.jpg"}]
+    return json.dumps({"data": items, "meta": {"current_page": 1, "last_page": 3, "seed": "AbC123"}}).encode(), "application/json"
+w._get = fake
+found, nxt = w.search("forest", "relevance", colour="#336600", atleast="2560x1440")
+u = asked[0]
+assert all(p in u for p in ("purity=100", "categories=111", "ratios=landscape", "q=forest", "colors=336600", "atleast=2560x1440")), u
+assert [p["id"] for p in found] == ["aaa111"] and nxt == (2, "AbC123"), (found, nxt)
+w.search(colour="notacolour", seed="x; rm"); assert "colors" not in asked[1] and "seed" not in asked[1], asked[1]
+'
+fake=$(mktemp -d)
+real_before=$(dconf dump / | sha256sum)
+# shellcheck disable=SC2016  # $XDG_RUNTIME_DIR belongs to the inner shell
+out=$(env -i PATH="$PATH" LANG=C.UTF-8 HOME="$fake" KINOBU_TEST_HOME="$fake" KINOBU_NO_DOWNLOAD=1 XDG_CONFIG_HOME="$fake/.config" XDG_DATA_HOME="$fake/.local/share" \
+    XDG_CACHE_HOME="$fake/.cache" XDG_STATE_HOME="$fake/.local/state" XDG_RUNTIME_DIR="$fake/run" \
+    bash -c 'mkdir -m 700 -p "$XDG_RUNTIME_DIR"; dbus-run-session -- tests/themes-apply.sh' 2>&1)
+check "apply: a light palette is light, in GNOME and Ptyxis" has "$out" "kinobu-light scheme='prefer-light'"
+check "apply: --mode light picks the theme's light palette" has "$out" "kinobu-light-palette=kinobu meadow light"
+check "apply: a palette is chosen by name"                has "$out" "palette-storm=tokyo-night storm dark css=3 bg=window-bg-color: #24283B"
+check "apply: a mode moves to the palette's pair"         has "$out" "mode-light=tokyo-night day light scheme='prefer-light'"
+check "apply: an unknown palette is refused, with the list" has "$out" "has no palette 'nothing' (it has: night, storm, moon, day, light)"
+check "kinobu-do style dark goes to the pair"             has "$out" "now=tokyo-night night dark"
+check "a look on Dracula moves to Catppuccin's Alucard (light)" has "$out" "dracula-moved=catppuccin alucard light"
+check "a look file from before palettes keeps its mode"   has "$out" "old-look=nord snow-storm light file-palette=1 file-variant=0"
+check "apply: GNOME's accent and Yaru follow the theme"   has "$out" "accent='green' icons='Yaru-olive'"
+check "apply: Ptyxis gets the theme's palette and follows the mode" has "$out" "palette='kinobu-kinobu' style='system'"
+check "apply: gtk.css imports Kinobu's stylesheet once"   has "$out" "gtk4-import=1"
+check "apply: macOS puts the window buttons on the left"  has "$out" "buttons='close,minimize,maximize:appmenu'"
+check "apply: a missing icon pack falls back to Yaru"     has "$out" "missing-pack icons='Yaru-blue'"
+check "apply: the palette and its pair join in one Ptyxis palette" has "$out" "macos-palette-file=yes"
+check "apply: the theme in use is remembered"             has "$out" "macos light"
+check "apply: an unknown theme is refused"                has "$out" "No theme called"
+check "your picks stay when the theme changes"           has "$out" "picks-kept icons='Adwaita' cursor='Adwaita'"
+check "your picks are saved in your look file"           has "$out" "look-file=1"
+# shellcheck disable=SC2016  # the check runs its own shell
+check "'theme' goes back to the theme's icons"            bash -c '[[ $1 == *"back-to-theme icons="* && $1 != *"back-to-theme icons='"'"'Adwaita"* ]]' _ "$out"
+check "the icons in use are linked into the home folder" has "$out" "home-link=/usr/share/icons/Yaru-olive-dark"
+check "links no longer in use go, the user's own stay"   has "$out" "old-link-gone=yes own-link-kept=yes"
+check "changing one wallpaper makes the four your own"      has "$out" "one-wallpaper=4"
+check "one wallpaper on every workspace"                 has "$out" "everywhere=4"
+check "there are four wallpapers, not more"              has "$out" "there are 4 wallpapers"
+check "older apps get your cursor too (~/.icons/default)" has "$out" "default-cursor=Inherits=Adwaita"
+check "apply: the real settings were not touched"         test "$real_before" = "$(dconf dump / | sha256sum)"
+rm -rf "$fake"
 
 echo
 if ((fails)); then echo "$fails test(s) failed"; exit 1; fi

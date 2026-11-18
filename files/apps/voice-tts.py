@@ -1,11 +1,11 @@
-# Zen (Kinobu): text-to-speech worker. zen.py starts it once and keeps it running, so each
+# Willow (Kinobu): text-to-speech worker. voice.py starts it once and keeps it running, so each
 # engine's model is loaded only once. One JSON request per line on stdin:
 #   {"engine": "kokoro"|"piper"|"qwen", "voice": "em_santa", "lang": "es", "text": "...", "out": "/tmp/x.wav"}
 # One JSON answer per line on stdout: {"out": path} or {"error": text}.
 # Qwen3-TTS runs in llama.cpp's own server (llama-server, Vulkan: any GPU vendor), started on
 # first use and stopped with this worker; it clones a reference voice (qwen-ref-<voice>-<lang>.wav,
 # or qwen-ref-<voice>.wav when that language has none).
-# Usage: zen-tts.py MODELS_DIR LLAMA_DIR   (runs in its own Python environment, see zen.py)
+# Usage: voice-tts.py MODELS_DIR LLAMA_DIR   (runs in its own Python environment, see voice.py)
 import atexit
 import base64
 import json
@@ -90,7 +90,7 @@ class Qwen:
         raise RuntimeError("llama-server did not start in time")
 
     def speak(self, text, voice, lang, out):
-        if voice.startswith("my-"):                         # a personal voice (zen.py: PERSONAL)
+        if voice.startswith("my-"):                         # a personal voice (voice.py: PERSONAL)
             ref = os.path.join(os.path.dirname(MODELS), "voices", voice[3:] + ".wav")
         else:
             ref = os.path.join(MODELS, f"qwen-ref-{voice}-{lang}.wav")
@@ -115,7 +115,7 @@ def qwen():
     if "qwen" not in loaded:
         engine = Qwen()
         # the first request compiles the GPU kernels (~15 s): pay it now, not on the first answer
-        warm = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), f"kinobu-zen-warm-{os.getpid()}.wav")
+        warm = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), f"kinobu-voice-warm-{os.getpid()}.wav")
         try:
             engine.speak("Hola.", "kinobu", "es", warm)
         finally:
