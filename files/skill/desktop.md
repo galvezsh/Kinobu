@@ -101,10 +101,12 @@ cursors are in `/usr/share/icons` (APT: Papirus, Numix Circle, elementary, Bibat
 
 The screen before signing in (GDM) shows Kinobu's background: Ubuntu's own theme with the grey
 replaced, built by `@BIN_DIR@/kinobu-login-screen` and chosen through the `gdm-theme.gresource`
-alternative; apt rebuilds it when Ubuntu updates its theme. `sudo kinobu-login-screen --remove`
-brings Ubuntu's back. The boot menu (GRUB) is not changed by Kinobu.
+alternative; apt rebuilds it when Ubuntu updates its theme. Ubuntu's logo under the user list is
+hidden by `/usr/share/gdm/dconf/95-kinobu-login` (`[org/gnome/login-screen] logo=''`, compiled
+by GDM on every start). `sudo kinobu-login-screen --remove` brings Ubuntu's back. The boot menu (GRUB) is not changed by Kinobu.
 
-The boot splash (Plymouth) shows Kinobu's rings turning on black: a two-step theme in
+The boot splash (Plymouth) shows the maker's logo with Kinobu's small rings turning under it (Kinobu's
+logo, still, when the firmware has none): a two-step theme in
 `/usr/share/plymouth/themes/kinobu`, chosen by hand as the `default.plymouth` alternative (so
 Ubuntu's updates keep it) by `@BIN_DIR@/kinobu-boot-splash`, which rebuilds the start-up image
 (`update-initramfs -u`). `sudo kinobu-boot-splash --remove` brings Ubuntu's back.

@@ -1,18 +1,19 @@
 [Plymouth Theme]
 Name=Kinobu
-Description=Kinobu's rings turning on black while the computer starts (kinobu-boot-splash)
+Description=The maker's logo with Kinobu's rings turning under it while the computer starts (kinobu-boot-splash)
 ModuleName=two-step
 
-# The same module and settings as Ubuntu's own boot splash (bgrt), with Kinobu's frames in the
-# centre and without the maker's logo. The password box of an encrypted disk uses Ubuntu's
-# pictures, copied next to the frames by kinobu-boot-splash.
+# The same module and settings as Ubuntu's own boot splash (bgrt): the maker's logo from the
+# firmware, and Kinobu's small turning rings under it instead of Ubuntu's spinner and logo. Without
+# a maker's logo, bgrt-fallback.png (Kinobu's, still). The password box of an encrypted disk uses
+# Ubuntu's pictures, copied next to the frames by kinobu-boot-splash.
 [two-step]
 Font=Ubuntu 12
 ImageDir=/usr/share/plymouth/themes/kinobu
 DialogHorizontalAlignment=.5
-DialogVerticalAlignment=.75
+DialogVerticalAlignment=.7
 HorizontalAlignment=.5
-VerticalAlignment=.5
+VerticalAlignment=.7
 WatermarkHorizontalAlignment=.5
 WatermarkVerticalAlignment=.96
 Transition=none
@@ -21,20 +22,20 @@ BackgroundStartColor=0x000000
 BackgroundEndColor=0x000000
 ProgressBarBackgroundColor=0x606060
 ProgressBarForegroundColor=0xffffff
-DialogClearsFirmwareBackground=true
+DialogClearsFirmwareBackground=false
 MessageBelowAnimation=true
 
 [boot-up]
 UseEndAnimation=false
-UseFirmwareBackground=false
+UseFirmwareBackground=true
 
 [shutdown]
 UseEndAnimation=false
-UseFirmwareBackground=false
+UseFirmwareBackground=true
 
 [reboot]
 UseEndAnimation=false
-UseFirmwareBackground=false
+UseFirmwareBackground=true
 
 [updates]
 SuppressMessages=true

@@ -34,9 +34,10 @@ Still to run outside the author's computer (the tests use a fake home folder, a 
 ### Look
 
 - [x] **The boot splash (Plymouth)**: Kinobu's rings turning while the computer starts (see the changelog).
-- [ ] The boot splash on a real start: the loop's speed, the size on a 4K screen, an encrypted disk's password box (in the virtual machine), and shutting down.
+- [ ] The boot splash on a real start: the loop's speed, the size on a 4K screen (Plymouth doubles pictures only on dense screens: a large 4K monitor may need `DeviceScale=2`), an encrypted disk's password box (in the virtual machine), and shutting down.
 - [x] **Terminal palettes with more contrast**: the engine makes every palette's colours legible (see the changelog).
 - [x] fastfetch and Kinobu's terminal output in the theme's accent.
+- [ ] The login screen without Ubuntu's logo (`95-kinobu-login`), seen on a real login.
 - [ ] Papirus folders in the theme's colour (`papirus-folders`).
 - [x] **Your own themes in Seasons**: duplicate any theme, change its palettes' colours with a live preview, delete it.
 - [ ] Later for your own themes, if they are missed: the terminal's own colours, a new palette in a theme, and the theme's own icons, cursor, fonts and wallpapers in the editor (decided on 2026-11-19 to leave them in Seasons' tabs, where they are the user's over any theme; `theme.toml` already takes them by hand).

@@ -107,7 +107,7 @@ What is the same for everybody lives in the system; what is personal lives in ea
 | `bin/kinobu-notify` | Run by the agents' hooks |
 | `bin/kinobu-theme` | The theme engine (Seasons uses it; agents and scripts too) |
 | `bin/kinobu-login-screen` | Builds the login screen's theme with Kinobu's background (`share/kinobu/login/`) |
-| `bin/kinobu-boot-splash` | Installs and chooses the boot splash with Kinobu's rings (its frames in `share/kinobu/data/plymouth/`) |
+| `bin/kinobu-boot-splash` | Installs and chooses the boot splash: the maker's logo with Kinobu's rings turning under it (its frames in `share/kinobu/data/plymouth/`) |
 | `share/kinobu/programs/` | Kinobu's apps (Trail, Sprout, Gate, Echo's notices, Willow, Seasons) and the theme engine |
 | `share/kinobu/themes/` | The factory themes |
 | `share/kinobu/skills/` | The system skill |
@@ -242,6 +242,7 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 |---|---|
 | `/etc/apt/apt.conf.d/99enable-amd64v3` | Optimised package builds |
 | `/etc/apt/apt.conf.d/99kinobu-login-screen` | Rebuilds the login screen's theme when Ubuntu updates its own |
+| `/usr/share/gdm/dconf/95-kinobu-login` | No distribution logo on the login screen (GDM reads it with Ubuntu's settings on every start) |
 | `/usr/share/plymouth/themes/kinobu/` | The boot splash (Plymouth only looks there), chosen by hand as `default.plymouth` |
 | `/etc/apt/sources.list.d/` and their keys | Software sources of the chosen apps only |
 | `/etc/udev/rules.d/60-uinput-uaccess.rules` | Lets `ydotool` type |
@@ -276,7 +277,7 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 | App colours | Remove the `kinobu` block from `~/.config/gtk-4.0/gtk.css` and `gtk-3.0/gtk.css` |
 | Agent context and notifications | Remove the `kinobu` link, block and hook entries in `~/.claude/` |
 | Optimised packages | `sudo rm /etc/apt/apt.conf.d/99enable-amd64v3` |
-| Kinobu's login screen | `sudo kinobu-login-screen --remove` (Ubuntu's grey comes back), then `sudo rm /etc/apt/apt.conf.d/99kinobu-login-screen` |
+| Kinobu's login screen | `sudo kinobu-login-screen --remove` (Ubuntu's grey and logo come back), then `sudo rm /etc/apt/apt.conf.d/99kinobu-login-screen` |
 | Kinobu's boot splash | `sudo kinobu-boot-splash --remove` (Ubuntu's comes back at the next start) |
 | Kinobu itself | `sudo rm -rf /usr/local/share/kinobu /usr/local/bin/kinobu* /etc/xdg/autostart/kinobu-user.desktop` |
 

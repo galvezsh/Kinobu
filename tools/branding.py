@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Draws Kinobu's terminal branding into files/branding/: the rings (logo.txt, and the larger
-files/shell/fastfetch-logo.txt) and the KINOBU
+"""Draws Kinobu's terminal branding into files/branding/: the rings (logo.txt, the reduced logo
+with two rings, and files/shell/fastfetch-logo.txt, the full logo with its four rings, 21 rows) and the KINOBU
 wordmark whose O is the rings (wordmark.txt, and assets/kinobu-{dark,light}.svg for the README), with letters as tall as the rings (9 rows). Colour marks: $1 outer ring and letters,
 $2 inner ring, $3 centre (the accent). Letters: figlet font Delta Corps Priest 1.
 
@@ -9,6 +9,8 @@ import argparse, math, pathlib
 
 GA = 137.5   # golden angle between the notches of the rings
 RINGS = ([(275, 90, -45, 70), (140, 60, -45 + GA, 60)], 56)   # (radius, width, notch angle, notch length), centre radius
+# The full logo (tools/logo.py's FULL): four rings, readable in text from about 21 rows
+FULL_RINGS = ([(282, 60, -45, 46), (204, 26, -45 + GA, 40), (152, 26, -45 + 2 * GA, 40), (100, 26, -45 + 3 * GA, 40)], 46)
 QUAD = " ▘▝▀▖▌▞▛▗▚▐▜▄▙▟█"   # bit 1 top-left, 2 top-right, 4 bottom-left, 8 bottom-right
 
 LETTERS = {
@@ -31,9 +33,9 @@ I_SHAPES = {
     "sprout": [" ▄█  ▄▄", "███ ▟█▀", "███▟▀  ", "███▌   ", "███▌   ", "███    ", "███    ", "█▀     "],
 }
 
-def layer(x, y):
+def layer(x, y, geometry=RINGS):
     """0 nothing, 1 outer ring, 2 inner ring, 3 centre, for a point of the 800-unit canvas."""
-    rings, dot = RINGS
+    rings, dot = geometry
     r = math.hypot(x, y)
     if r <= dot:
         return 3
@@ -45,7 +47,7 @@ def layer(x, y):
             return 1 if i == 0 else 2
     return 0
 
-def rings(rows, cols=None, ss=6):
+def rings(rows, cols=None, ss=6, geometry=RINGS):
     """The rings as rows of (character, colour) cells."""
     cols = cols or round(rows * 2.1)
     size, out = 648, []
@@ -59,7 +61,7 @@ def rings(rows, cols=None, ss=6):
                     for sx in range(ss):
                         x = (cx * 2 + q % 2 + (sx + .5) / ss) / (cols * 2) * size - size / 2
                         y = (cy * 2 + q // 2 + (sy + .5) / ss) / (rows * 2) * size - size / 2
-                        l = layer(x, y)
+                        l = layer(x, y, geometry)
                         if l:
                             hit += 1; votes[l] += 1
                 if hit > ss * ss / 2:
@@ -178,7 +180,7 @@ if __name__ == "__main__":
         out = pathlib.Path(__file__).resolve().parent.parent / "files" / "branding"
         (out / "wordmark.txt").write_text(word)
         (out / "logo.txt").write_text(marked(rings(11)))
-        (out.parent / "shell" / "fastfetch-logo.txt").write_text(marked(rings(17)))
+        (out.parent / "shell" / "fastfetch-logo.txt").write_text(marked(rings(21, geometry=FULL_RINGS)))
         # The README banner, for GitHub's dark and light themes
         assets = out.parent.parent / "assets"
         grid = wordmark(args.rows, args.i, args.letters)

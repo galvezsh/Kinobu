@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# kinobu-boot-splash: Kinobu's rings turning while the computer starts and shuts down (Plymouth),
-# instead of the maker's logo and Ubuntu's. Written by Kinobu: rewritten on every run and --update.
+# kinobu-boot-splash: the maker's logo with Kinobu's small rings turning under it while the computer
+# starts and shuts down (Plymouth), instead of Ubuntu's spinner and logo. Written by Kinobu:
+# rewritten on every run and --update.
 #
 # Ubuntu chooses the boot splash through the alternative default.plymouth (its own, bgrt, in
 # automatic mode). This copies Kinobu's theme (the two-step module Ubuntu uses, with Kinobu's
@@ -31,7 +32,7 @@ build() {   # build DIR: Kinobu's frames, the theme file and Ubuntu's password p
     local out=$1 picture
     [[ -f $SOURCE/kinobu.plymouth && -f $SOURCE/throbber-0001.png ]] || { say "Kinobu's boot frames are missing ($SOURCE)"; return 1; }
     mkdir -p "$out"
-    cp "$SOURCE"/kinobu.plymouth "$SOURCE"/throbber-*.png "$SOURCE"/animation-*.png "$out/"
+    cp "$SOURCE"/kinobu.plymouth "$SOURCE"/throbber-*.png "$SOURCE"/animation-*.png "$SOURCE"/bgrt-fallback.png "$out/"
     for picture in "${PICTURES[@]}"; do
         if [[ -f $UBUNTU/$picture ]]; then cp "$UBUNTU/$picture" "$out/"; fi
     done

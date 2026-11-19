@@ -340,6 +340,8 @@ sed "s|@SYSTEM_DIR@|$bs_tmp|g" files/apps/kinobu-boot-splash >"$bs_tmp/kbs"
 bash "$bs_tmp/kbs" --build "$bs_tmp/out" >/dev/null 2>&1
 # shellcheck disable=SC2016  # the check runs its own shell
 check "the boot screen theme: two-step, its folder and 90 frames that loop" bash -c 'grep -qx "ModuleName=two-step" "$1/kinobu.plymouth" && grep -qx "ImageDir=/usr/share/plymouth/themes/kinobu" "$1/kinobu.plymouth" && [[ $(ls "$1"/throbber-*.png | wc -l) -eq 90 && -f $1/animation-0001.png ]]' _ "$bs_tmp/out"
+# shellcheck disable=SC2016  # the check runs its own shell
+check "the boot screen keeps the maker's logo, with Kinobu's when there is none" bash -c '[[ $(grep -c "^UseFirmwareBackground=true" "$1/kinobu.plymouth") -eq 3 && -f $1/bgrt-fallback.png ]]' _ "$bs_tmp/out"
 if [[ -d /usr/share/plymouth/themes/spinner ]]; then
     check "the boot screen takes Ubuntu's pictures for a disk password" test -f "$bs_tmp/out/lock.png" -a -f "$bs_tmp/out/entry.png" -a -f "$bs_tmp/out/bullet.png"
 fi

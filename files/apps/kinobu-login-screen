@@ -4,13 +4,15 @@
 #
 # Ubuntu chooses that screen's theme through the alternative gdm-theme.gresource. This builds a
 # copy of Ubuntu's own (Yaru) with only the plain grey background replaced by Kinobu's picture,
-# and registers it with a higher priority: Ubuntu's files are never changed. The lock screen
-# (Super+L) is not affected: it shows each user's wallpaper.
+# and registers it with a higher priority: Ubuntu's files are never changed. It also takes Ubuntu's
+# logo off the bottom of that screen: a file of Kinobu's own in GDM's settings folder, which GDM
+# reads every time it starts. The lock screen (Super+L) is not affected: it shows each user's
+# wallpaper.
 #
 #   sudo kinobu-login-screen              build it (again) and use it
 #   sudo kinobu-login-screen --if-needed  only when Ubuntu's theme or the picture changed (apt runs
 #                                         it after every package change)
-#   sudo kinobu-login-screen --remove     back to Ubuntu's grey
+#   sudo kinobu-login-screen --remove     back to Ubuntu's grey and logo
 #   kinobu-login-screen --build FILE      build the theme into FILE, changing nothing (tests)
 set -euo pipefail
 
@@ -24,6 +26,7 @@ NAME=gdm-theme.gresource
 PRIORITY=50                       # above Yaru's (15) and GNOME's (10)
 PICTURE=org/gnome/shell/theme/kinobu-login.jpg
 VERSION=1                         # raise it when the CSS below changes, so every computer rebuilds
+GDM_SETTINGS=/usr/share/gdm/dconf/95-kinobu-login   # read with Ubuntu's own (90-debian-settings) on every start
 
 CSS="
 /* Kinobu: its own background on the login screen (kinobu-login-screen) */
@@ -66,8 +69,20 @@ stamp() { cat "$SOURCE" "$IMAGE" 2>/dev/null | sha256sum | cut -d' ' -f1; printf
 
 registered() { update-alternatives --query "$NAME" 2>/dev/null | grep -qx "Alternative: $TARGET"; }
 
+no_logo() {   # no distribution logo under the user list (Ubuntu sets its own; Kinobu's is the background)
+    local want
+    want=$'# Written by kinobu-login-screen: no logo under the user list\n[org/gnome/login-screen]\nlogo=\'\'\n'
+    [[ -d ${GDM_SETTINGS%/*} ]] || return 0
+    if [[ "$(cat "$GDM_SETTINGS" 2>/dev/null)"$'\n' != "$want" ]]; then
+        printf '%s' "$want" >"$GDM_SETTINGS"
+        chmod 644 "$GDM_SETTINGS"
+        if [[ -x /usr/share/gdm/generate-config ]]; then /usr/share/gdm/generate-config || true; fi
+    fi
+}
+
 use() {
     [[ $EUID -eq 0 ]] || { say "Run it with sudo"; exit 1; }
+    no_logo
     if [[ ! -f $SOURCE ]]; then say "Ubuntu's login theme (Yaru) is not installed: nothing to do"; exit 0; fi
     if [[ ${1:-} == --if-needed && -f $TARGET && "$(cat "$STAMP" 2>/dev/null)" == "$(stamp)" ]] && registered; then
         exit 0
@@ -88,6 +103,10 @@ case ${1:-} in
         [[ $EUID -eq 0 ]] || { say "Run it with sudo"; exit 1; }
         if registered; then update-alternatives --remove "$NAME" "$TARGET" >/dev/null; fi
         rm -rf "$DIR"
+        if [[ -f $GDM_SETTINGS ]]; then
+            rm -f "$GDM_SETTINGS"
+            if [[ -x /usr/share/gdm/generate-config ]]; then /usr/share/gdm/generate-config || true; fi
+        fi
         say "Back to Ubuntu's login screen." ;;
     -h|--help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' ;;
     *) say "Unknown option: $1 (--help)"; exit 1 ;;

@@ -5,7 +5,7 @@
     "type": "file",
     "source": "@LOGO@",
     "color": { "1": "38;2;236;230;217", "2": "38;2;169;163;151", "3": "38;2;201;165;74" },
-    "padding": { "top": 2, "left": 2, "right": 4 }
+    "padding": { "top": 0, "left": 2, "right": 4 }
   },
   "display": { "separator": "  ", "color": { "keys": "38;2;201;165;74" } },
   "modules": [
