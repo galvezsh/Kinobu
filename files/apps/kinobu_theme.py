@@ -116,6 +116,22 @@ def readable(colour, background, foreground, minimum=4.5):
     return out
 
 
+# The ANSI colours that carry text in a terminal (red to cyan, normal and bright); black and white
+# are meant to sit near the background or the text, so they are left as they are.
+ANSI_TEXT = [f"Color{i}" for i in (*range(1, 7), *range(9, 15))]
+
+
+def legible(colour, background, minimum=4.5):
+    """The colour darkened (on a light background) or lightened (on a dark one), its hue kept,
+    until it reads on the background like text does."""
+    towards = "#000000" if luminance(background) > 0.18 else "#FFFFFF"
+    out, step = colour, 0
+    while contrast(out, background) < minimum and step < 20:
+        step += 1
+        out = mix(colour, towards, step * 0.05)
+    return out
+
+
 def nearest_accent(hex_colour):
     def lab(c):   # OKLab
         r, g, b = rgb(c)
@@ -343,6 +359,127 @@ def gtk3_css(theme, pid):
 
 
 # --- Applying ---------------------------------------------------------------------------------
+# --- The user's own themes: a copy of any theme, its colours changed in Seasons ----------------
+def theme_slug(name):
+    """A theme id from its name: lowercase letters, digits and dashes, never one in use."""
+    import unicodedata
+    plain = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    slug = re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-")[:40] or "my-theme"
+    taken, out, n = set(theme_ids()), slug, 2
+    while out in taken:
+        out, n = f"{slug}-{n}", n + 1
+    return out
+
+
+def toml_string(text):
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def set_top_key(text, key, value):
+    """theme.toml with a top-level key (before the first table) set to a string."""
+    head, sep, tables = text.partition("\n[")
+    line = f"{key} = {toml_string(value)}"
+    pattern = re.compile(rf"^{key}\s*=.*$", re.M)
+    head = pattern.sub(lambda m: line, head, count=1) if pattern.search(head) else head.rstrip("\n") + "\n" + line + "\n"
+    return head + sep + tables
+
+
+def new_theme(from_id, name, description=None):
+    """Makes the user's own copy of a theme under a new name; returns its id. The copy keeps
+    everything (palettes, terminal, icons, wallpapers); Seasons then changes its colours."""
+    import shutil
+    source = load(from_id)
+    name = " ".join(name.split()) or f"{source.get('name', from_id)} 2"
+    theme_id = theme_slug(name)
+    folder = os.path.join(USER_THEMES, theme_id)
+    text = read(os.path.join(source["path"], "theme.toml"))
+    text = re.sub(r"\A(?:#.*\n)+\n?", "", text)          # the source's opening comments are about it
+    text = set_top_key(text, "name", name)
+    text = set_top_key(text, "author", f"You, from {source.get('name', from_id)}")
+    if description:
+        text = set_top_key(text, "description", description)
+    os.makedirs(folder)
+    if os.path.isdir(os.path.join(source["path"], "backgrounds")):
+        shutil.copytree(os.path.join(source["path"], "backgrounds"), os.path.join(folder, "backgrounds"))
+    write_if_changed(os.path.join(folder, "theme.toml"), f"# Made in Seasons from {source.get('name', from_id)}\n" + text)
+    return theme_id
+
+
+def own_theme(theme_id):
+    theme = load(theme_id)
+    if not theme["own"]:
+        raise ThemeError(f"'{theme_id}' is a theme of Kinobu: make your own copy first (kinobu-theme new)")
+    return theme
+
+
+def set_colours(theme_id, pid, colours):
+    """Changes colours of one palette of the user's own theme (COLOURS keys, "#RRGGBB"). Refused
+    when the text would be hard to read, as validate does; the file keeps its comments."""
+    theme = own_theme(theme_id)
+    if pid not in theme["palettes"]:
+        raise ThemeError(f"'{theme_id}' has no palette '{pid}'")
+    for key, value in colours.items():
+        if key not in COLOURS or not re.fullmatch(r"#[0-9A-Fa-f]{6}", value):
+            raise ThemeError(f"{key} = {value}: a colour key ({', '.join(COLOURS)}) and #RRGGBB")
+    trial = dict(theme, palettes=dict(theme["palettes"], **{pid: dict(theme["palettes"][pid], **colours)}))
+    problems = [p for p in validate(trial) if f"[palettes.{pid}]" in p]
+    if problems:
+        raise ThemeError("; ".join(problems))
+    if "accent" in colours:   # GNOME's own accent (and Yaru's colour) follow the new one
+        colours = dict(colours, gnome_accent=nearest_accent(colours["accent"]))
+    def as_value(v):
+        return v.upper() if v.startswith("#") else v
+    path = os.path.join(theme["path"], "theme.toml")
+    lines, inside, done = read(path).split("\n"), False, set()
+    for i, line in enumerate(lines):
+        if line.startswith("["):
+            if inside:                     # keys the palette did not have go at its end
+                end = i
+                while end > 0 and not lines[end - 1].strip():
+                    end -= 1
+                lines[end:end] = [f'{k} = "{as_value(v)}"' for k, v in colours.items() if k not in done]
+                done.update(colours)
+                break
+            inside = line.strip() == f"[palettes.{pid}]"
+            continue
+        m = re.match(r"^(\w+)\s*=", line)
+        if inside and m and m.group(1) in colours:
+            lines[i] = f'{m.group(1)} = "{as_value(colours[m.group(1)])}"'
+            done.add(m.group(1))
+    if inside and len(done) < len(colours):   # the last table of the file
+        while lines and not lines[-1].strip():
+            lines.pop()
+        lines += [f'{k} = "{as_value(v)}"' for k, v in colours.items() if k not in done] + [""]
+    write_if_changed(path, "\n".join(lines))
+    return quality(load(theme_id))
+
+
+BUTTON_LAYOUTS = {"left": "close,minimize,maximize:appmenu", "right": "appmenu:minimize,maximize,close"}
+
+
+def button_side(theme):
+    """Where a theme puts the window buttons: "left" (as macOS) or "right" (GNOME's default)."""
+    return "left" if theme.get("button_layout", "").startswith("close") else "right"
+
+
+def set_buttons(theme_id, side):
+    """Puts the window buttons of the user's own theme on the left or the right."""
+    theme = own_theme(theme_id)
+    if side not in BUTTON_LAYOUTS:
+        raise ThemeError("the window buttons go on the left or the right")
+    path = os.path.join(theme["path"], "theme.toml")
+    write_if_changed(path, set_top_key(read(path), "button_layout", BUTTON_LAYOUTS[side]))
+
+
+def delete_theme(theme_id):
+    """Sends the user's own theme to the Trash (not the one in use)."""
+    theme = own_theme(theme_id)
+    if current()[0] == theme_id:
+        raise ThemeError("it is the theme in use: apply another one first")
+    from gi.repository import Gio
+    Gio.File.new_for_path(theme["path"]).trash(None)
+
+
 def write_if_changed(path, text):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
@@ -517,6 +654,14 @@ def find_dir(name, kind):
     return None
 
 
+def users_pack(name):
+    """True when an icon pack or cursor theme is the user's own (its folder is in the home
+    folder), False for the system's. The links Kinobu makes in ~/.local/share/icons point to the
+    system's packs, so they count as the system's."""
+    found = find_dir(name, "icons")
+    return bool(found) and os.path.realpath(found).startswith(os.path.realpath(HOME) + os.sep)
+
+
 def gnome_accent(theme, pid):
     """GNOME's accent for a palette: the palette's, the theme's, or the nearest to its colour."""
     return (theme["palettes"][pid].get("gnome_accent") or theme.get("gnome_accent")
@@ -646,6 +791,15 @@ def terminal_side(theme, pid):
         for key in ("background", "foreground"):
             if table.get(f"terminal_{key}"):
                 colours[key.capitalize()] = table[f"terminal_{key}"]
+        # Many terminal palettes, the light ones above all, have colours too pale to read on
+        # their background (yellow, the bright ones): they are made legible here
+        background = colours.get("Background", "")
+        if re.fullmatch(r"#[0-9A-Fa-f]{6}", background):
+            for key in ANSI_TEXT:
+                if re.fullmatch(r"#[0-9A-Fa-f]{6}", colours.get(key, "")):
+                    colours[key] = legible(colours[key], background)
+            if re.fullmatch(r"#[0-9A-Fa-f]{6}", colours.get("Foreground", "")):   # text, as in the apps
+                colours["Foreground"] = legible(colours["Foreground"], background, 7)
     return colours
 
 
@@ -667,6 +821,27 @@ def terminal_palette(theme, pid):
         lines += [f"{k}={v}" for k, v in sides[mode].items()]
         lines.append("")
     return f"{APP_ID}-{theme['id']}", "\n".join(lines)
+
+
+TERMINAL_ACCENT = os.path.join(STATE, "kinobu", "terminal-{mode}")
+
+
+def terminal_accents(theme, pid):
+    """For each mode, the colours Kinobu's terminal output takes from the palette (fastfetch and
+    the setup): "accent ring1 ring2" as r;g;b, the accent made legible on the terminal's
+    background and the rings near its text with a faint tint of the accent."""
+    out = {}
+    for one in (pid, pair_of(theme, pid) or pid):
+        table, term = theme["palettes"][one], terminal_side(theme, one)
+        background = term.get("Background") or table["background"]
+        foreground = term.get("Foreground") or table["foreground"]
+        accent = legible(table["accent"], background)
+        rings = (mix(foreground, accent, 0.12), mix(mix(foreground, background, 0.4), accent, 0.12))
+        line = " ".join(";".join(str(round(v * 255)) for v in rgb(c)) for c in (accent, *rings))
+        out.setdefault(mode_of(theme, one), line)
+    for mode in MODES:   # a palette without a pair gives both modes
+        out.setdefault(mode, out.get("dark") or out.get("light"))
+    return out
 
 
 def terminal_colours(theme, pid):
@@ -947,7 +1122,10 @@ def apply(theme_id, palette=None, mode=None, quiet=False):
     elif background and not quiet:
         notes.append("this theme has no wallpapers yet: kept the current ones")
 
-    # Terminal: the palette of every Ptyxis profile
+    # Terminal: the accent of Kinobu's own output (fastfetch, the setup), then the palette of
+    # every Ptyxis profile
+    for mode, line in terminal_accents(theme, chosen).items():
+        write_if_changed(TERMINAL_ACCENT.format(mode=mode), line + "\n")
     if pid:
         if palette_file:
             write_if_changed(os.path.join(PTYXIS_PALETTES, f"{pid}.palette"), palette_file)
@@ -988,6 +1166,18 @@ def main(argv):
     p.add_argument("--strict", action="store_true", help="also fail on contrast below Kinobu's bar")
     p.add_argument("themes", nargs="*")
     sub.add_parser("refresh", help="write the active theme again (after an update)")
+    p = sub.add_parser("new", help="your own copy of a theme, to change its colours")
+    p.add_argument("name", help="the new theme's name")
+    p.add_argument("--from", dest="source", default="kinobu", help="the theme to copy (kinobu)")
+    p = sub.add_parser("colour", help="change colours of a palette of your own theme")
+    p.add_argument("theme")
+    p.add_argument("palette")
+    p.add_argument("colours", nargs="+", metavar="KEY=#RRGGBB", help=", ".join(COLOURS))
+    p = sub.add_parser("buttons", help="the window buttons of your own theme on the left or the right")
+    p.add_argument("theme")
+    p.add_argument("side", choices=tuple(BUTTON_LAYOUTS))
+    p = sub.add_parser("delete", help="send your own theme to the Trash")
+    p.add_argument("theme")
     p = sub.add_parser("pick", help="your own icons, cursor, fonts or wallpaper over the theme's "
                        "('theme' goes back to the theme's)")
     p.add_argument("what", choices=("icons", "cursor", "interface-font", "monospace-font", "wallpaper",
@@ -1048,6 +1238,20 @@ def main(argv):
                 print(("✘ " if failed else "✔ ") + theme_id + "".join(f"\n    {p}" for p in problems)
                       + "".join(f"\n    ! {n}" for n in notes))
             return 1 if bad else 0
+        elif args.command == "new":
+            theme_id = new_theme(args.source, args.name)
+            print(f"✔ {theme_id}: {os.path.join(USER_THEMES, theme_id, 'theme.toml')}")
+        elif args.command == "colour":
+            pairs = dict(c.split("=", 1) for c in args.colours if "=" in c)
+            for note in set_colours(args.theme, args.palette, pairs):
+                print(f"· {note}")
+            print("✔ Done (kinobu-theme refresh shows it when it is the theme in use)")
+        elif args.command == "buttons":
+            set_buttons(args.theme, args.side)
+            print("✔ Done (kinobu-theme refresh shows it when it is the theme in use)")
+        elif args.command == "delete":
+            delete_theme(args.theme)
+            print("✔ In the Trash")
         elif args.command == "pick":
             value = "" if args.value == "theme" else args.value
             if args.what == "wallpaper":

@@ -26,14 +26,20 @@ Still to run outside the author's computer (the tests use a fake home folder, a 
 - [ ] Review the texts of the welcome tour and of the skill, adapted from Orkestr by name only.
 - [ ] The menu tests that fail now and then (`tests/pty-run.py` under load): make them wait for what they need instead of fixed times.
 
+### Updates
+
+- [ ] **`kinobu --update` updates itself.** Today the installed command runs the installed copy (`/usr/local/share/kinobu/src`), which only reinstalls itself: new changes need `git pull` and `bash kinobu.sh --update` from the project's folder. The installed `kinobu --update` should look in the project's GitHub releases for a newer version than `/usr/local/share/kinobu/version` (`https://api.github.com/repos/agalvezsh/<repo>/releases/latest`, no personal data in the User-Agent), download it, check it (a SHA-256 in the release and a signature, GPG or minisign, since it runs with sudo), keep it in `src/` and run its own `kinobu.sh --update`, with the no-downgrade guard kept. To decide: a notice of a new version (at login or through Echo), and what happens while the repository is private. Later, maybe an APT repository.
+- [ ] Until then, **`kinobu --update` says when it runs the installed copy**: it brings nothing new, and the project folder's `kinobu.sh --update` is the one to run.
+
 ### Look
 
-- [ ] **The boot splash (Plymouth)**: Kinobu's logo instead of the maker's, and the login screen's logo (`org.gnome.login-screen logo`).
-- [ ] **Faster theme wallpapers**: Wallhaven's server is slow (about a minute for a theme's 30 MB, downloaded at once): show progress in Seasons, or download every theme's wallpapers in the background after the setup.
-- [ ] **Light terminal palettes with more contrast**: Everforest's light ANSI colours (yellow, green) read pale on Meadow and Birch; a palette could give its own 16 colours.
-- [ ] fastfetch and Kinobu's terminal output in the theme's accent; Papirus folders in the theme's colour (`papirus-folders`).
-- [ ] **Seasons' editor**: a theme of one's own from any other, its palettes, wallpapers by drag and drop, a live preview.
-- [ ] **Kinobu's own wallpapers**, drawn from each palette (no copyright at all), as an option next to Wallhaven's.
+- [x] **The boot splash (Plymouth)**: Kinobu's rings turning while the computer starts (see the changelog).
+- [ ] The boot splash on a real start: the loop's speed, the size on a 4K screen, an encrypted disk's password box (in the virtual machine), and shutting down.
+- [x] **Terminal palettes with more contrast**: the engine makes every palette's colours legible (see the changelog).
+- [x] fastfetch and Kinobu's terminal output in the theme's accent.
+- [ ] Papirus folders in the theme's colour (`papirus-folders`).
+- [x] **Your own themes in Seasons**: duplicate any theme, change its palettes' colours with a live preview, delete it.
+- [ ] Later for your own themes, if they are missed: the terminal's own colours, a new palette in a theme, and the theme's own icons, cursor, fonts and wallpapers in the editor (decided on 2026-11-19 to leave them in Seasons' tabs, where they are the user's over any theme; `theme.toml` already takes them by hand).
 
 ### Willow, the voice assistant
 

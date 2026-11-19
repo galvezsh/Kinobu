@@ -74,7 +74,17 @@ kinobu-theme pick interface-font "Inter 11"
 kinobu-theme pick wallpaper 2 ~/Pictures/forest.jpg   # wallpaper 2 of 4; 1 is also the lock screen
 kinobu-theme pick wallpapers ~/Pictures/forest.jpg     # the same on every workspace ("theme": the theme's)
 kinobu-theme look                          # the user's look file
+kinobu-theme new "My Nord" --from nord     # the user's own copy of a theme (prints its id)
+kinobu-theme colour my-nord polar-night accent=#D08770 background=#2A2421   # its colours
+kinobu-theme buttons my-nord left          # its window buttons on the left (or right)
+kinobu-theme delete my-nord                # to the Trash (not the theme in use)
 ```
+
+In Seasons each theme card's menu (⋮) has Duplicate; the user's own themes also have
+Customise (colours with a live preview and contrast checks, the window buttons' side), Open the file
+and Delete. Themes, Icons and Cursors show
+the system's and the user's own in two groups; a user installs icon or cursor packs by unpacking
+them into `~/.local/share/icons` (or `~/.icons`).
 
 The user's choices live in `~/.config/kinobu/look.toml`: Kinobu's updates never change it and
 picks stay when the theme changes. In Seasons each section has a "Follow the theme" switch: off
@@ -93,6 +103,11 @@ The screen before signing in (GDM) shows Kinobu's background: Ubuntu's own theme
 replaced, built by `@BIN_DIR@/kinobu-login-screen` and chosen through the `gdm-theme.gresource`
 alternative; apt rebuilds it when Ubuntu updates its theme. `sudo kinobu-login-screen --remove`
 brings Ubuntu's back. The boot menu (GRUB) is not changed by Kinobu.
+
+The boot splash (Plymouth) shows Kinobu's rings turning on black: a two-step theme in
+`/usr/share/plymouth/themes/kinobu`, chosen by hand as the `default.plymouth` alternative (so
+Ubuntu's updates keep it) by `@BIN_DIR@/kinobu-boot-splash`, which rebuilds the start-up image
+(`update-initramfs -u`). `sudo kinobu-boot-splash --remove` brings Ubuntu's back.
 
 ## Clock, weather and wallpapers
 
@@ -121,7 +136,9 @@ own changes when the setup is re-run.
 
 GTK apps get the theme's colours from `~/.config/gtk-4.0/kinobu.css` and
 `~/.config/gtk-3.0/kinobu.css` (written by `kinobu-theme`), imported by a `kinobu` block in each
-`gtk.css`. Put your own CSS outside that block. `ff` runs fastfetch in the accent colour.
+`gtk.css`. Put your own CSS outside that block. `ff` runs fastfetch in the theme's accent, read
+from `~/.local/state/kinobu/terminal-dark` or `-light` ("accent ring1 ring2" as r;g;b, written
+by the theme engine). The engine makes a palette's terminal colours legible on its background.
 
 ## Power
 

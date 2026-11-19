@@ -69,7 +69,7 @@ They run in this order. `--update` runs the ones marked, with the function in th
 | `drivers` | Installs the drivers Ubuntu recommends for the hardware | — |
 | `services` | Lets `ydotool` type dictated text, turns off ModemManager (unless there is a mobile modem) and the OpenVPN system service | — |
 | `user` | Oh My Bash, the Nerd Font, Kinobu's block in `~/.bashrc`, the fastfetch summary, the Ptyxis palette and the terminal fonts of VS Code and the JetBrains IDEs | The `~/.bashrc` block and fastfetch |
-| `desktop` | GNOME extensions, clock, weather (the city of your time zone), four workspaces, power settings, dock, Geary in the background, the app grid, and the look: Seasons, the themes and their icon and cursor packs, then your theme (Kinobu for a new user) | The themes and their packs; your look is kept |
+| `desktop` | GNOME extensions, clock, weather (the city of your time zone), four workspaces, power settings, dock, Geary in the background, the app grid, the boot splash and the look: Seasons, the themes and their icon and cursor packs, then your theme (Kinobu for a new user) | The themes and their packs; your look is kept |
 | `shortcuts` | The launcher, the shortcut table, the Super+K cheat sheet and the welcome tour | The same: Kinobu's shortcuts always win |
 | `context` | The system skill, the read-only subagent, the note and the agent's notifications | The same |
 
@@ -107,6 +107,7 @@ What is the same for everybody lives in the system; what is personal lives in ea
 | `bin/kinobu-notify` | Run by the agents' hooks |
 | `bin/kinobu-theme` | The theme engine (Seasons uses it; agents and scripts too) |
 | `bin/kinobu-login-screen` | Builds the login screen's theme with Kinobu's background (`share/kinobu/login/`) |
+| `bin/kinobu-boot-splash` | Installs and chooses the boot splash with Kinobu's rings (its frames in `share/kinobu/data/plymouth/`) |
 | `share/kinobu/programs/` | Kinobu's apps (Trail, Sprout, Gate, Echo's notices, Willow, Seasons) and the theme engine |
 | `share/kinobu/themes/` | The factory themes |
 | `share/kinobu/skills/` | The system skill |
@@ -143,7 +144,7 @@ Each app has a name you see, the same in every language, and technical names und
 | **Echo** | The agents' notifications (no window of its own) | — | `kinobu-notify` |
 | **Gate** | The approval window for the agents' permissions | `os.kinobu.Approve` | opened by `kinobu-notify` |
 | **Willow** | The voice assistant | `os.kinobu.Voice` | `kinobu-launch voice` |
-| **Seasons** | Themes with their palettes (each dark or light), icons, cursors, fonts and wallpapers, each with a "Follow the theme" switch, and wallpapers from Wallhaven (see [docs/themes.md](docs/themes.md)) | `os.kinobu.Themes` | `kinobu-launch themes`; the engine is `kinobu-theme` |
+| **Seasons** | Themes with their palettes (each dark or light), icons, cursors, fonts and wallpapers, each with a "Follow the theme" switch, wallpapers from Wallhaven, and your own themes: duplicate one from its menu and change its colours. Themes, icons and cursors show the system's and yours apart (see [docs/themes.md](docs/themes.md)) | `os.kinobu.Themes` | `kinobu-launch themes`; the engine is `kinobu-theme` |
 
 ## AI agents
 
@@ -241,6 +242,7 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 |---|---|
 | `/etc/apt/apt.conf.d/99enable-amd64v3` | Optimised package builds |
 | `/etc/apt/apt.conf.d/99kinobu-login-screen` | Rebuilds the login screen's theme when Ubuntu updates its own |
+| `/usr/share/plymouth/themes/kinobu/` | The boot splash (Plymouth only looks there), chosen by hand as `default.plymouth` |
 | `/etc/apt/sources.list.d/` and their keys | Software sources of the chosen apps only |
 | `/etc/udev/rules.d/60-uinput-uaccess.rules` | Lets `ydotool` type |
 | `/opt/java/graalvm-jdk-<version>/` | The GraalVM JDK |
@@ -253,7 +255,7 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 | `~/.claude/` | The skill link, the note, the subagent and the hooks of Claude Code |
 | `~/.config/kinobu/` | The default agent, your version, Willow's settings |
 | `~/.local/share/kinobu/voice/` | Willow's voices and models |
-| `~/.local/state/kinobu/` | One log per run and the GNOME settings before each run (last 10) |
+| `~/.local/state/kinobu/` | One log per run and the GNOME settings before each run (last 10); `terminal-dark` and `terminal-light`, the theme's accent for fastfetch and the setup |
 | GNOME settings (dconf) | Theme, clock, weather, workspaces, power, extensions, shortcuts, dock, app grid |
 
 ## Safety
@@ -275,6 +277,7 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 | Agent context and notifications | Remove the `kinobu` link, block and hook entries in `~/.claude/` |
 | Optimised packages | `sudo rm /etc/apt/apt.conf.d/99enable-amd64v3` |
 | Kinobu's login screen | `sudo kinobu-login-screen --remove` (Ubuntu's grey comes back), then `sudo rm /etc/apt/apt.conf.d/99kinobu-login-screen` |
+| Kinobu's boot splash | `sudo kinobu-boot-splash --remove` (Ubuntu's comes back at the next start) |
 | Kinobu itself | `sudo rm -rf /usr/local/share/kinobu /usr/local/bin/kinobu* /etc/xdg/autostart/kinobu-user.desktop` |
 
 ## Tests

@@ -46,6 +46,9 @@ echo "missing-pack icons=$(get org.gnome.desktop.interface icon-theme)"
 k set macos >/dev/null
 echo "macos buttons=$(get org.gnome.desktop.wm.preferences button-layout) icons=$(get org.gnome.desktop.interface icon-theme) palette=$(get "$(profile)" palette)"
 test -s "$XDG_DATA_HOME/org.gnome.Ptyxis/palettes/kinobu-macos.palette" && echo "macos-palette-file=yes"
+for mode in dark light; do
+    grep -qE '^[0-9]+;[0-9]+;[0-9]+ [0-9]+;[0-9]+;[0-9]+ [0-9]+;[0-9]+;[0-9]+$' "$HOME/.local/state/kinobu/terminal-$mode" && echo "terminal-accent-$mode=yes"
+done
 k current
 k set nothing-like-this 2>&1 | head -1
 # The user's picks: kept when the theme changes, back to the theme's with "theme"

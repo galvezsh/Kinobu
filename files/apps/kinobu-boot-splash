@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# kinobu-boot-splash: Kinobu's rings turning while the computer starts and shuts down (Plymouth),
+# instead of the maker's logo and Ubuntu's. Written by Kinobu: rewritten on every run and --update.
+#
+# Ubuntu chooses the boot splash through the alternative default.plymouth (its own, bgrt, in
+# automatic mode). This copies Kinobu's theme (the two-step module Ubuntu uses, with Kinobu's
+# frames) to /usr/share/plymouth/themes/kinobu, a folder no package owns, and selects it by hand:
+# Ubuntu's updates re-register bgrt but never change a choice made by hand. The start-up image is
+# then rebuilt (update-initramfs), and every later rebuild (each new kernel) keeps Kinobu's.
+#
+#   sudo kinobu-boot-splash              install it (again) and use it
+#   sudo kinobu-boot-splash --if-needed  only when Kinobu's frames changed or it is not in use
+#   sudo kinobu-boot-splash --remove     back to Ubuntu's boot splash
+#   kinobu-boot-splash --build DIR       assemble the theme into DIR, changing nothing (tests)
+set -euo pipefail
+
+SOURCE="@SYSTEM_DIR@/data/plymouth"
+THEMES=/usr/share/plymouth/themes
+TARGET="$THEMES/kinobu"
+FILE="$TARGET/kinobu.plymouth"
+STAMP="$TARGET/built-from"
+LINK="$THEMES/default.plymouth"
+NAME=default.plymouth
+PRIORITY=150
+UBUNTU="$THEMES/spinner"          # the password box's pictures (plymouth-theme-spinner)
+PICTURES=(entry.png bullet.png lock.png keyboard.png keymap-render.png capslock.png)
+
+say() { printf '%s\n' "$*"; }
+
+build() {   # build DIR: Kinobu's frames, the theme file and Ubuntu's password pictures in DIR
+    local out=$1 picture
+    [[ -f $SOURCE/kinobu.plymouth && -f $SOURCE/throbber-0001.png ]] || { say "Kinobu's boot frames are missing ($SOURCE)"; return 1; }
+    mkdir -p "$out"
+    cp "$SOURCE"/kinobu.plymouth "$SOURCE"/throbber-*.png "$SOURCE"/animation-*.png "$out/"
+    for picture in "${PICTURES[@]}"; do
+        if [[ -f $UBUNTU/$picture ]]; then cp "$UBUNTU/$picture" "$out/"; fi
+    done
+}
+
+stamp() { cat "$SOURCE"/* 2>/dev/null | sha256sum | cut -d' ' -f1; }
+
+in_use() { [[ "$(update-alternatives --query "$NAME" 2>/dev/null | sed -n 's/^Value: //p')" == "$FILE" ]]; }
+
+use() {
+    [[ $EUID -eq 0 ]] || { say "Run it with sudo"; exit 1; }
+    if [[ ! -d $THEMES ]] || ! command -v update-initramfs >/dev/null; then
+        say "Plymouth is not installed: nothing to do"
+        exit 0
+    fi
+    if [[ ${1:-} == --if-needed && "$(cat "$STAMP" 2>/dev/null)" == "$(stamp)" ]] && in_use; then
+        exit 0
+    fi
+    rm -rf "$TARGET.new"
+    build "$TARGET.new"
+    stamp >"$TARGET.new/built-from"
+    chmod -R u=rwX,go=rX "$TARGET.new"
+    rm -rf "$TARGET"
+    mv "$TARGET.new" "$TARGET"
+    update-alternatives --install "$LINK" "$NAME" "$FILE" "$PRIORITY" >/dev/null
+    update-alternatives --set "$NAME" "$FILE" >/dev/null
+    say "Rebuilding the start-up image (about a minute)…"
+    update-initramfs -u
+    say "Kinobu's boot splash is ready: you see it the next time the computer starts."
+}
+
+case ${1:-} in
+    ''|--if-needed) use "${1:-}" ;;
+    --build) [[ -n ${2:-} ]] || { say "--build DIR"; exit 1; }; build "$2" ;;
+    --remove)
+        [[ $EUID -eq 0 ]] || { say "Run it with sudo"; exit 1; }
+        if update-alternatives --query "$NAME" 2>/dev/null | grep -qx "Alternative: $FILE"; then
+            update-alternatives --remove "$NAME" "$FILE" >/dev/null   # back to automatic: Ubuntu's
+        fi
+        rm -rf "$TARGET"
+        update-initramfs -u
+        say "Back to Ubuntu's boot splash." ;;
+    -h|--help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *) say "Unknown option: $1 (--help)"; exit 1 ;;
+esac

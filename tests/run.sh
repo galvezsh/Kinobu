@@ -11,9 +11,9 @@ lacks() { [[ -n $1 && $1 != *"$2"* ]]; }
 echo "Syntax and lint"
 check "bash -n" bash -n kinobu.sh lib/*.sh tests/run.sh
 if command -v shellcheck >/dev/null; then
-    check "shellcheck" shellcheck -x -S style kinobu.sh lib/*.sh tests/run.sh tests/themes-apply.sh files/apps/kinobu-do files/apps/kinobu-login-screen
+    check "shellcheck" shellcheck -x -S style kinobu.sh lib/*.sh tests/run.sh tests/themes-apply.sh files/apps/kinobu-do files/apps/kinobu-login-screen files/apps/kinobu-boot-splash
 elif command -v uvx >/dev/null; then
-    check "shellcheck (uvx)" uvx --quiet --from shellcheck-py shellcheck -x -S style kinobu.sh lib/*.sh tests/run.sh tests/themes-apply.sh files/apps/kinobu-do files/apps/kinobu-login-screen
+    check "shellcheck (uvx)" uvx --quiet --from shellcheck-py shellcheck -x -S style kinobu.sh lib/*.sh tests/run.sh tests/themes-apply.sh files/apps/kinobu-do files/apps/kinobu-login-screen files/apps/kinobu-boot-splash
 else
     echo "  · shellcheck not available, skipped"
 fi
@@ -198,6 +198,8 @@ command='$prefix/bin/kinobu-launch welcome'"
     check "GNOME's Help shortcut is released"   has "$keys" "help=@as []"
     check "the tour is not in the app grid"     grep -q '^NoDisplay=true' "$prefix/share/applications/os.kinobu.Welcome.desktop"
     check "the login screen: its command, its picture and apt's hook" test -x "$prefix/bin/kinobu-login-screen" -a -s "$share/data/login-background.jpg"
+    check "the boot screen: its command and its frames"   test -x "$prefix/bin/kinobu-boot-splash" -a -s "$share/data/plymouth/kinobu.plymouth" -a -s "$share/data/plymouth/throbber-0090.png"
+    check "the boot screen is set up with sudo, only when needed" has "$(<"$record")" "kinobu-boot-splash --if-needed"
     # shellcheck disable=SC2016  # the check runs its own shell
     check "the login screen is built with sudo, and rebuilt by apt" bash -c '[[ $(<"$1") == *"kinobu-login-screen --if-needed"* && $(<"$1") == *"99kinobu-login-screen"* ]]' _ "$record"
     check "the dock's Show Apps button gets Kinobu's logo" test -s "$prefix/share/icons/Yaru/scalable/actions/view-app-grid-ubuntu-symbolic.svg" -a -s "$prefix/share/icons/hicolor/scalable/actions/view-app-grid-ubuntu-symbolic.svg"
@@ -275,6 +277,30 @@ echo "Themes (kinobu-theme and Seasons)"
 check "every factory theme is valid and reads well (contrast)" bash -c "python3 -I files/apps/kinobu_theme.py validate --strict >/dev/null"
 # shellcheck disable=SC2016  # the check runs its own shell
 # shellcheck disable=SC2016  # the check runs its own shell
+check "every palette's terminal colours read on its background (4.5)" python3 -I -c '
+import sys; sys.path.insert(0, "files/apps"); import kinobu_theme as k
+bad = [f"{t}/{p} {c}" for t in k.theme_ids() for p in k.load(t)["palettes"]
+       for c, v in k.terminal_colours(k.load(t), p).items()
+       if c in k.ANSI_TEXT and k.contrast(v, k.terminal_colours(k.load(t), p)["Background"]) < 4.5]
+sys.exit(1 if bad else 0)'
+# The user's own themes: a copy, its colours changed, the factory ones and unreadable text refused
+own_home=$(mktemp -d)
+own() { HOME=$own_home DCONF_PROFILE=/nonexistent python3 -I files/apps/kinobu_theme.py "$@" 2>&1; }
+own new "Mí Otoño" --from kinobu >/dev/null
+own new "Mí Otoño" --from nord >/dev/null
+own colour mi-otono forest accent=#5e81ac background=#2A2421 >/dev/null
+check "a copy of a theme is yours, under its own name"       grep -q '^name = "Mí Otoño"' "$own_home/.config/kinobu/themes/mi-otono/theme.toml"
+check "a second copy with the same name gets its own id"     test -f "$own_home/.config/kinobu/themes/mi-otono-2/theme.toml"
+check "its colours change in its palette, GNOME's accent follows" bash -c "sed -n '/^\[palettes.forest\]/,/^\[palettes.night\]/p' '$own_home/.config/kinobu/themes/mi-otono/theme.toml' | grep -q 'accent = \"#5E81AC\"' && grep -q 'gnome_accent = \"slate\"' '$own_home/.config/kinobu/themes/mi-otono/theme.toml'"
+check "the copy is still a valid theme"                      bash -c "HOME=$own_home python3 -I files/apps/kinobu_theme.py validate mi-otono >/dev/null"
+check "the factory themes are not changed in place"          has "$(own colour kinobu forest accent=#000000)" "make your own copy first"
+check "colours with unreadable text are refused"             has "$(own colour mi-otono forest foreground=#2A2421)" "hard to read"
+own buttons mi-otono left >/dev/null
+check "your theme can put the window buttons on the left"   grep -q '^button_layout = "close,minimize,maximize:appmenu"' "$own_home/.config/kinobu/themes/mi-otono/theme.toml"
+own delete mi-otono-2 >/dev/null
+check "deleting your theme sends it to the Trash"            test -d "$own_home/.local/share/Trash/files/mi-otono-2"
+rm -rf "$own_home"
+
 check "the GTK 3 stylesheet uses only colours GTK 3 reads" bash -c '! python3 -I files/apps/kinobu_theme.py css kinobu --gtk3 | grep -qE "rgba?\([0-9.]+ [0-9.]+ [0-9.]+"'
 # shellcheck disable=SC2016  # the check runs its own shell
 check "a palette and its pair share one stylesheet" bash -c '[[ $(python3 -I files/apps/kinobu_theme.py css kinobu | grep -c "prefers-color-scheme") -ge 3 ]]'
@@ -309,6 +335,15 @@ if command -v glib-compile-resources >/dev/null && [[ -f /usr/share/gnome-shell/
     check "the login screen theme is Ubuntu's with Kinobu's picture" bash -c '[[ $(gresource extract "$1" /org/gnome/shell/theme/gdm.css) == *"kinobu-login.jpg"* ]] && gresource extract "$1" /org/gnome/shell/theme/kinobu-login.jpg | cmp -s - files/branding/login-background.jpg' _ "$ls_tmp/out.gresource"
     rm -rf "$ls_tmp"
 fi
+bs_tmp=$(mktemp -d); mkdir -p "$bs_tmp/data/plymouth"; cp files/branding/plymouth/* "$bs_tmp/data/plymouth/"
+sed "s|@SYSTEM_DIR@|$bs_tmp|g" files/apps/kinobu-boot-splash >"$bs_tmp/kbs"
+bash "$bs_tmp/kbs" --build "$bs_tmp/out" >/dev/null 2>&1
+# shellcheck disable=SC2016  # the check runs its own shell
+check "the boot screen theme: two-step, its folder and 90 frames that loop" bash -c 'grep -qx "ModuleName=two-step" "$1/kinobu.plymouth" && grep -qx "ImageDir=/usr/share/plymouth/themes/kinobu" "$1/kinobu.plymouth" && [[ $(ls "$1"/throbber-*.png | wc -l) -eq 90 && -f $1/animation-0001.png ]]' _ "$bs_tmp/out"
+if [[ -d /usr/share/plymouth/themes/spinner ]]; then
+    check "the boot screen takes Ubuntu's pictures for a disk password" test -f "$bs_tmp/out/lock.png" -a -f "$bs_tmp/out/entry.png" -a -f "$bs_tmp/out/bullet.png"
+fi
+rm -rf "$bs_tmp"
 # shellcheck disable=SC2016  # the check runs its own Python
 check "Wallhaven: every category, safe and wide pictures are asked for and kept" python3 -I -c '
 import sys, json; sys.path.insert(0, "files/apps"); import kinobu_wallhaven as w
@@ -346,6 +381,8 @@ check "apply: gtk.css imports Kinobu's stylesheet once"   has "$out" "gtk4-impor
 check "apply: macOS puts the window buttons on the left"  has "$out" "buttons='close,minimize,maximize:appmenu'"
 check "apply: a missing icon pack falls back to Yaru"     has "$out" "missing-pack icons='Yaru-blue'"
 check "apply: the palette and its pair join in one Ptyxis palette" has "$out" "macos-palette-file=yes"
+check "apply: fastfetch and the setup get the theme's accent for each mode" has "$out" "terminal-accent-dark=yes"
+check "apply: … and for the light mode"                    has "$out" "terminal-accent-light=yes"
 check "apply: the theme in use is remembered"             has "$out" "macos light"
 check "apply: an unknown theme is refused"                has "$out" "No theme called"
 check "your picks stay when the theme changes"           has "$out" "picks-kept icons='Adwaita' cursor='Adwaita'"

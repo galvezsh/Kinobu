@@ -23,9 +23,9 @@ A theme changes the whole look of the computer in one step: light or dark mode, 
 | Icons | `icon-theme`: Yaru (follows the accent) or an installed pack | Yes |
 | Cursor | `cursor-theme` | Yes (some apps on restart) |
 | Wallpapers, four (one per workspace, repeated in order on more), and the lock screen | The `workspace-wallpapers` extension (its list filled to 12), `picture-uri`, `picture-uri-dark` and the screensaver key; the theme's pictures come from Wallhaven | Yes |
-| Terminal (Ptyxis) | The profile's `palette`: one of the ~200 palettes Ptyxis ships, or one generated from the theme | Yes |
+| Terminal (Ptyxis) | The profile's `palette`: one of the ~200 palettes Ptyxis ships, or one generated from the theme; its colours made legible on its background (4.5 for red to cyan, 7 for the text) | Yes |
 | Prompt (Oh My Bash) | Uses the terminal's ANSI colours, so it follows the palette | Yes |
-| fastfetch and Kinobu's own terminal output | The theme's accent instead of today's fixed table of GNOME accents (`ff` in `bashrc.sh`, `ui_accent` in `lib/ui.sh`) | Next command |
+| fastfetch and Kinobu's own terminal output | The theme's accent for each mode, made legible on the terminal's background, in `~/.local/state/kinobu/terminal-{dark,light}` (read by `ff` in `bashrc.sh` and `ui_init` in `lib/ui.sh`; GNOME's accent without them) | Next command |
 | Kinobu's apps (Willow, welcome tour, approval window, the themes app) | libadwaita, so they get the GTK CSS | Like other apps |
 | Window buttons | `org.gnome.desktop.wm.preferences button-layout`, on the left for macOS | Yes |
 
@@ -185,17 +185,21 @@ A bar at the bottom with five sections (decided on 2026-11-17; built in the repo
 
 | Section | What it shows |
 |---|---|
-| **Themes** | A card per theme: a preview drawn from its colours, a round button per palette (its window colour and accent) and *Apply* |
-| **Icons** | A card per installed icon pack (Papirus covers Papirus-Dark and -Light), with ten of its own icons |
-| **Cursors** | A card per cursor theme, with five of its cursors read from their X cursor files |
+| **Themes** | A card per theme: a preview drawn from its colours, a round button per palette (its window colour and accent) and *Apply*. Two groups, *System* (Kinobu's) and *User* (the user's own) |
+| **Icons** | A card per installed icon pack (Papirus covers Papirus-Dark and -Light), with ten of its own icons; *System* and *User* groups (a pack whose folder is in the home folder is the user's: `users_pack`) |
+| **Cursors** | A card per cursor theme, with five of its cursors read from their X cursor files; *System* and *User* groups, as for icons |
 | **Fonts** | Interface (menus, windows, documents) and monospace (editors, code), each written in its own font; size; any other font. The terminal keeps the Nerd Font: its prompt needs the symbols |
 | **Wallpapers** | One per workspace, the first also the lock screen; *Change…* opens a picture. **Find wallpapers on Wallhaven…** opens a window: a search box on top, random pictures as it opens, the theme's suggestion (`wallhaven` and `wallhaven_colour` in `theme.toml`), the popular ones; *Use* downloads one to `~/Pictures/Wallhaven` and sets it on a workspace or on all of them |
 
 **The theme proposes, the user decides.** Icons, Cursors, Fonts and Wallpapers open with a **Follow the theme** switch. On, the theme chooses and the choices below rest. Off, what the theme gives now becomes the user's own pick, to change as they like; it is kept in `~/.config/kinobu/look.toml` (an empty value means "the theme's") and stays when the theme changes. Turning it on again goes back to the theme's. Kinobu's updates never change that file. No GNOME Shell theme (decided: it can break, even with security updates). `kinobu-theme pick icons|cursor|interface-font|monospace-font|wallpaper N …` does the same from the command line, and `seasons.py --page NAME` opens a section.
 
-1. **Gallery**: own themes can be edited, duplicated and deleted (later).
-2. **Editor**: start from any theme; name, modes, accent with a colour picker, the interface colours, the terminal palette (a Ptyxis one or own colours), icons, wallpapers by drag and drop (one per workspace); a live preview; saved to `~/.config/kinobu/themes`.
-3. **Later**: a palette from a wallpaper, importing Omarchy themes (`colors.toml`), a keyboard shortcut.
+**Your own themes** (built in 0.3, kept simple on purpose):
+
+1. **Duplicate**: the menu of any theme card (⋮) makes the user's copy under a name they give: the whole `theme.toml` (palettes, terminal, icons, cursor, wallpapers) in `~/.config/kinobu/themes/<id>/`, its id from the name (`theme_slug`), its opening comments replaced by `# Made in Seasons from …`, a description in the user's language. Then the colour editor opens.
+2. **Customise**: one palette at a time (a drop-down), a colour button per colour (`COLOURS`), the theme's own preview drawn live, and the three contrasts against Kinobu's bar (text 7, secondary text 4.5, accent 3). Text below 4.5 cannot be saved (the same rule as `validate`). Saving rewrites only those lines of the palette's table, so the file keeps its comments; a changed accent also sets the palette's `gnome_accent` to the nearest GNOME accent; a theme in use is applied again. The terminal keeps the palette's Ptyxis palette. The editor also sets the theme's window buttons, left or right (`button_layout`). Icons, cursor, fonts and wallpapers are not in the editor on purpose: Seasons' tabs make them the user's over any theme, which is what most people want, and `theme.toml` takes them by hand.
+3. **Open the file** and **Delete** (to the Trash; not the theme in use) for the user's themes. Factory themes are never changed in place.
+4. The command line does the same: `kinobu-theme new NAME --from ID`, `colour ID PALETTE KEY=#RRGGBB…`, `buttons ID left|right`, `delete ID`; `seasons.py --edit ID` opens the editor (Duplicate for a factory theme).
+5. **Later, if missed**: the terminal's own colours, adding a palette, wallpapers by drag and drop, a palette from a wallpaper, importing Omarchy themes (`colors.toml`). Icons and cursors stay packs the user installs.
 
 ### Wallhaven
 
@@ -205,7 +209,7 @@ Next: a few chosen pictures per theme (Wallhaven ids in `theme.toml`), downloade
 
 ## 9. Phases
 
-1. **Engine and format** — *done in the repository*: `theme.toml`, `kinobu-theme`, the CSS layers 1 and 2, GNOME's settings, Ptyxis and the factory themes; tests. Still to do: fastfetch and Kinobu's own terminal output following the theme's accent, and **the setup**: installing the engine, Seasons, the themes and the templates in the system, Papirus and Bibata from APT, and the `desktop` block applying a theme instead of `ACCENT`, `COLOR_SCHEME` and `TERMINAL_PALETTE`.
+1. **Engine and format** — *done in the repository*: `theme.toml`, `kinobu-theme`, the CSS layers 1 and 2, GNOME's settings, Ptyxis and the factory themes; tests. Still to do: **the setup**: installing the engine, Seasons, the themes and the templates in the system, Papirus and Bibata from APT, and the `desktop` block applying a theme instead of `ACCENT`, `COLOR_SCHEME` and `TERMINAL_PALETTE`.
 2. **Packs, a fixed step of the setup** (not in the menus, nothing to tick) — *done*: installed once for every user in the system, from Ubuntu's archive when it has them (Papirus, Numix Circle, elementary, Bibata, Breeze, Inter, JetBrains Mono) and otherwise as ready-made downloads pinned and checked into `/usr/local/share/icons` (`LOOK_PACKS` in `lib/look.sh`); the engine links the ones in use into each user's folder. Updates may add more. Candidates checked on 2026-11-17: Papirus (Ubuntu's own package, unpacked without installing it), Fluent and WhiteSur icons (GPL-3.0; their `install.sh` assembles them from the source, so it has to be run), Bibata cursors (GPL-3.0, ready-made release files), WhiteSur cursors (GPL-3.0, ready-made in the repository), Inter and JetBrains Mono (OFL-1.1). Cantarell and Adwaita Sans are already in Ubuntu. GNOME Tweaks is no longer installed and the Extensions app is hidden from the app grid. The skill.
 3. **The app**: gallery and the sections Icons, Cursors, Fonts and Wallpapers — *done in the repository* (`files/apps/seasons.py`): a card per theme with a preview drawn from its colours, its palettes and Apply; the Follow the theme switches (2026-11-18).
 4. **The app**: editor.

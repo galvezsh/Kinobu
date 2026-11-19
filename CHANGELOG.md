@@ -2,6 +2,19 @@
 
 What changed in each version of Kinobu. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). To bring a computer set up by an earlier version to the latest one, run `bash kinobu.sh --update` (your look is kept).
 
+## [Unreleased] — 0.3 in development
+
+### Added
+
+- **Your own themes in Seasons.** Each theme card has a menu: *Duplicate…* makes your own copy of any theme under the name you give it (it keeps the palettes, terminal, icons and wallpapers) and opens its colours; your themes also have *Customise…*, *Open the file* and *Delete…* (to the Trash). The colour editor shows a palette at a time: a colour button for the window, content, sidebar, cards, text, secondary text, accent, success, warning and error, a live preview and how well the text reads; text that would be hard to read cannot be saved, and saving a theme in use applies it. GNOME's accent follows the new accent. The editor also puts the theme's window buttons on the left or the right; icons, cursor, fonts and wallpapers stay in their own tabs (they are yours, over any theme). From the command line: `kinobu-theme new NAME --from ID`, `kinobu-theme colour ID PALETTE KEY=#RRGGBB…`, `kinobu-theme buttons ID left|right`, `kinobu-theme delete ID`; `seasons.py --edit ID` opens the editor.
+- **Kinobu's rings when the computer starts and shuts down** (Plymouth), instead of the maker's logo and Ubuntu's: the logo on black, every ring turning (the outer one to the left, the inner ones each its own way) and the golden centre breathing, in a three-second loop. It is Ubuntu's own boot module (two-step) with Kinobu's frames, so the box for an encrypted disk's password and the "Installing updates" screen work as before. Chosen by hand through Ubuntu's `default.plymouth` alternative, which Ubuntu's updates never change; the start-up image is rebuilt only when the frames change. `sudo kinobu-boot-splash --remove` brings Ubuntu's back. Frames drawn by `tools/plymouth.py`.
+- **Seasons keeps the system's and your own apart**: Themes, Icons and Cursors each show a *System* group and a *User* group (your own themes; packs unpacked into your home folder, such as `~/.local/share/icons` or `~/.icons`), with a hint on where to put them while the group is empty. The links Kinobu makes for sandboxed apps count as the system's.
+
+### Changed
+
+- **Every terminal palette reads well**: the theme engine makes the terminal's colours legible on its background (4.5 for red to cyan, 7 for the text), keeping their hue. Light palettes had pale yellows and bright colours (down to 1.0 on Windows' Light, 1.7 on Kinobu's Meadow and Birch); now all reach it, and a test checks every palette.
+- **fastfetch and the setup's colours follow the theme's own accent**, for the terminal's mode, instead of GNOME's nearest accent colour: the name, the keys and the centre of the rings, with the rings near the terminal's text (they were near white, faint on a light terminal). Without a theme applied, GNOME's accent as before.
+
 ## [0.2] — 2026-11-18
 
 Kinobu's look and its own apps: themes with palettes and Seasons to choose them, wallpapers from Wallhaven, Willow (formerly Zen) with three powers and safe actions, Kinobu Agent, and the first real install and update on the author's computer. Run `bash kinobu.sh --update`: your theme is kept and moved to its palettes on its own.

@@ -1,16 +1,21 @@
 # shellcheck shell=bash
 # Terminal output: colours, the Kinobu banner, status lines and the checklist.
 
-# Sets the colours: the accent follows GNOME's, the rings carry a faint tint of it.
+# Sets the colours: the theme's accent for the terminal's mode when the theme engine wrote it
+# (as fastfetch does), else GNOME's; the rings carry a faint tint of it.
 ui_init() {
     C_ACCENT="" C_RING1="" C_RING2="" C_OK="" C_WARN="" C_ERR="" C_DIM="" C_BOLD="" C_RESET=""
     if [[ ! -t 1 || -n ${NO_COLOR:-} ]]; then return 0; fi
-    local accent r g b
-    accent=$(ui_accent)
-    IFS=';' read -r r g b <<<"$accent"
-    C_ACCENT=$'\e[38;2;'"$accent"m
-    C_RING1=$'\e[38;2;'"$(( (238 * 88 + r * 12) / 100 ));$(( (238 * 88 + g * 12) / 100 ));$(( (238 * 88 + b * 12) / 100 ))"m
-    C_RING2=$'\e[38;2;'"$(( (165 * 88 + r * 12) / 100 ));$(( (165 * 88 + g * 12) / 100 ));$(( (165 * 88 + b * 12) / 100 ))"m
+    local accent="" ring1="" ring2="" mode=light r g b
+    if [[ $(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null || true) == *dark* ]]; then mode=dark; fi
+    read -r accent ring1 ring2 2>/dev/null <"$HOME/.local/state/kinobu/terminal-$mode" || true
+    if [[ -z $ring2 ]]; then
+        accent=$(ui_accent)
+        IFS=';' read -r r g b <<<"$accent"
+        ring1="$(( (238 * 88 + r * 12) / 100 ));$(( (238 * 88 + g * 12) / 100 ));$(( (238 * 88 + b * 12) / 100 ))"
+        ring2="$(( (165 * 88 + r * 12) / 100 ));$(( (165 * 88 + g * 12) / 100 ));$(( (165 * 88 + b * 12) / 100 ))"
+    fi
+    C_ACCENT=$'\e[38;2;'"$accent"m C_RING1=$'\e[38;2;'"$ring1"m C_RING2=$'\e[38;2;'"$ring2"m
     C_OK=$'\e[38;2;87;227;137m' C_WARN=$'\e[38;2;248;196;92m' C_ERR=$'\e[38;2;246;97;81m'
     C_DIM=$'\e[90m' C_BOLD=$'\e[1m' C_RESET=$'\e[0m'
 }

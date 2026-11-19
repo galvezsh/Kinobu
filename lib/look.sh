@@ -60,6 +60,7 @@ install_look() {
     ok "$(find "$themes" -name theme.toml | wc -l) themes; Seasons is in the app grid (Settings folder)"
     install_look_packs
     install_login_screen
+    install_boot_splash
 }
 
 # The login screen (GDM): Ubuntu's own theme with Kinobu's background instead of the plain grey,
@@ -78,6 +79,29 @@ install_login_screen() {
         ok "Kinobu's background on the login screen (you see it when you sign out)"
     else
         warn "The login screen keeps Ubuntu's background (see the log)"
+    fi
+}
+
+# The boot splash (Plymouth): Kinobu's rings turning on black instead of the maker's logo and
+# Ubuntu's (files/apps/kinobu-boot-splash, frames drawn by tools/plymouth.py). Chosen by hand, so
+# Ubuntu's updates keep it; the start-up image is rebuilt only when the frames change.
+# `sudo kinobu-boot-splash --remove` goes back to Ubuntu's.
+install_boot_splash() {
+    if ! $SYSTEM_WRITES; then return 0; fi
+    step "Boot screen"
+    local frames="$SYSTEM_DIR/data/plymouth" file name
+    for file in "$ROOT_DIR"/files/branding/plymouth/*; do
+        put_file "$frames/${file##*/}" <"$file"
+    done
+    for file in "$frames"/*; do   # frames a newer drawing no longer has
+        name=${file##*/}
+        if [[ -e $file && ! -e $ROOT_DIR/files/branding/plymouth/$name ]]; then sys "$frames" rm -f "$file"; fi
+    done
+    put_file "$BIN_DIR/kinobu-boot-splash" 0755 < <(render apps/kinobu-boot-splash SYSTEM_DIR)
+    if run root "$BIN_DIR/kinobu-boot-splash" --if-needed; then
+        ok "Kinobu's rings when the computer starts (you see them at the next start)"
+    else
+        warn "The boot screen keeps Ubuntu's (see the log)"
     fi
 }
 

@@ -270,6 +270,15 @@ def page_box(intro):
     return scroll, page
 
 
+def section(title, hint=None):
+    """A small heading over a group of cards (System, User), and a hint when the group is empty."""
+    box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4, margin_start=6, margin_top=6)
+    box.append(Gtk.Label(label=title, xalign=0, css_classes=["heading", "season-section"]))
+    if hint:
+        box.append(Gtk.Label(label=hint, xalign=0, wrap=True, css_classes=["dim-label"]))
+    return box
+
+
 def flow():
     return Gtk.FlowBox(selection_mode=Gtk.SelectionMode.NONE, homogeneous=True, min_children_per_line=1,
                        max_children_per_line=3, column_spacing=18, row_spacing=18)
@@ -295,6 +304,7 @@ class ThemeCard(Gtk.Box):
             title_row.append(Gtk.Label(label=t("yours"), css_classes=["dim-label", "caption"]))
         self.badge = badge(t("in_use"))
         title_row.append(self.badge)
+        title_row.append(self.menu())
         body.append(title_row)
         body.append(Gtk.Label(label=T.get(f"theme.{theme['id']}", theme.get("description", "")), xalign=0, wrap=True,
                               lines=2, ellipsize=3, css_classes=["dim-label"], max_width_chars=28))
@@ -329,6 +339,23 @@ class ThemeCard(Gtk.Box):
         body.append(chips)
         self.palette_text.set_label(self.palette_label(self.palette))
 
+    def menu(self):
+        """Duplicate (any theme); Edit colours, Open the file and Delete (the user's own)."""
+        items = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        popover = Gtk.Popover(child=items)
+        entries = [("duplicate", lambda: DuplicateDialog(self.win, self.theme).present(self.win))]
+        if self.theme.get("own"):
+            entries += [("edit_colours", lambda: ColourEditor(self.win, self.theme, self.palette).present(self.win)),
+                        ("open_file", lambda: Gio.AppInfo.launch_default_for_uri(
+                            GLib.filename_to_uri(os.path.join(self.theme["path"], "theme.toml")), None)),
+                        ("delete", lambda: self.win.delete_theme(self.theme))]
+        for key, action in entries:
+            button = Gtk.Button(child=Gtk.Label(label=t(key), xalign=0), css_classes=["flat"])
+            button.connect("clicked", lambda _b, a=action: (popover.popdown(), a()))
+            items.append(button)
+        return Gtk.MenuButton(icon_name="view-more-symbolic", popover=popover, tooltip_text=t("more"),
+                              css_classes=["flat", "circular"], valign=Gtk.Align.CENTER)
+
     def waiting(self):
         """What to say while it is applied: the first time, its wallpapers are downloaded."""
         own = all(self.win.state["look"]["wallpapers"][i] if i < len(self.win.state["look"]["wallpapers"]) else ""
@@ -361,6 +388,205 @@ class ThemeCard(Gtk.Box):
         self.button.set_sensitive(not in_use and not busy)
         self.button.set_label(t("in_use") if in_use else t("apply"))
         (self.button.remove_css_class if in_use else self.button.add_css_class)("suggested-action")
+
+
+# --- The user's own themes: a copy of any theme, and its colours ------------------------------
+class DuplicateDialog(Adw.AlertDialog):
+    """Asks the name of the copy, makes it and opens its colours."""
+
+    def __init__(self, win, theme):
+        name = theme.get("name", theme["id"])
+        super().__init__(heading=t("duplicate_title", name=name), body=t("duplicate_body", name=name))
+        self.win, self.theme = win, theme
+        self.entry = Gtk.Entry(text=t("copy_name", name=name), activates_default=True)
+        self.set_extra_child(self.entry)
+        self.add_response("cancel", t("cancel"))
+        self.add_response("create", t("create"))
+        self.set_response_appearance("create", Adw.ResponseAppearance.SUGGESTED)
+        self.set_default_response("create")
+        self.connect("response", self.on_response)
+
+    def on_response(self, _dialog, response):
+        if response != "create":
+            return
+        name = self.theme.get("name", self.theme["id"])
+        try:
+            new_id = engine.new_theme(self.theme["id"], self.entry.get_text(),
+                                      description=t("own_description", name=name))
+        except (engine.ThemeError, OSError) as e:
+            self.win.toasts.add_toast(Adw.Toast(title=t("failed", error=e), timeout=8))
+            return
+        self.win.reload_themes()
+        theme = engine.load(new_id)
+        self.win.toasts.add_toast(Adw.Toast(title=t("created", name=theme["name"]), timeout=5))
+        ColourEditor(self.win, theme, engine.resolve(theme)).present(self.win)
+
+
+# The colours a palette has, in the order the editor shows them
+EDIT_COLOURS = ("background", "view", "sidebar", "card", "foreground", "muted", "accent",
+                "success", "warning", "error")
+
+
+class ColourEditor(Adw.Dialog):
+    """The colours of each palette of the user's own theme: a live preview, one colour button per
+    colour and how well it reads. Save writes theme.toml (and applies it when it is in use)."""
+
+    def __init__(self, win, theme, palette):
+        super().__init__(title=t("edit_title", name=theme.get("name", theme["id"])),
+                         content_width=860, content_height=640)
+        self.win, self.theme, self.palette = win, theme, palette
+        self.edits = {pid: {} for pid in theme["palettes"]}
+        self.loading = False
+
+        view = Adw.ToolbarView()
+        view.add_top_bar(Adw.HeaderBar())
+        content = Gtk.Box(spacing=24, margin_start=24, margin_end=24, margin_top=6, margin_bottom=12)
+        view.set_content(content)
+
+        left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, width_request=320)
+        left.append(Gtk.Label(label=t("edit_intro"), xalign=0, wrap=True, max_width_chars=36,
+                              css_classes=["dim-label"]))
+        self.ids = list(theme["palettes"])
+        names = [f"{engine.palette_name(theme, pid)} · {t(engine.mode_of(theme, pid))}" for pid in self.ids]
+        self.choice = Gtk.DropDown.new_from_strings(names)
+        self.choice.set_selected(self.ids.index(palette))
+        self.choice.connect("notify::selected", self.on_palette)
+        left.append(self.choice)
+        frame = Gtk.Box(css_classes=["card"], overflow=Gtk.Overflow.HIDDEN)
+        self.preview = Canvas(lambda p, w, h: draw_preview(self.look(), p, w, h), 320, 192)
+        frame.append(self.preview)
+        left.append(frame)
+        self.verdict = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        left.append(self.verdict)
+
+        # The window buttons: for the whole theme, not one palette
+        self.side = engine.button_side(theme)
+        sides = Gtk.Box(css_classes=["linked"], valign=Gtk.Align.CENTER)
+        self.side_buttons, first = {}, None
+        for side in ("left", "right"):
+            button = Gtk.ToggleButton(label=t(f"buttons_{side}"), group=first, active=side == self.side)
+            button.connect("toggled", self.on_side, side)
+            sides.append(button)
+            self.side_buttons[side], first = button, first or button
+        buttons_row = Gtk.Box(spacing=12, margin_top=6)
+        buttons_row.append(Gtk.Label(label=t("window_buttons"), xalign=0, hexpand=True, wrap=True))
+        buttons_row.append(sides)
+        left.append(buttons_row)
+        left.append(Gtk.Label(label=t("edit_more_hint"), xalign=0, wrap=True, max_width_chars=36,
+                              css_classes=["dim-label", "caption"], margin_top=6))
+        content.append(left)
+
+        group = Adw.PreferencesGroup()
+        self.buttons = {}
+        for key in EDIT_COLOURS:
+            button = Gtk.ColorDialogButton(dialog=Gtk.ColorDialog(with_alpha=False), valign=Gtk.Align.CENTER)
+            button.connect("notify::rgba", self.on_colour, key)
+            row = Adw.ActionRow(title=t(f"col_{key}"), subtitle=t(f"col_{key}_desc"))
+            row.add_suffix(button)
+            row.set_activatable_widget(button)
+            group.add(row)
+            self.buttons[key] = button
+        scroll = Gtk.ScrolledWindow(child=group, hexpand=True, hscrollbar_policy=Gtk.PolicyType.NEVER)
+        content.append(scroll)
+
+        bar = Gtk.Box(spacing=12, margin_start=24, margin_end=24, margin_top=6, margin_bottom=18)
+        self.status = Gtk.Label(xalign=0, hexpand=True, wrap=True, css_classes=["dim-label"])
+        bar.append(self.status)
+        self.save = Gtk.Button(label=t("save"), css_classes=["pill", "suggested-action"])
+        self.save.connect("clicked", self.on_save)
+        bar.append(self.save)
+        view.add_bottom_bar(bar)
+        self.set_child(view)
+        self.show_palette()
+
+    def look(self):
+        return Look(self.edited(), self.palette)
+
+    def edited(self):
+        """The theme with the changes not saved yet (colours and the window buttons)."""
+        palettes = {pid: dict(table, **self.edits[pid]) for pid, table in self.theme["palettes"].items()}
+        return dict(self.theme, palettes=palettes,
+                    button_layout=engine.BUTTON_LAYOUTS[getattr(self, "side", engine.button_side(self.theme))])
+
+    def show_palette(self):
+        self.loading = True
+        colours = self.edited()["palettes"][self.palette]
+        for key, button in self.buttons.items():
+            rgba = Gdk.RGBA()
+            rgba.parse(colours.get(key, "#000000"))
+            button.set_rgba(rgba)
+        self.loading = False
+        self.update()
+
+    def on_side(self, button, side):
+        if button.get_active():
+            self.side = side
+            self.update()
+
+    def on_palette(self, dropdown, _pspec):
+        self.palette = self.ids[dropdown.get_selected()]
+        self.show_palette()
+
+    def on_colour(self, button, _pspec, key):
+        if self.loading:
+            return
+        c = button.get_rgba()
+        value = "#" + "".join(f"{round(v * 255):02X}" for v in (c.red, c.green, c.blue))
+        if value.upper() != str(self.theme["palettes"][self.palette].get(key, "")).upper():
+            self.edits[self.palette][key] = value
+        else:
+            self.edits[self.palette].pop(key, None)
+        self.update()
+
+    def update(self):
+        """The preview, how well this palette reads, and whether every palette can be saved."""
+        self.preview.queue_draw()
+        theme, c = self.edited(), self.edited()["palettes"][self.palette]
+        surfaces = ("background", "view", "card", "sidebar")
+        ratios = [("text", min(engine.contrast(c["foreground"], c[s]) for s in surfaces), 4.5),
+                  ("muted", min(engine.contrast(c["muted"], c[s]) for s in ("background", "view")), 0),
+                  ("accent", engine.contrast(c["accent"], c["background"]), 0)]
+        child = self.verdict.get_first_child()
+        while child:
+            self.verdict.remove(child)
+            child = self.verdict.get_first_child()
+        for what, ratio, minimum in ratios:
+            good = ratio >= engine.QUALITY[what]
+            row = Gtk.Box(spacing=8)
+            row.append(Gtk.Image(icon_name="emblem-ok-symbolic" if good else "dialog-warning-symbolic",
+                                 css_classes=["success" if good else ("error" if ratio < minimum else "warning")]))
+            row.append(Gtk.Label(label=t(f"reads_{what}", ratio=f"{ratio:.1f}", wanted=f"{engine.QUALITY[what]:g}"),
+                                 xalign=0))
+            self.verdict.append(row)
+        blocked = [pid for pid in self.ids if engine.validate(dict(theme, palettes={pid: theme["palettes"][pid]}))]
+        changed = any(self.edits.values()) or self.side != engine.button_side(self.theme)
+        self.save.set_sensitive(changed and not blocked)
+        if blocked:
+            self.status.set_label(t("hard_to_read", palettes=", ".join(engine.palette_name(theme, p) for p in blocked)))
+        elif changed:
+            self.status.set_label(t("unsaved"))
+        else:
+            self.status.set_label("")
+
+    def on_save(self, _button):
+        theme_id, name = self.theme["id"], self.theme.get("name", self.theme["id"])
+        edits = {pid: dict(e) for pid, e in self.edits.items() if e}
+        side = self.side if self.side != engine.button_side(self.theme) else None
+        in_use = self.win.state["theme"] == theme_id
+
+        def work():
+            notes = []
+            for pid, colours in edits.items():
+                engine.set_colours(theme_id, pid, colours)
+            if side:
+                engine.set_buttons(theme_id, side)
+            Look._terminals.clear()
+            if in_use:
+                notes += engine.apply(theme_id, self.win.state["palette"])
+            return notes
+        self.win.run(work, t("saved_applied" if in_use else "saved", name=name),
+                     done=self.win.reload_themes)
+        self.close()
 
 
 # --- Icons and cursors: a card per pack, with a sample of its own pictures ----------------------
@@ -482,12 +708,16 @@ class PacksPage:
         self.widget, page = page_box(t(f"{kind}_intro"))
         self.follow = FollowRow(win, [kind], t(f"follow_{kind}"))
         page.append(self.follow.group)
-        self.grid = flow()
-        page.append(self.grid)
         packs = engine.icon_families() if kind == "icons" else engine.cursor_themes()
         self.cards = [PackCard(win, kind, pack_id, name) for pack_id, name in packs]
+        system, mine = flow(), flow()
+        users = {card: engine.users_pack(card.pack_id) for card in self.cards}
+        page.append(section(t("section_system")))
+        page.append(system)
+        page.append(section(t("section_user"), None if any(users.values()) else t(f"user_{kind}_hint")))
+        page.append(mine)
         for card in self.cards:
-            self.grid.append(card)
+            (mine if users[card] else system).append(card)
             card.get_parent().set_focusable(False)
 
     def refresh(self, state, busy=False):
@@ -1013,12 +1243,12 @@ class Window(Adw.ApplicationWindow):
 
         self.state = self.read_state(first=True)
         themes_widget, themes_page = page_box(t("intro"))
-        grid = flow()
-        themes_page.append(grid)
-        self.theme_cards = [ThemeCard(self, theme) for theme in engine.load_all()]
-        for card in self.theme_cards:
-            grid.append(card)
-            card.get_parent().set_focusable(False)
+        self.theme_grid, self.user_grid = flow(), flow()
+        self.user_hint = section(t("section_user"), t("user_themes_hint"))
+        for part in (section(t("section_system")), self.theme_grid, self.user_hint, self.user_grid):
+            themes_page.append(part)
+        self.theme_cards = []
+        self.reload_themes(refresh=False)
         self.pages = [PacksPage(self, "icons"), PacksPage(self, "cursor"), FontsPage(self), WallpapersPage(self)]
         self.stack.add_titled_with_icon(themes_widget, "themes", t("tab_themes"), "applications-graphics-symbolic")
         for page, name, icon in zip(self.pages, ("icons", "cursors", "fonts", "wallpapers"),
@@ -1069,6 +1299,39 @@ class Window(Adw.ApplicationWindow):
     def look_preview(self):
         return Look(self.state["theme_obj"], self.state["palette"])
 
+    def reload_themes(self, refresh=True):
+        """The theme cards again (a theme was made, changed or deleted)."""
+        self.theme_grid.remove_all()
+        self.user_grid.remove_all()
+        self.theme_cards = [ThemeCard(self, theme) for theme in engine.load_all()]
+        for card in self.theme_cards:
+            (self.user_grid if card.theme.get("own") else self.theme_grid).append(card)
+            card.get_parent().set_focusable(False)
+        own = any(card.theme.get("own") for card in self.theme_cards)
+        self.user_hint.get_last_child().set_visible(not own)   # the hint, only while there are none
+        if refresh:
+            self.refresh()
+
+    def delete_theme(self, theme):
+        name = theme.get("name", theme["id"])
+        dialog = Adw.AlertDialog(heading=t("delete_title", name=name), body=t("delete_body"))
+        dialog.add_response("cancel", t("cancel"))
+        dialog.add_response("delete", t("delete_button"))
+        dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+
+        def answered(_dialog, response):
+            if response != "delete":
+                return
+            try:
+                engine.delete_theme(theme["id"])
+            except (engine.ThemeError, GLib.Error) as e:
+                self.toasts.add_toast(Adw.Toast(title=t("failed", error=e), timeout=8))
+                return
+            self.reload_themes()
+            self.toasts.add_toast(Adw.Toast(title=t("deleted", name=name), timeout=5))
+        dialog.connect("response", answered)
+        dialog.present(self)
+
     def refresh(self, busy=False):
         if not busy:
             first = self.state.get("first", False)
@@ -1078,7 +1341,7 @@ class Window(Adw.ApplicationWindow):
         for page in self.pages:
             page.refresh(self.state, busy)
 
-    def run(self, work, message, waiting=None):
+    def run(self, work, message, waiting=None, done=None):
         """Runs an engine call away from the window, then shows the result. While it works the
         pointer says so, and waiting (a text) stays on screen until it ends."""
         self.refresh(busy=True)
@@ -1095,10 +1358,14 @@ class Window(Adw.ApplicationWindow):
                 notes, error = [], str(e)
             GLib.idle_add(done, notes, error)
 
+        after = done
+
         def done(notes, error):
             self.set_cursor(None)
             if notice:
                 notice.dismiss()
+            if after:
+                after(refresh=False)
             self.refresh()
             if error:
                 self.toasts.add_toast(Adw.Toast(title=t("failed", error=error), timeout=8))
@@ -1117,6 +1384,7 @@ class Window(Adw.ApplicationWindow):
 
 CSS = """
 .season { border-radius: 14px; }
+.season-section { color: var(--window-fg-color); }
 .palette-chip { min-width: 30px; min-height: 30px; padding: 2px; }
 .palette-chip:checked { box-shadow: inset 0 0 0 2px var(--accent-bg-color); }
 .season-badge {
@@ -1135,6 +1403,8 @@ CSS = """
 
 # seasons.py --page icons|cursors|fonts|wallpapers opens on that section
 PAGE = sys.argv[sys.argv.index("--page") + 1] if "--page" in sys.argv[:-1] else "themes"
+# seasons.py --edit THEME opens the colours of the user's own theme (or Duplicate for another one)
+EDIT = sys.argv[sys.argv.index("--edit") + 1] if "--edit" in sys.argv[:-1] else ""
 
 
 def main():
@@ -1151,6 +1421,14 @@ def main():
         if PAGE in ("themes", "icons", "cursors", "fonts", "wallpapers"):
             win.stack.set_visible_child_name(PAGE)
         win.present()
+        if EDIT:
+            try:
+                theme = engine.load(EDIT)
+            except engine.ThemeError as e:
+                win.toasts.add_toast(Adw.Toast(title=t("failed", error=e), timeout=8))
+            else:
+                dialog = ColourEditor(win, theme, engine.resolve(theme)) if theme["own"] else DuplicateDialog(win, theme)
+                dialog.present(win)
 
     app.connect("activate", activate)
     return app.run(sys.argv[:1])
