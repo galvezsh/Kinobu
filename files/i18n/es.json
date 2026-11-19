@@ -80,6 +80,7 @@
     "hint_paused": "Toca la esfera para hablar",
     "muted": "Micrófono silenciado",
     "hint_muted": "Actívalo con el botón, Ctrl+M o Super+Alt+K",
+    "stop_talking": "Dejar de hablar",
     "sound_off": "El sonido está silenciado: te respondo por escrito",
     "no_agent": "No encuentro tu agente. De momento funciono con Claude Code: instálalo e inicia sesión.",
     "agent_error": "Tu agente no ha respondido. Comprueba que tiene la sesión iniciada.",
@@ -200,6 +201,7 @@
     "theme.gruvbox": "Estilo retro: colores cálidos y terrosos, con mucho contraste.",
     "theme.nord": "Ártico y sereno: azules helados sobre la noche polar.",
     "theme.windows": "Limpio y familiar, inspirado en Windows 11: grises claros y azul.",
-    "theme.macos": "Luminoso y pulido, inspirado en macOS: botones de ventana a la izquierda."
+    "theme.macos": "Luminoso y pulido, inspirado en macOS: botones de ventana a la izquierda.",
+    "downloading_walls": "Descargando los fondos del tema… La primera vez tarda un poco más."
   }
 }

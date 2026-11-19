@@ -22,6 +22,8 @@ APT_PACKAGES=(
     # The themes' icons, cursors and fonts from Ubuntu (Seasons; the others are in lib/look.sh)
     papirus-icon-theme numix-icon-theme-circle elementary-icon-theme bibata-cursor-theme breeze-cursor-theme
     fonts-inter fonts-jetbrains-mono
+    # Builds Kinobu's login screen theme (glib-compile-resources; kinobu-login-screen)
+    libgio-2.0-dev-bin
     # GTK 4 and libadwaita from Python: Kinobu's own windows
     python3-gi gir1.2-gtk-4.0 gir1.2-adw-1
 )

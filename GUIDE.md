@@ -106,6 +106,7 @@ What is the same for everybody lives in the system; what is personal lives in ea
 | `bin/kinobu-launch` | Run by the app shortcuts |
 | `bin/kinobu-notify` | Run by the agents' hooks |
 | `bin/kinobu-theme` | The theme engine (Seasons uses it; agents and scripts too) |
+| `bin/kinobu-login-screen` | Builds the login screen's theme with Kinobu's background (`share/kinobu/login/`) |
 | `share/kinobu/programs/` | Kinobu's apps (Trail, Sprout, Gate, Echo's notices, Willow, Seasons) and the theme engine |
 | `share/kinobu/themes/` | The factory themes |
 | `share/kinobu/skills/` | The system skill |
@@ -168,6 +169,8 @@ What it can do:
 - **Know this computer**: it reads Kinobu's skill only when it is unsure, so it costs nothing the rest of the time.
 - **Check things in the background**: for something that needs more care but changes nothing, it asks a stronger model (Sonnet) without opening any window and tells you with a notification when it is ready.
 - **Hand over real work**: changing the system, files or code opens Claude Code in a terminal with the task already written.
+
+To **stop it while it speaks** (a long answer, or you want to say something), press the stop button next to the microphone, Esc or Super+Shift+Space again: the voice stops at once, the whole answer stays in the window and Willow listens again.
 
 Each turn costs a fraction of a cent (on a Claude subscription it counts towards its usage instead).
 
@@ -237,6 +240,7 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 | Path | What |
 |---|---|
 | `/etc/apt/apt.conf.d/99enable-amd64v3` | Optimised package builds |
+| `/etc/apt/apt.conf.d/99kinobu-login-screen` | Rebuilds the login screen's theme when Ubuntu updates its own |
 | `/etc/apt/sources.list.d/` and their keys | Software sources of the chosen apps only |
 | `/etc/udev/rules.d/60-uinput-uaccess.rules` | Lets `ydotool` type |
 | `/opt/java/graalvm-jdk-<version>/` | The GraalVM JDK |
@@ -270,6 +274,7 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 | App colours | Remove the `kinobu` block from `~/.config/gtk-4.0/gtk.css` and `gtk-3.0/gtk.css` |
 | Agent context and notifications | Remove the `kinobu` link, block and hook entries in `~/.claude/` |
 | Optimised packages | `sudo rm /etc/apt/apt.conf.d/99enable-amd64v3` |
+| Kinobu's login screen | `sudo kinobu-login-screen --remove` (Ubuntu's grey comes back), then `sudo rm /etc/apt/apt.conf.d/99kinobu-login-screen` |
 | Kinobu itself | `sudo rm -rf /usr/local/share/kinobu /usr/local/bin/kinobu* /etc/xdg/autostart/kinobu-user.desktop` |
 
 ## Tests

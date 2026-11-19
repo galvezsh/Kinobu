@@ -11,9 +11,9 @@ lacks() { [[ -n $1 && $1 != *"$2"* ]]; }
 echo "Syntax and lint"
 check "bash -n" bash -n kinobu.sh lib/*.sh tests/run.sh
 if command -v shellcheck >/dev/null; then
-    check "shellcheck" shellcheck -x -S style kinobu.sh lib/*.sh tests/run.sh tests/themes-apply.sh files/apps/kinobu-do
+    check "shellcheck" shellcheck -x -S style kinobu.sh lib/*.sh tests/run.sh tests/themes-apply.sh files/apps/kinobu-do files/apps/kinobu-login-screen
 elif command -v uvx >/dev/null; then
-    check "shellcheck (uvx)" uvx --quiet --from shellcheck-py shellcheck -x -S style kinobu.sh lib/*.sh tests/run.sh tests/themes-apply.sh files/apps/kinobu-do
+    check "shellcheck (uvx)" uvx --quiet --from shellcheck-py shellcheck -x -S style kinobu.sh lib/*.sh tests/run.sh tests/themes-apply.sh files/apps/kinobu-do files/apps/kinobu-login-screen
 else
     echo "  · shellcheck not available, skipped"
 fi
@@ -197,6 +197,9 @@ else
 command='$prefix/bin/kinobu-launch welcome'"
     check "GNOME's Help shortcut is released"   has "$keys" "help=@as []"
     check "the tour is not in the app grid"     grep -q '^NoDisplay=true' "$prefix/share/applications/os.kinobu.Welcome.desktop"
+    check "the login screen: its command, its picture and apt's hook" test -x "$prefix/bin/kinobu-login-screen" -a -s "$share/data/login-background.jpg"
+    # shellcheck disable=SC2016  # the check runs its own shell
+    check "the login screen is built with sudo, and rebuilt by apt" bash -c '[[ $(<"$1") == *"kinobu-login-screen --if-needed"* && $(<"$1") == *"99kinobu-login-screen"* ]]' _ "$record"
     check "the dock's Show Apps button gets Kinobu's logo" test -s "$prefix/share/icons/Yaru/scalable/actions/view-app-grid-ubuntu-symbolic.svg" -a -s "$prefix/share/icons/hicolor/scalable/actions/view-app-grid-ubuntu-symbolic.svg"
     check "the Settings folder has a translated name" test -s "$home/.local/share/desktop-directories/Kinobu-Settings.directory"
     check "the weather city comes from the time zone" has "$(isolated /org/gnome/shell/weather/locations)" "uint32"
@@ -298,6 +301,14 @@ def pairs(p):
     if len(keys) != len(set(keys)): sys.exit(1)
     return dict(p)
 for f in glob.glob("files/i18n/*.json"): json.load(open(f), object_pairs_hook=pairs)'
+if command -v glib-compile-resources >/dev/null && [[ -f /usr/share/gnome-shell/theme/Yaru/gnome-shell-theme.gresource ]]; then
+    ls_tmp=$(mktemp -d); mkdir -p "$ls_tmp/data"; cp files/branding/login-background.jpg "$ls_tmp/data/"
+    sed "s|@SYSTEM_DIR@|$ls_tmp|g" files/apps/kinobu-login-screen >"$ls_tmp/kls"
+    bash "$ls_tmp/kls" --build "$ls_tmp/out.gresource" >/dev/null 2>&1
+    # shellcheck disable=SC2016  # the check runs its own shell
+    check "the login screen theme is Ubuntu's with Kinobu's picture" bash -c '[[ $(gresource extract "$1" /org/gnome/shell/theme/gdm.css) == *"kinobu-login.jpg"* ]] && gresource extract "$1" /org/gnome/shell/theme/kinobu-login.jpg | cmp -s - files/branding/login-background.jpg' _ "$ls_tmp/out.gresource"
+    rm -rf "$ls_tmp"
+fi
 # shellcheck disable=SC2016  # the check runs its own Python
 check "Wallhaven: every category, safe and wide pictures are asked for and kept" python3 -I -c '
 import sys, json; sys.path.insert(0, "files/apps"); import kinobu_wallhaven as w

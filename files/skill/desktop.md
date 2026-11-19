@@ -51,7 +51,8 @@ Super+Shift+Space opens Willow (`@PROGRAMS_DIR@/voice.py`): it listens through H
 answers aloud with a small headless model and can only read the system, search the web and open
 apps, pages or folders; real work goes to the user's agent. Settings in
 `~/.config/kinobu/voice.json`, voices and models in `~/.local/share/kinobu/voice/` (personal Qwen
-voices in `voices/`). If it stays silent, check the engine in its settings and the sound mute.
+voices in `voices/`). The stop button next to the microphone, Esc or Super+Shift+Space again stop
+it while it speaks. If it stays silent, check the engine in its settings and the sound mute.
 
 ## Themes (Seasons)
 
@@ -86,6 +87,13 @@ rewritten on every change. Open apps take a new theme when they open again. Icon
 cursors are in `/usr/share/icons` (APT: Papirus, Numix Circle, elementary, Bibata, Breeze) and
 `/usr/local/share/icons` (Kora, Phinger, Catppuccin, Nordzy, macOS and WhiteSur cursors).
 
+## Login screen
+
+The screen before signing in (GDM) shows Kinobu's background: Ubuntu's own theme with the grey
+replaced, built by `@BIN_DIR@/kinobu-login-screen` and chosen through the `gdm-theme.gresource`
+alternative; apt rebuilds it when Ubuntu updates its theme. `sudo kinobu-login-screen --remove`
+brings Ubuntu's back. The boot menu (GRUB) is not changed by Kinobu.
+
 ## Clock, weather and wallpapers
 
 24 h clock with weekday and date. The weather in the top bar comes from the location set in
@@ -93,7 +101,9 @@ GNOME Weather (`org.gnome.shell.weather locations`). There are four wallpapers, 
 and repeated in order on more; a theme's come from Wallhaven, downloaded to
 `~/.local/share/kinobu/wallpapers` when it is applied. Each workspace has its own wallpaper
 (workspace-wallpapers extension, key `workspace-wallpapers`, one file URI per workspace; its
-schema is in the extension's folder, so use `kinobu-theme pick wallpaper`).
+schema is in the extension's folder, so use `kinobu-theme pick wallpaper`). Do not set
+`org.gnome.desktop.background picture-uri` while the extension runs: it takes that as the pick for
+the workspace on screen.
 
 ## Shell and terminal fonts
 

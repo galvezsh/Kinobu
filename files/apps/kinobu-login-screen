@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# kinobu-login-screen: Kinobu's background on the login screen (GDM, the screen before signing in
+# and after signing out). Written by Kinobu: rewritten on every run and --update.
+#
+# Ubuntu chooses that screen's theme through the alternative gdm-theme.gresource. This builds a
+# copy of Ubuntu's own (Yaru) with only the plain grey background replaced by Kinobu's picture,
+# and registers it with a higher priority: Ubuntu's files are never changed. The lock screen
+# (Super+L) is not affected: it shows each user's wallpaper.
+#
+#   sudo kinobu-login-screen              build it (again) and use it
+#   sudo kinobu-login-screen --if-needed  only when Ubuntu's theme or the picture changed (apt runs
+#                                         it after every package change)
+#   sudo kinobu-login-screen --remove     back to Ubuntu's grey
+#   kinobu-login-screen --build FILE      build the theme into FILE, changing nothing (tests)
+set -euo pipefail
+
+SOURCE=/usr/share/gnome-shell/theme/Yaru/gnome-shell-theme.gresource
+DIR="@SYSTEM_DIR@/login"
+TARGET="$DIR/gdm-theme.gresource"
+STAMP="$DIR/built-from"
+IMAGE="@SYSTEM_DIR@/data/login-background.jpg"
+LINK=/usr/share/gnome-shell/gdm-theme.gresource
+NAME=gdm-theme.gresource
+PRIORITY=50                       # above Yaru's (15) and GNOME's (10)
+PICTURE=org/gnome/shell/theme/kinobu-login.jpg
+VERSION=1                         # raise it when the CSS below changes, so every computer rebuilds
+
+CSS="
+/* Kinobu: its own background on the login screen (kinobu-login-screen) */
+#lockDialogGroup {
+  background-color: #0C0F10;
+  background-image: url(\"resource:///$PICTURE\");
+  background-size: cover;
+  background-position: center; }
+"
+
+say() { printf '%s\n' "$*"; }
+
+build() {   # build OUT: Ubuntu's theme with Kinobu's background, written to OUT
+    local out=$1 tmp file
+    command -v glib-compile-resources >/dev/null || { say "glib-compile-resources is missing (package libgio-2.0-dev-bin)"; return 1; }
+    [[ -f $SOURCE && -f $IMAGE ]] || { say "Ubuntu's login theme or Kinobu's picture is missing"; return 1; }
+    tmp=$(mktemp -d)
+    # shellcheck disable=SC2064  # tmp is fixed now
+    trap "rm -rf '$tmp'" RETURN
+    {
+        printf '<?xml version="1.0" encoding="UTF-8"?>\n<gresources>\n  <gresource prefix="/">\n'
+        while IFS= read -r file; do
+            [[ -n $file ]] || continue
+            mkdir -p "$tmp/src$(dirname "$file")"
+            gresource extract "$SOURCE" "$file" >"$tmp/src$file"
+            if [[ $file == *.css ]] && grep -q '#lockDialogGroup' "$tmp/src$file"; then
+                printf '%s' "$CSS" >>"$tmp/src$file"
+            fi
+            printf '    <file>%s</file>\n' "${file#/}"
+        done < <(gresource list "$SOURCE")
+        printf '    <file>%s</file>\n  </gresource>\n</gresources>\n' "$PICTURE"
+    } >"$tmp/theme.xml"
+    mkdir -p "$tmp/src/$(dirname "$PICTURE")"
+    cp "$IMAGE" "$tmp/src/$PICTURE"
+    grep -rq 'kinobu-login.jpg' "$tmp/src" --include='*.css' || { say "Ubuntu's theme has no login background to replace"; return 1; }
+    glib-compile-resources --sourcedir "$tmp/src" --target "$out" "$tmp/theme.xml"
+}
+
+stamp() { cat "$SOURCE" "$IMAGE" 2>/dev/null | sha256sum | cut -d' ' -f1; printf 'v%s\n' "$VERSION"; }
+
+registered() { update-alternatives --query "$NAME" 2>/dev/null | grep -qx "Alternative: $TARGET"; }
+
+use() {
+    [[ $EUID -eq 0 ]] || { say "Run it with sudo"; exit 1; }
+    if [[ ! -f $SOURCE ]]; then say "Ubuntu's login theme (Yaru) is not installed: nothing to do"; exit 0; fi
+    if [[ ${1:-} == --if-needed && -f $TARGET && "$(cat "$STAMP" 2>/dev/null)" == "$(stamp)" ]] && registered; then
+        exit 0
+    fi
+    mkdir -p "$DIR"
+    build "$DIR/new.gresource"
+    chmod 644 "$DIR/new.gresource"
+    mv "$DIR/new.gresource" "$TARGET"
+    stamp >"$STAMP"
+    update-alternatives --install "$LINK" "$NAME" "$TARGET" "$PRIORITY" >/dev/null
+    say "Kinobu's login screen is ready: you see it when you sign out."
+}
+
+case ${1:-} in
+    ''|--if-needed) use "${1:-}" ;;
+    --build) [[ -n ${2:-} ]] || { say "--build FILE"; exit 1; }; build "$2" ;;
+    --remove)
+        [[ $EUID -eq 0 ]] || { say "Run it with sudo"; exit 1; }
+        if registered; then update-alternatives --remove "$NAME" "$TARGET" >/dev/null; fi
+        rm -rf "$DIR"
+        say "Back to Ubuntu's login screen." ;;
+    -h|--help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *) say "Unknown option: $1 (--help)"; exit 1 ;;
+esac

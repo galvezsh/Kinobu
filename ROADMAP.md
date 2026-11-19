@@ -7,6 +7,7 @@ What is still to do while Kinobu is in development. Tick each item when it is do
 - The first real `--install` and `--update`, on the author's computer (after moving it off Orkestr): no warnings; three bugs found and fixed (the default agent when none is ticked, GTK 3 colours, Gate flashing in auto mode).
 - Claude Code complete: hooks, notices, Gate (the auto-mode wait, Allow, Deny, "In terminal" bringing the terminal back), the skill and the `kinobu-agent` subagent, checked in real sessions.
 - Themes with palettes, Seasons and its five sections, four wallpapers per theme from Wallhaven, Wallhaven's search in Seasons.
+- The login screen with Kinobu's background (`kinobu-login-screen`), checked in an isolated GNOME; still to see on the real one by signing out.
 - Willow installs, prepares its voices and starts (with the models already on the author's computer).
 
 The details are in the [Changelog](CHANGELOG.md).
@@ -27,9 +28,8 @@ Still to run outside the author's computer (the tests use a fake home folder, a 
 
 ### Look
 
-- [ ] **The login screen** (GDM, the grey screen before signing in and after signing out): a background of Kinobu's own through Ubuntu's `gdm-theme.gresource` alternative (`update-alternatives`), Yaru's theme with the background changed, rebuilt on every `--update` and after Ubuntu updates its theme; if it fails or is removed, Ubuntu's comes back. Tried in the virtual machine first.
-- [ ] **The boot menu (GRUB)**, offered only when another system (Windows) is found: `os-prober` on, the menu shown 5 seconds, a theme in Kinobu's colours, in `/etc/default/grub.d/kinobu.cfg`. Tried in the virtual machine first.
 - [ ] **The boot splash (Plymouth)**: Kinobu's logo instead of the maker's, and the login screen's logo (`org.gnome.login-screen logo`).
+- [ ] **Faster theme wallpapers**: Wallhaven's server is slow (about a minute for a theme's 30 MB, downloaded at once): show progress in Seasons, or download every theme's wallpapers in the background after the setup.
 - [ ] **Light terminal palettes with more contrast**: Everforest's light ANSI colours (yellow, green) read pale on Meadow and Birch; a palette could give its own 16 colours.
 - [ ] fastfetch and Kinobu's terminal output in the theme's accent; Papirus folders in the theme's colour (`papirus-folders`).
 - [ ] **Seasons' editor**: a theme of one's own from any other, its palettes, wallpapers by drag and drop, a live preview.
@@ -39,6 +39,7 @@ Still to run outside the author's computer (the tests use a fake home folder, a 
 
 - [ ] A whole conversation, and the real download of the models (about 450 MB, 2 GB with Qwen3-TTS).
 - [ ] Its new abilities with the real model: the three powers compared on the same questions (Haiku low, medium, high; Sonnet medium), `kinobu-do` actions, the screen, the skill on demand and the background checks on Sonnet; measure the tokens per turn.
+- [ ] **Links shown, not read aloud**: Willow keeps URLs in the window's text (to copy them) but its voice says something like "I left the link in the window" (in its instructions, and the URLs taken out of the text before the voice as a safety net).
 - [ ] Two separate settings: **Willow's agent** (the small model that answers) and **delegate to** (the agent that opens for real work).
 
 ### System layer
@@ -56,7 +57,8 @@ Still to run outside the author's computer (the tests use a fake home folder, a 
   5. Updating a pack: change its tag and SHA-256 in `packs.toml`, run the workflow, copy the new SHA-256 into Kinobu.
   6. Then: the Windows theme back on Fluent and the macOS theme on WhiteSur. The same repository can serve the themes' wallpapers.
 - **More agents**, once Claude Code is complete: Codex, then Antigravity CLI (installer, skill, note, subagent, hooks, the approval window and Willow in their headless modes). They were integrated in early 0.1 and taken out to finish one agent first; the facts found for them are in AGENTS.md §8.
+- **The boot menu (GRUB)**: left alone for now (decided on 2026-11-18). A theme and showing Windows would touch the boot, with Secure Boot on; only with a test in a virtual machine first.
 - **DaVinci Resolve** in the Media creation menu: it is not in APT, snap or the store and needs its own setup.
 - **Version names.** From 1.0 on, each major version is named after a fruit (`Kinobu v1.0 (Yuzu)`).
-- Willow: more languages, a private mode with a local model, and interrupting it while it speaks.
+- Willow: more languages, a private mode with a local model, and interrupting it by voice while it speaks (it would hear itself without echo cancellation; the stop button, Esc and the shortcut do it today).
 - A desktop notice when Ubuntu's automatic updates start in the background.

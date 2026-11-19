@@ -130,6 +130,6 @@ write_skill() {
         OMB_THEME NERD_FONT_FAMILY SYSTEM_DIR BIN_DIR LAUNCHER NOTIFIER)
     put_file "$dir/shortcuts.md" < <(render skill/shortcuts.md APP_ID APP_NAME LAUNCHER TABLE="${table%$'\n'}")
     for guide in software desktop hardware agents; do
-        put_file "$dir/$guide.md" < <(render "skill/$guide.md" SYSTEM_DIR PROGRAMS_DIR LAUNCHER NOTIFIER)
+        put_file "$dir/$guide.md" < <(render "skill/$guide.md" SYSTEM_DIR PROGRAMS_DIR BIN_DIR LAUNCHER NOTIFIER)
     done
 }

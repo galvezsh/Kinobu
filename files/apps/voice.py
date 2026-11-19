@@ -118,7 +118,8 @@ CSS = """
 .kinobu-voice .kinobu-chip { padding: 2px 10px; border-radius: 999px; font-size: 90%;
   background-color: color-mix(in srgb, var(--accent-bg-color) 15%, transparent); }
 .kinobu-voice entry.kinobu-entry { border-radius: 999px; min-height: 40px; padding: 0 16px; }
-.kinobu-voice button.kinobu-mic { min-width: 44px; min-height: 44px; padding: 0; }
+.kinobu-voice button.kinobu-mic, .kinobu-voice button.kinobu-hush { min-width: 44px; min-height: 44px;
+  padding: 0; }
 .kinobu-voice button.kinobu-mic:not(:checked) { background-color: var(--destructive-bg-color);
   color: var(--destructive-fg-color); }
 """
@@ -727,6 +728,7 @@ class VoiceWindow(Adw.ApplicationWindow):
         self.config = load_config()
         self.continuous = bool(self.config["continuous"])
         self.real, self.busy, self.mic_muted, self.sound_muted, self.syncing = False, False, False, False, False
+        self.hushed = False                     # the user cut the voice: the rest of the turn is not spoken
 
         header = Adw.HeaderBar(title_widget=Adw.WindowTitle(title=t("app")), css_classes=["flat"],
                                decoration_layout=":close")
@@ -753,8 +755,14 @@ class VoiceWindow(Adw.ApplicationWindow):
                                     valign=Gtk.Align.CENTER,
                                     css_classes=["circular", "suggested-action", "kinobu-mic"])
         self.mic.connect("toggled", self.on_mic)
+        # Stop: cuts the voice at once (also Esc and Super+Shift+Space again); only while it speaks
+        self.hush = Gtk.Button(icon_name="media-playback-stop-symbolic", tooltip_text=t("stop_talking"),
+                               valign=Gtk.Align.CENTER, visible=False,
+                               css_classes=["circular", "destructive-action", "kinobu-hush"])
+        self.hush.connect("clicked", lambda *_: self.interrupt())
         bottom = Gtk.Box(spacing=10, margin_start=16, margin_end=16, margin_bottom=16, margin_top=6)
         bottom.append(self.entry)
+        bottom.append(self.hush)
         bottom.append(self.mic)
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -783,6 +791,7 @@ class VoiceWindow(Adw.ApplicationWindow):
             self.dot.remove_css_class("off")
         self.hint.set_label(t("hint_muted" if state == "muted" else "hint_paused"))
         self.hint.set_visible(state in ("paused", "muted"))
+        self.hush.set_visible(state == "speaking" and not self.sound_muted)
         if self.real:
             self.listener.enabled = state == "listening" and not self.mic_muted
 
@@ -864,6 +873,29 @@ class VoiceWindow(Adw.ApplicationWindow):
             return True
         self.timers.append(GLib.timeout_add(20, step))
 
+    def speaking(self):
+        return self.sphere.state == "speaking" or (self.real and self.speaker.busy())
+
+    def interrupt(self):
+        """Cuts the voice at once: what was left to say is dropped, the whole answer stays in the
+        window and Willow listens again. If the answer is still being written, it ends in silence."""
+        if not self.speaking():
+            return False
+        self.hushed = True
+        self.hush.set_visible(False)
+        self.stop_audio()
+        if not self.real:                                   # the demo: end the fake answer
+            self.cancel()
+            self.after_answer()
+            return True
+        self.speaker.stop()
+        self.env = []
+        if self.answer_label is not None:
+            self.answer_label.set_label(self.visible())
+        if not self.busy or self.turn_done:
+            self.finish_turn()
+        return True
+
     def stop_audio(self):
         if self.player and self.player.poll() is None:
             self.player.terminate()
@@ -939,6 +971,7 @@ class VoiceWindow(Adw.ApplicationWindow):
 
     def ask(self, text):
         self.speaker.stop()
+        self.hushed = False
         self.bubble(t("you"), text, True)
         message = text
         if gender_note(self.config["voice"]) != gender_note(self.agent_voice):
@@ -973,7 +1006,7 @@ class VoiceWindow(Adw.ApplicationWindow):
 
     def queue_sentence(self, sentence):
         sentence = sentence.strip()
-        if sentence and not self.sound_muted and self.config["engine"] in ENGINES:
+        if sentence and not self.sound_muted and not self.hushed and self.config["engine"] in ENGINES:
             self.speaker.say(sentence, self.config["engine"], self.config["voice"])
 
     def on_delta(self, piece):
@@ -1041,7 +1074,7 @@ class VoiceWindow(Adw.ApplicationWindow):
             self.finish_turn()
 
     def finish_turn(self):
-        self.busy, self.env = False, []
+        self.busy, self.env, self.hushed = False, [], False
         if getattr(self, "restart_pending", False):
             self.restart_agent()
         if getattr(self, "closing", False):                 # "goodbye": close once it has spoken
@@ -1143,8 +1176,9 @@ class VoiceWindow(Adw.ApplicationWindow):
             self.set_state("paused")
 
     def on_key(self, _ctl, keyval, _code, mods):
-        if keyval == Gdk.KEY_Escape:
-            self.close()
+        if keyval == Gdk.KEY_Escape:                   # first it stops talking, then it closes
+            if not self.interrupt():
+                self.close()
             return True
         if keyval in (Gdk.KEY_m, Gdk.KEY_M) and mods & Gdk.ModifierType.CONTROL_MASK:
             self.mic.set_active(not self.mic.get_active())
@@ -1299,8 +1333,9 @@ def main():
                 win.start_demo()
             else:
                 win.start_engine()
-        else:
+        else:                                       # Super+Shift+Space again: back, and quiet
             win.present()
+            win.interrupt()
     app.connect("activate", activate)
     return app.run([])
 

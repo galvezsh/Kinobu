@@ -381,6 +381,40 @@ def settings(schema):
 WALLPAPERS_EXTENSION = ("workspace-wallpapers@jonathan.aljl.eu", "org.gnome.shell.extensions.workspace-wallpapers")
 
 
+def restart_extension(uuid):
+    """Turns a running GNOME Shell extension off and on again, so it reads its settings anew.
+    The per-workspace wallpapers extension needs it: it takes any outside change of the desktop's
+    wallpaper as the user's pick for the workspace on screen (applying a theme from the second
+    workspace copied the first wallpaper onto it), while on start it shows the right wallpaper of
+    the workspace on screen itself. False when it is not running or there is no GNOME session
+    (then the caller sets the desktop's wallpaper as before). Never in the tests: their own
+    settings database is not the one the running GNOME reads."""
+    if os.environ.get("DCONF_PROFILE"):
+        return False
+    from gi.repository import Gio, GLib
+    try:
+        Gio.Settings.sync()        # the extension must read the list just written
+        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+
+        def call(method, reply):
+            return bus.call_sync("org.gnome.Shell.Extensions", "/org/gnome/Shell/Extensions",
+                                 "org.gnome.Shell.Extensions", method, GLib.Variant("(s)", (uuid,)),
+                                 GLib.VariantType(reply), Gio.DBusCallFlags.NONE, 3000, None).unpack()[0]
+        info = call("GetExtensionInfo", "(a{sv})")
+        if not info.get("enabled") or info.get("state") != 1:     # 1: running
+            return False
+    except GLib.Error:
+        return False
+    try:
+        call("DisableExtension", "(b)")
+    except GLib.Error:
+        pass
+    try:                           # on again whatever happened, never left off
+        return bool(call("EnableExtension", "(b)"))
+    except GLib.Error:
+        return False
+
+
 def extension_settings(uuid, schema):
     """Settings of a GNOME Shell extension: their schema lives in the extension's own folder."""
     from gi.repository import Gio
@@ -658,20 +692,29 @@ def wallhaven_file(wallhaven_id):
     return None
 
 
+def wallpapers_to_download(theme, pid):
+    """The theme's Wallhaven wallpapers not downloaded yet (Seasons warns that the first time is slower)."""
+    return [w for w in theme_wallhaven(theme, mode_of(theme, pid)) if not wallhaven_file(w)]
+
+
 def fetch_wallpapers(theme, mode):
-    """Downloads the theme's Wallhaven wallpapers that are missing. Returns notes. Set
-    KINOBU_NO_DOWNLOAD=1 to skip it (the tests do)."""
+    """Downloads the theme's Wallhaven wallpapers that are missing, all at once. Returns notes.
+    Set KINOBU_NO_DOWNLOAD=1 to skip it (the tests do)."""
     missing = [w for w in theme_wallhaven(theme, mode) if not wallhaven_file(w)]
     if not missing or os.environ.get("KINOBU_NO_DOWNLOAD") == "1":
         return []
     sys.path.insert(0, HERE)   # next to this file, also under python3 -I
     import kinobu_wallhaven as wallhaven
-    failed = 0
-    for wallhaven_id in missing:
+    from concurrent.futures import ThreadPoolExecutor
+
+    def one(wallhaven_id):
         try:
             wallhaven.download(wallhaven.picture(wallhaven_id), WALLPAPERS_DIR)
+            return True
         except (wallhaven.WallhavenError, OSError):
-            failed += 1
+            return False
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        failed = list(pool.map(one, missing)).count(False)
     return [f"{failed} of the theme's wallpapers could not be downloaded (no connection?): "
             "kept the current ones there"] if failed else []
 
@@ -888,13 +931,16 @@ def apply(theme_id, palette=None, mode=None, quiet=False):
         four = [("file://" + w if w and os.path.isfile(w) else "") for w in use["wallpapers"]]
         uris = [four[i % WALL_SLOTS] for i in range(EXTENSION_SLOTS)]
         per_workspace = extension_settings(*WALLPAPERS_EXTENSION)
+        refreshed = False
         if per_workspace and per_workspace.props.settings_schema.has_key("workspace-wallpapers"):
             old = per_workspace.get_strv("workspace-wallpapers")
             uris = [u or (old[i] if i < len(old) else "") for i, u in enumerate(uris)]
             per_workspace.set_value("workspace-wallpapers", GLib.Variant("as", uris))
-        if uris[0]:   # the first workspace is also the desktop of both modes and the lock screen
-            background.set_string("picture-uri", uris[0])
-            background.set_string("picture-uri-dark", uris[0])
+            refreshed = restart_extension(WALLPAPERS_EXTENSION[0])
+        if uris[0]:   # the first workspace is also the lock screen (and the desktop without the extension)
+            if not refreshed:
+                background.set_string("picture-uri", uris[0])
+                background.set_string("picture-uri-dark", uris[0])
             screensaver = settings("org.gnome.desktop.screensaver")
             if screensaver:
                 screensaver.set_string("picture-uri", uris[0])

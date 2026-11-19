@@ -80,6 +80,7 @@
     "hint_paused": "Touch the orb to talk",
     "muted": "Microphone muted",
     "hint_muted": "Unmute it with the button, Ctrl+M or Super+Alt+K",
+    "stop_talking": "Stop talking",
     "sound_off": "Sound is muted: I answer in writing",
     "no_agent": "I can't find your agent. For now I work with Claude Code: install it and sign in.",
     "agent_error": "Your agent did not answer. Check that it is signed in.",
@@ -200,6 +201,7 @@
     "theme.gruvbox": "Retro groove: warm, earthy colours with plenty of contrast.",
     "theme.nord": "Arctic and quiet: frosty blues on polar night.",
     "theme.windows": "Clean and familiar, inspired by Windows 11: light greys and blue.",
-    "theme.macos": "Bright and polished, inspired by macOS: window buttons on the left."
+    "theme.macos": "Bright and polished, inspired by macOS: window buttons on the left.",
+    "downloading_walls": "Downloading the theme's wallpapers… The first time takes a little longer."
   }
 }

@@ -83,6 +83,7 @@
     "theme.gruvbox": "Ambiance rétro : des couleurs chaudes et terreuses, avec beaucoup de contraste.",
     "theme.nord": "Arctique et paisible : des bleus givrés sur la nuit polaire.",
     "theme.windows": "Net et familier, inspiré de Windows 11 : gris clairs et bleu.",
-    "theme.macos": "Lumineux et soigné, inspiré de macOS : boutons des fenêtres à gauche."
+    "theme.macos": "Lumineux et soigné, inspiré de macOS : boutons des fenêtres à gauche.",
+    "downloading_walls": "Téléchargement des fonds d'écran du thème… La première fois prend un peu plus de temps."
   }
 }

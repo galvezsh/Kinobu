@@ -321,12 +321,21 @@ class ThemeCard(Gtk.Box):
         self.button.connect("clicked", lambda b: self.win.run(
             lambda: engine.apply(self.theme["id"], self.palette),
             t("applied", name=f"{self.theme.get('name', self.theme['id'])} · "
-                              f"{engine.palette_name(self.theme, self.palette)}")))
+                              f"{engine.palette_name(self.theme, self.palette)}"),
+            waiting=self.waiting()))
         chips.append(self.button)
         self.palette_text = Gtk.Label(xalign=0, css_classes=["dim-label", "caption"])
         body.append(self.palette_text)
         body.append(chips)
         self.palette_text.set_label(self.palette_label(self.palette))
+
+    def waiting(self):
+        """What to say while it is applied: the first time, its wallpapers are downloaded."""
+        own = all(self.win.state["look"]["wallpapers"][i] if i < len(self.win.state["look"]["wallpapers"]) else ""
+                  for i in range(engine.WALL_SLOTS))
+        if not own and engine.wallpapers_to_download(self.theme, self.palette):
+            return t("downloading_walls")
+        return None
 
     def palette_label(self, pid):
         return f"{engine.palette_name(self.theme, pid)} · {t(engine.mode_of(self.theme, pid))}"
@@ -1069,9 +1078,15 @@ class Window(Adw.ApplicationWindow):
         for page in self.pages:
             page.refresh(self.state, busy)
 
-    def run(self, work, message):
-        """Runs an engine call away from the window, then shows the result."""
+    def run(self, work, message, waiting=None):
+        """Runs an engine call away from the window, then shows the result. While it works the
+        pointer says so, and waiting (a text) stays on screen until it ends."""
         self.refresh(busy=True)
+        self.set_cursor(Gdk.Cursor.new_from_name("progress"))
+        notice = None
+        if waiting:
+            notice = Adw.Toast(title=waiting, timeout=0)
+            self.toasts.add_toast(notice)
 
         def worker():
             try:
@@ -1081,6 +1096,9 @@ class Window(Adw.ApplicationWindow):
             GLib.idle_add(done, notes, error)
 
         def done(notes, error):
+            self.set_cursor(None)
+            if notice:
+                notice.dismiss()
             self.refresh()
             if error:
                 self.toasts.add_toast(Adw.Toast(title=t("failed", error=error), timeout=8))

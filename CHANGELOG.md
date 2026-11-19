@@ -18,6 +18,9 @@ Kinobu's look and its own apps: themes with palettes and Seasons to choose them,
 - **At least two dark and two light palettes in every theme**: Kinobu's Birch, Tokyo Night Light, Gruvbox Light Hard, Rosé Pine Dawn Bright, Nord's Deep and Bright, and Soft and Deep for Windows and macOS. **Dracula is now part of Catppuccin** (Dracula and Alucard palettes, blended with Catppuccin's greys); a look on Dracula moves there on its own. Eight themes.
 - **Seasons: a "Follow the theme" switch** in Icons, Cursors, Fonts and Wallpapers. Off keeps what the theme gives now as your own choice; on goes back to the theme's.
 - **The dock's Show Apps button shows Kinobu's logo** instead of Ubuntu's (a symbolic version of the logo, drawn by `tools/logo.py`).
+- **Seasons says when a theme's wallpapers are downloading** (the first time a theme is applied it can take a while): a notice stays until they are in, the pointer shows it is working, and the four are downloaded at once.
+- **The login screen has Kinobu's background** instead of Ubuntu's plain grey: the wordmark large, blurred and dimmed on a dark gradient, the same for every user. Built from Ubuntu's own theme and chosen through its `gdm-theme.gresource` alternative, so Ubuntu's files are never changed; apt rebuilds it when Ubuntu updates its theme, and `sudo kinobu-login-screen --remove` brings the grey back. Adds the small `libgio-2.0-dev-bin` package.
+- **Willow can be stopped while it speaks**: a stop button next to the microphone while it talks, Esc (a second Esc closes the window) or Super+Shift+Space again. The voice stops at once, the whole answer stays in the window and Willow listens again.
 - **Super+F1 opens the welcome tour** (Sprout), shown in Trail and the tour itself; the tour leaves the app grid. GNOME's Help shortcut is released (Yelp is not installed).
 
 ### Changed
@@ -39,6 +42,7 @@ Kinobu's look and its own apps: themes with palettes and Seasons to choose them,
 - **An agent that is already installed opens with Super+Shift+Enter even when it was not ticked** in the menu (unticking means "do not install it"). Found in the first real install.
 - **Gate no longer flashes on every command in Claude Code's auto mode**: it waits a few seconds, and opens only when the automatic check leaves the decision to the user.
 - **GTK 3 apps read the theme's border colours**: the stylesheet used a colour form only GTK 4 understands, and GTK 3 apps logged a parsing error.
+- **Applying a theme from another workspace no longer copies the first wallpaper onto it.** The per-workspace wallpapers extension took the desktop's wallpaper, which Kinobu set to the first one, as the user's pick for the workspace on screen; now Kinobu only writes the extension's list and restarts it, and the extension shows the right wallpaper itself.
 - **The skill describes virt-manager as Kinobu sets it up** (the `libvirt` group) and no longer mentions GNOME Boxes.
 
 ## [0.1] — 2026-11-17

@@ -59,6 +59,26 @@ install_look() {
     done
     ok "$(find "$themes" -name theme.toml | wc -l) themes; Seasons is in the app grid (Settings folder)"
     install_look_packs
+    install_login_screen
+}
+
+# The login screen (GDM): Ubuntu's own theme with Kinobu's background instead of the plain grey,
+# registered as an alternative above Ubuntu's (files/apps/kinobu-login-screen). apt rebuilds it when
+# Ubuntu's theme is updated; `sudo kinobu-login-screen --remove` goes back to Ubuntu's.
+install_login_screen() {
+    if ! $SYSTEM_WRITES; then return 0; fi
+    step "Login screen"
+    # --update adds no packages: this one is small and only builds the theme
+    if ! command -v glib-compile-resources >/dev/null; then apt_install libgio-2.0-dev-bin; fi
+    put_file "$SYSTEM_DIR/data/login-background.jpg" <"$ROOT_DIR/files/branding/login-background.jpg"
+    put_file "$BIN_DIR/kinobu-login-screen" 0755 < <(render apps/kinobu-login-screen SYSTEM_DIR)
+    put_file /etc/apt/apt.conf.d/99kinobu-login-screen \
+        <<<"DPkg::Post-Invoke { \"if [ -x $BIN_DIR/kinobu-login-screen ]; then $BIN_DIR/kinobu-login-screen --if-needed >/dev/null 2>&1 || true; fi\"; };"
+    if run root "$BIN_DIR/kinobu-login-screen" --if-needed; then
+        ok "Kinobu's background on the login screen (you see it when you sign out)"
+    else
+        warn "The login screen keeps Ubuntu's background (see the log)"
+    fi
 }
 
 # Downloads the LOOK_PACKS that are missing or changed. A pack that cannot be downloaded or does

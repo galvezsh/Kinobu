@@ -16,6 +16,19 @@ It is the successor of **Orkestr OS**, rebuilt from scratch in November 2026: th
 - They work **step by step**: explain, propose and wait for a go-ahead before anything beyond a small change.
 - The setup is for people **new to the terminal and to Linux**: plain words on screen, no jargon, a tidy and good-looking output.
 - They want a **clear hierarchy** in what is installed and **functions grouped by purpose**.
+- **Keep the documentation up to date with every change, without being asked.** The author asks for changes and does not repeat that the documents must follow: that is part of every change, in the same piece of work, never "later". Before saying a change is done, go through this list and update what it touches:
+
+  | File | Update it when |
+  |---|---|
+  | `CHANGELOG.md` | Always: one line per change a user would notice, under the version in development (Added, Changed, Fixed, Removed) |
+  | `ROADMAP.md` | An item is done (tick it, then it goes to the changelog), a new task or idea comes up, or a plan changes |
+  | `GUIDE.md` | How something works or is used changes: an app, a shortcut, a setting, a mode, a file Kinobu writes |
+  | `README.md` | What Kinobu is or offers changes, its state, or the version |
+  | `AGENTS.md` | A decision and its reason (§6), a trap or a verified fact (§8), the layout (§3), a convention or a test |
+  | `files/skill/*.md` | What an agent on an installed computer must know changes (Kinobu's skill) |
+  | `docs/` | The design of something not built yet changes |
+
+  Then tell the author in the answer which documents were updated, and which were not because nothing in them changed. If a change is only in the repository, say so too: the author's computer gets it when they run `bash kinobu.sh --update` themselves.
 - They set up git and sign commits themselves: do not `git init`, commit or push unless asked.
 - **Never run `kinobu.sh --install`, `--update` or a block against the author's real system.** Use the tests (§7).
 - Verify facts (installer URLs, file formats, config paths) against official sources, and say what was and was not verified.
@@ -36,11 +49,12 @@ It is the successor of **Orkestr OS**, rebuilt from scratch in November 2026: th
 | `files/` | Everything installed as a file: `apt/`, `shell/`, `desktop/`, `apps/`, `i18n/`, `agents/`, `skill/`, `subagents/`, `services/`, `branding/`. `@NAME@` marks are filled by `render` |
 | `tools/branding.py` | Draws the rings and the wordmark: `files/branding/{logo,wordmark}.txt`, `files/shell/fastfetch-logo.txt` and `assets/kinobu-{dark,light}.svg` |
 | `tools/logo.py` | Draws the vector logo: `assets/logo{,-small}{,-light}.svg` |
+| `tools/login_background.py` | Draws the login screen's background: `files/branding/login-background.jpg` (the wordmark blurred on a dark gradient) |
 | `assets/` | The README banner and the logo |
 | `files/themes/` | The factory themes (one folder each, `theme.toml`) and `templates/` (the palette layer of the GTK CSS). The engine is `files/apps/kinobu_theme.py`, the app `files/apps/seasons.py` |
 | `tests/` | `run.sh`, `pty-run.py`, `approve-focus.py`, `themes-apply.sh`, `desktop-shots.sh` with `scenes/`, and `stubs/` |
 | `docs/` | Designs of what is not built yet: `themes.md` |
-| `README.md`, `GUIDE.md`, `ROADMAP.md`, `CHANGELOG.md` | Human documentation. Update the changelog with every change and keep the roadmap in line |
+| `README.md`, `GUIDE.md`, `ROADMAP.md`, `CHANGELOG.md` | Human documentation, kept up to date with every change (§2) |
 | `CLAUDE.md` | `@AGENTS.md` |
 
 ## 4. How a run works
@@ -130,6 +144,8 @@ Carried over from Orkestr (October–November 2026); re-check when they may have
 - **`python3-gi-cairo` is not installed by default**: draw with GtkSnapshot. In PyGObject, `Graphene.Rect().init(...)` and `Gsk.RoundedRect().init_from_rect(...)` return unusable copies: initialise the object in place and use it.
 - **Ubuntu Dock's Show Apps icon** (2026-11-18): no setting; `appIcons.js` asks for the icon name `view-app-grid-<session mode>-symbolic` (`view-app-grid-ubuntu-symbolic`), which only Yaru ships. Kinobu puts its own in `/usr/local/share/icons/Yaru` (searched before `/usr/share`) and `hicolor` (for the other packs): a folder without `index.theme` only adds icons to the theme of that name, so the theme engine must not take it for a theme.
 - **Wallhaven's API** (2026-11-18): `https://wallhaven.cc/api/v1/search` answers without a key for safe pictures; `purity=100`, `categories=100`, `ratios=landscape`, `atleast=WxH`, `colors=` (a fixed list of 29 hex values), `sorting=random|relevance|toplist|date_added|favorites`, `page`, and `seed` for random pages. Each result has `path` (the file), `thumbs.large`, `resolution`, `purity`. 45 requests a minute (429 after).
+- **The login screen (GDM)** (2026-11-18): GNOME's `gdm` session mode loads `gdm.css` from `/usr/share/gnome-shell/gdm-theme.gresource`, an `update-alternatives` link (Yaru 15, GNOME 10). Ubuntu's grey is `#lockDialogGroup { background-color: #222222 }`. `glib-compile-resources` is in `libgio-2.0-dev-bin`. St reads `background-image: url("resource:///…")` with `background-size: cover`. To look at a built theme without root: `GNOME_SHELL_DATADIR=<folder>` with links to `/usr/share/gnome-shell/*` and the theme replaced (in `--mode=ubuntu` the theme is `theme/Yaru/gnome-shell-theme.gresource`), then an `St.Widget({name: 'lockDialogGroup'})` over the stage. The `gdm` mode loads no extensions, so the test harness cannot capture it directly. GRUB is left alone (Secure Boot, the author's decision).
+- **The workspace-wallpapers extension** (version 4, 2026-11-19): any change of `org.gnome.desktop.background picture-uri` it did not write itself is saved as the wallpaper of the workspace on screen, and on enable it shows the active workspace's wallpaper and writes `picture-uri` itself. So the theme engine writes only its list and restarts it (`DisableExtension`/`EnableExtension` on `org.gnome.Shell.Extensions`, never in the tests); `picture-uri` only when it is not running. Wayland gives other apps no way to know the active workspace.
 - **Screenshots on GNOME 50** (2026-11-18): the Shell's screenshot D-Bus API refuses every caller outside its allow-list, `gnome-screenshot` included (it then falls back to X11 and hangs). The screenshot portal (`org.freedesktop.portal.Screenshot`, `interactive: false`) works: GNOME asks once "Allow apps to take screenshots?" and stores the answer (permission store table `screenshot`); `XDG_CURRENT_DESKTOP` must name GNOME or the portal has no backend. Brightness has no public D-Bus setter (only `org.gnome.Shell.Brightness` dimming): `brightnessctl` on laptops.
 - **Claude Code 2.1.326 flags used by Willow**: `--effort`, `--tools`, `--allowedTools` (`Read(//absolute/path/**)` rules), `--system-prompt`, `--setting-sources ""`, `--no-session-persistence`, `--input-format/--output-format stream-json`; no `--max-turns`.
 - **Omarchy 4** (read on 2026-11-16): packaged in `/usr/share/omarchy`, `/etc/skel` seeds new users, per-user migrations with a notice at login, themes as `colors.toml` plus templates, the active theme in each user's state folder.
@@ -142,4 +158,12 @@ Carried over from Orkestr (October–November 2026); re-check when they may have
 - **Add a text or a language**: `files/i18n/<language>.json` (`en.json` must have every key).
 - **Add a block**: its function, then `BLOCKS`, `BLOCK_TITLE`, `BLOCK_DESC`, `BLOCK_FN` and, if it runs on updates, `lib/update.sh`.
 - **Change the logo or the wordmark**: `python3 tools/branding.py` rewrites the terminal branding and the README banner; `python3 tools/logo.py`, the vector logo.
-- **Release**: bump `APP_VERSION` and the header of `kinobu.sh`, date the entry in `CHANGELOG.md`, update the README line and the roadmap. What must reach computers already set up belongs in a function `UPDATE_FN` runs.
+- **Release (a new version)**, all in the same piece of work:
+  1. `APP_VERSION` and the header of `kinobu.sh`.
+  2. `CHANGELOG.md`: date the version's entry, with a short summary on top and what to run to update.
+  3. `README.md`: the version line and the state note.
+  4. `ROADMAP.md`: move the version's done items to "Done in X.Y", and open the next version.
+  5. `AGENTS.md`: the version and state in §1, and the versions row in §6.
+  6. `GUIDE.md` and the skill, if anything there still names the old version.
+  7. Check that what must reach computers already set up is in a function `UPDATE_FN` runs.
+  8. `bash tests/run.sh`, and propose the commit message (the author commits).
