@@ -2,10 +2,13 @@
 
 What changed in each version of Kinobu. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). To bring a computer set up by an earlier version to the latest one, run `bash kinobu.sh --update` (your look is kept).
 
-## [Unreleased] — 0.3 in development
+## [0.3] — 2026-11-19
+
+Your own themes in Seasons, legible terminals, the theme's accent and the full logo in fastfetch, Kinobu's rings on the boot screen under the maker's logo, a login screen without Ubuntu's logo, and Willow can be stopped while it speaks. Run `bash kinobu.sh --update` from the project's folder: the installed `kinobu --update` still runs the copy it already has (fixed in 0.4).
 
 ### Added
 
+- **Willow can be stopped while it speaks**: a stop button next to the microphone while it talks, Esc (a second Esc closes the window) or Super+Shift+Space again. The voice stops at once, the whole answer stays in the window and Willow listens again.
 - **Your own themes in Seasons.** Each theme card has a menu: *Duplicate…* makes your own copy of any theme under the name you give it (it keeps the palettes, terminal, icons and wallpapers) and opens its colours; your themes also have *Customise…*, *Open the file* and *Delete…* (to the Trash). The colour editor shows a palette at a time: a colour button for the window, content, sidebar, cards, text, secondary text, accent, success, warning and error, a live preview and how well the text reads; text that would be hard to read cannot be saved, and saving a theme in use applies it. GNOME's accent follows the new accent. The editor also puts the theme's window buttons on the left or the right; icons, cursor, fonts and wallpapers stay in their own tabs (they are yours, over any theme). From the command line: `kinobu-theme new NAME --from ID`, `kinobu-theme colour ID PALETTE KEY=#RRGGBB…`, `kinobu-theme buttons ID left|right`, `kinobu-theme delete ID`; `seasons.py --edit ID` opens the editor.
 - **Kinobu's rings when the computer starts and shuts down** (Plymouth): the maker's logo stays, and under it, small as Windows' dots (96 px), Kinobu's logo turns instead of Ubuntu's spinner and logo (every ring turning, the outer one to the left, the inner ones each its own way, and the golden centre breathing, in a three-second loop). A computer whose firmware has no logo (a virtual machine, some desktops) shows Kinobu's logo, still, in its place. It is Ubuntu's own boot module (two-step) with Kinobu's frames, so the box for an encrypted disk's password and the "Installing updates" screen work as before. Chosen by hand through Ubuntu's `default.plymouth` alternative, which Ubuntu's updates never change; the start-up image is rebuilt only when the frames change. `sudo kinobu-boot-splash --remove` brings Ubuntu's back. Frames drawn by `tools/plymouth.py`.
 - **Seasons keeps the system's and your own apart**: Themes, Icons and Cursors each show a *System* group and a *User* group (your own themes; packs unpacked into your home folder, such as `~/.local/share/icons` or `~/.icons`), with a hint on where to put them while the group is empty. The links Kinobu makes for sandboxed apps count as the system's.
@@ -16,6 +19,10 @@ What changed in each version of Kinobu. The format follows [Keep a Changelog](ht
 - **The login screen without Ubuntu's logo** under the user list: Kinobu's background already carries its name. A file of Kinobu's own in GDM's settings folder (`/usr/share/gdm/dconf/95-kinobu-login`), read every time GDM starts, so Ubuntu's updates keep it; `sudo kinobu-login-screen --remove` brings the logo back with the grey.
 - **fastfetch shows the full logo**, with its four rings, instead of the reduced one with two (21 rows, as tall as the summary next to it), and it starts on the summary's first line instead of two rows lower.
 - **fastfetch and the setup's colours follow the theme's own accent**, for the terminal's mode, instead of GNOME's nearest accent colour: the name, the keys and the centre of the rings, with the rings near the terminal's text (they were near white, faint on a light terminal). Without a theme applied, GNOME's accent as before.
+
+### Fixed
+
+- **Applying a theme from another workspace no longer copies the first wallpaper onto it.** The per-workspace wallpapers extension took the desktop's wallpaper, which Kinobu set to the first one, as the user's pick for the workspace on screen; now Kinobu only writes the extension's list and restarts it, and the extension shows the right wallpaper itself.
 
 ## [0.2] — 2026-11-18
 
@@ -35,7 +42,6 @@ Kinobu's look and its own apps: themes with palettes and Seasons to choose them,
 - **The dock's Show Apps button shows Kinobu's logo** instead of Ubuntu's (a symbolic version of the logo, drawn by `tools/logo.py`).
 - **Seasons says when a theme's wallpapers are downloading** (the first time a theme is applied it can take a while): a notice stays until they are in, the pointer shows it is working, and the four are downloaded at once.
 - **The login screen has Kinobu's background** instead of Ubuntu's plain grey: the wordmark large, blurred and dimmed on a dark gradient, the same for every user. Built from Ubuntu's own theme and chosen through its `gdm-theme.gresource` alternative, so Ubuntu's files are never changed; apt rebuilds it when Ubuntu updates its theme, and `sudo kinobu-login-screen --remove` brings the grey back. Adds the small `libgio-2.0-dev-bin` package.
-- **Willow can be stopped while it speaks**: a stop button next to the microphone while it talks, Esc (a second Esc closes the window) or Super+Shift+Space again. The voice stops at once, the whole answer stays in the window and Willow listens again.
 - **Super+F1 opens the welcome tour** (Sprout), shown in Trail and the tour itself; the tour leaves the app grid. GNOME's Help shortcut is released (Yelp is not installed).
 
 ### Changed
@@ -57,7 +63,6 @@ Kinobu's look and its own apps: themes with palettes and Seasons to choose them,
 - **An agent that is already installed opens with Super+Shift+Enter even when it was not ticked** in the menu (unticking means "do not install it"). Found in the first real install.
 - **Gate no longer flashes on every command in Claude Code's auto mode**: it waits a few seconds, and opens only when the automatic check leaves the decision to the user.
 - **GTK 3 apps read the theme's border colours**: the stylesheet used a colour form only GTK 4 understands, and GTK 3 apps logged a parsing error.
-- **Applying a theme from another workspace no longer copies the first wallpaper onto it.** The per-workspace wallpapers extension took the desktop's wallpaper, which Kinobu set to the first one, as the user's pick for the workspace on screen; now Kinobu only writes the extension's list and restarts it, and the extension shows the right wallpaper itself.
 - **The skill describes virt-manager as Kinobu sets it up** (the `libvirt` group) and no longer mentions GNOME Boxes.
 
 ## [0.1] — 2026-11-17

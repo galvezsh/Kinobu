@@ -3,7 +3,7 @@
 #
 #   Kinobu — the agentic Ubuntu desktop
 #
-#   Version : 0.2 (in development)
+#   Version : 0.3 (in development)
 #   Author  : Alberto Gálvez (agalvezsh)
 #   License : AGPL-3.0-or-later (see LICENSE)
 #
@@ -26,7 +26,7 @@ set -Eeuo pipefail
 # =============================================================================
 APP_NAME="Kinobu"
 APP_ID="kinobu"
-APP_VERSION="0.2"
+APP_VERSION="0.3"
 SUPPORTED_UBUNTU="26.04"
 MIN_FREE_GB=25                              # free space the full setup needs on /
 DISCRETE_GPU='NVIDIA|Radeon (RX|Pro)|Arc'   # lspci names of dedicated graphics cards

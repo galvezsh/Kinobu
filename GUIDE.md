@@ -2,7 +2,7 @@
 
 How Kinobu works inside: the modes, the blocks, where everything is installed, the agents' integration, the files it touches and how to undo things. For what Kinobu is and why it exists, start with the [README](README.md).
 
-> Kinobu 0.2 is in development: installed and updated on its author's computer, otherwise run in simulation. This guide describes what the code does; see the [Roadmap](ROADMAP.md) for what is not verified yet.
+> Kinobu 0.3 is in development: installed and updated on its author's computer, otherwise run in simulation. This guide describes what the code does; see the [Roadmap](ROADMAP.md) for what is not verified yet.
 
 ## Contents
 
@@ -130,6 +130,8 @@ The agents' hooks only read and run these files, which any user may do: no speci
 cd kinobu && git pull
 bash kinobu.sh --update
 ```
+
+Run it from the project's folder after `git pull`: the installed `kinobu --update` runs the copy of Kinobu it already has, so it brings nothing new (a self-updating `kinobu --update` is planned for 0.4).
 
 It shows no menus and never touches your look: your theme and what you picked in Seasons (`~/.config/kinobu/look.toml`), your terminal font, dock, weather, power settings and extensions stay as you left them; the themes themselves may improve. Kinobu never goes back: a copy older than the installed version refuses to run.
 

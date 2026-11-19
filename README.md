@@ -11,10 +11,10 @@
 
 **The agentic Ubuntu desktop.** One script that turns a fresh Ubuntu 26.04 LTS into a computer ready to work with AI: the apps, the development tools, AI agents truly integrated into the system, a voice assistant and a familiar, good-looking desktop where everything works together from the first minute.
 
-By **Alberto Gálvez** ([agalvezsh](https://github.com/agalvezsh)) · version **0.2** (in development) · [AGPL-3.0-or-later](LICENSE)
+By **Alberto Gálvez** ([agalvezsh](https://github.com/agalvezsh)) · version **0.3** (in development) · [AGPL-3.0-or-later](LICENSE)
 
 > [!WARNING]
-> Kinobu 0.2 is in development. It has been installed and updated on its author's computer, and otherwise run in simulation (see the [Roadmap](ROADMAP.md)): do not use it on a computer you care about yet.
+> Kinobu 0.3 is in development. It has been installed and updated on its author's computer, and otherwise run in simulation (see the [Roadmap](ROADMAP.md)): do not use it on a computer you care about yet.
 
 ## Why it exists
 
@@ -35,7 +35,7 @@ The logo is a trunk seen from above: the thick outer ring is the base, the inner
 - **A desktop you already know.** A dock at the bottom, four workspaces, shortcuts that are easy to guess and **Trail**, the cheat sheet on **Super+K**.
 - **AI agents, integrated.** Claude Code opens with **Super+Shift+Enter**, knows this system through Kinobu's skill, can ask a read-only investigator for help and notifies you when it finishes or needs your permission. More agents will follow once this one is complete.
 - **Talk to your computer.** **Willow** (Super+Shift+Space) listens and answers aloud with voices that run on your computer. It changes the volume, the theme or the music, sets reminders, looks at your screen when you ask, checks things in the background and hands real work to your agent. **Handy** (Super+Space) types what you dictate.
-- **Your look, your way.** **Seasons** changes the whole look at once with eight themes (Kinobu, Tokyo Night, Catppuccin with Dracula, Nord, Gruvbox, Rosé Pine, Windows and macOS), each with at least two dark and two light palettes: app colours, icons, cursor, terminal and window buttons. Pick your own icons, cursor, fonts and a wallpaper per workspace, and they stay when you change themes. The login screen wears Kinobu's own background, without Ubuntu's logo, and Kinobu's small rings turn under the maker's logo while the computer starts.
+- **Your look, your way.** **Seasons** changes the whole look at once with eight themes (Kinobu, Tokyo Night, Catppuccin with Dracula, Nord, Gruvbox, Rosé Pine, Windows and macOS), each with at least two dark and two light palettes: app colours, icons, cursor, terminal and window buttons. Pick your own icons, cursor, fonts and a wallpaper per workspace, and they stay when you change themes; make a theme of your own from any other and change its colours. The login screen wears Kinobu's own background, without Ubuntu's logo, and Kinobu's small rings turn under the maker's logo while the computer starts.
 - **Easy to follow.** A quick check of your computer, menus to choose your software and a clean screen that shows each step, made for people who are new to the terminal.
 - **For every user of the computer.** Kinobu installs itself once for the whole system; each user gets their own part at their first login.
 - **Done right, then left alone.** Run it again at any time: it only does what is missing. It saves your GNOME settings first, logs every run and never touches disks or partitions.
