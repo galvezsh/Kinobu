@@ -23,7 +23,12 @@ check "installed scripts parse" bash -n files/apps/kinobu-launch files/apps/kino
 # shellcheck disable=SC2016  # the checks below run their own shell
 check "translations are valid JSON" bash -c 'for f in files/i18n/*.json; do jq -e . "$f" >/dev/null || exit 1; done'
 check "nothing still says Orkestr" bash -c '! grep -rIqi orkestr kinobu.sh lib files tools'
-check "no removed agent left" bash -c '! grep -rIqiE "opencode|hermes|cursor-agent" kinobu.sh lib files/skill files/agents files/subagents files/apps'
+# The skills describe what is: no versions that go stale, no plans; and they stay short
+check "the skills name no versions or plans" bash -c '! grep -rIqiE "kinobu [0-9]|@APP_VERSION@|graalvm-jdk-[0-9]|planned|for now|later version" files/skills files/agents/note.md'
+check "the note, loaded in every conversation, stays short" test "$(wc -w <files/agents/note.md)" -le 220
+# shellcheck disable=SC2016  # the check runs its own shell
+check "the skills' main files stay short" bash -c '[[ $(wc -w <files/skills/kinobu/SKILL.md) -le 600 && $(wc -w <files/skills/kinobu-dev/SKILL.md) -le 800 ]]'
+check "no removed agent left" bash -c '! grep -rIqiE "opencode|hermes|cursor-agent" kinobu.sh lib files/skills files/agents files/subagents files/apps'
 
 # Opens the real Gate for a moment on the desktop: only when asked, so it never surprises anyone
 if [[ ${KINOBU_TEST_WINDOWS:-} == 1 && -n ${WAYLAND_DISPLAY:-}${DISPLAY:-} ]]; then
@@ -185,6 +190,13 @@ else
     check ".bashrc gets the Kinobu block"       grep -q ">>> kinobu >>>" "$home/.bashrc"
     check "fastfetch config points to the system logo" grep -q "$share/data/fastfetch-logo.txt" "$home/.config/fastfetch/config.jsonc"
     check "the skill is linked into Claude Code" test "$(readlink "$home/.claude/skills/kinobu")" = "$share/skills/kinobu"
+    check "the skill for developing programs is linked too" test "$(readlink "$home/.claude/skills/kinobu-dev")" = "$share/skills/kinobu-dev"
+    # shellcheck disable=SC2016  # the check runs its own shell
+    check "the skills and the note have every mark filled" bash -c '! grep -rqE "@[A-Z_]+@" "$1/skills" "$2/.claude/CLAUDE.md"' _ "$share" "$home"
+    check "the note gives the system's language"  grep -qE "system.s language: [A-Za-z]+ \(" "$home/.claude/CLAUDE.md"
+    check "Claude Code answers concisely by default" test "$(jq -r .outputStyle "$home/.claude/settings.json")" = "Concise"
+    check "Claude Code's verbose mode is off"   test "$(jq -r .verbose "$home/.claude/settings.json")" = "false"
+    check "Ptyxis opens only the window asked for (no session restore)" test "$(isolated /org/gnome/Ptyxis/restore-session)" = "false"
     check "the note is in the agent's instructions" grep -q "kinobu:begin" "$home/.claude/CLAUDE.md"
     check "the subagent for Claude Code"        test -s "$home/.claude/agents/kinobu-agent.md"
     check "Claude Code's hooks call the system notifier" test "$(jq -r '.hooks.Stop[0].hooks[0].command' "$home/.claude/settings.json")" = "$prefix/bin/kinobu-notify claude done"

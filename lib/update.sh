@@ -14,7 +14,7 @@ declare -A UPDATE_FN=(
 declare -A UPDATE_DESC=(
     [apps]="Ubuntu, the Snap Store apps, Handy and Java; no new apps are added"
     [ai]="The AI tools that are installed and the voice assistant"
-    [user]="$APP_NAME's part of the shell and the system summary (palette and fonts are kept)"
+    [user]="$APP_NAME's part of the shell, the system summary and the terminal's start (palette and fonts are kept)"
     [desktop]="The themes, Seasons and their icons and cursors (your look is kept)"
     [shortcuts]="$APP_NAME's shortcuts, their cheat sheet and the welcome tour"
     [context]="What your AI agents know about this system, and their notifications"
@@ -74,6 +74,9 @@ update_ai_tools() {
 update_user_files() {
     write_shell_profile
     write_fastfetch
+    step "Terminal: one new window each time (Ptyxis)"
+    ptyxis_fresh_start
+    ok "Ptyxis does not bring back the last session's windows"
     step "Dictation typing (ydotool)"
     ydotool_retry
 }

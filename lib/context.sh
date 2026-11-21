@@ -1,5 +1,6 @@
 # shellcheck shell=bash
-# Block "context": the system skill, the read-only subagent, the note and the notifications of every agent.
+# Block "context": the skills (the system's and the one for developing programs), the read-only
+# subagent, the note, the answer style and the notifications of every agent.
 
 # ---------------------------------------------------------------------------------------------
 # Configuration
@@ -14,34 +15,39 @@ NOTIFY_MIN_SECONDS=20               # "finished" is only shown for tasks that to
 # ---------------------------------------------------------------------------------------------
 # Block: context
 # ---------------------------------------------------------------------------------------------
-# Writes the system skill, links it into every agent and adds the Kinobu note to their instructions
+# Writes the skills, links them into every agent and adds the Kinobu note to their instructions
 install_context() {
-    local skill="$SYSTEM_DIR/skills/$APP_ID"
-    step "System skill ($skill)"
-    write_skill "$skill"
-    ok "$(find "$skill" -name '*.md' | wc -l) guides written"
+    local skills="$SYSTEM_DIR/skills"
+    step "Skills for the agents ($skills)"
+    write_skill "$skills/$APP_ID"
+    write_dev_skill "$skills/$APP_ID-dev"
+    ok "The system's ($(find "$skills/$APP_ID" -name '*.md' | wc -l) guides) and the one for developing programs"
 
-    step "Linking the skill into each agent"
+    step "Linking the skills into each agent"
     # Same layout as Omarchy: symlinks, so re-running this script updates every agent.
-    # Every supported agent gets it, installed or not, so one installed later is ready too.
-    local dirs=("$HOME/.claude/skills") dir link
+    # Every supported agent gets them, installed or not, so one installed later is ready too.
+    local dirs=("$HOME/.claude/skills") dir name link
     for dir in "${dirs[@]}"; do
-        link="$dir/$APP_ID"
         mkdir -p "$dir"
-        if [[ -e $link && ! -L $link ]]; then
-            warn "Kept your own ${link/#$HOME/\~} (not a $APP_NAME link)"
-        else
-            ln -sfn "$skill" "$link"
-            ok "${link/#$HOME/\~}"
-        fi
+        for name in "$APP_ID" "$APP_ID-dev"; do
+            link="$dir/$name"
+            if [[ -e $link && ! -L $link ]]; then
+                warn "Kept your own ${link/#$HOME/\~} (not a $APP_NAME link)"
+            else
+                ln -sfn "$skills/$name" "$link"
+                ok "${link/#$HOME/\~}"
+            fi
+        done
     done
 
     install_subagents
 
     step "Note in the agents' global instructions (system + how to work)"
-    # Always loaded by the agent (every conversation), so keep it short: details live in the skill
+    # Always loaded by the agent (every conversation), so keep it short: details live in the skills
     local pointer
-    pointer=$(render agents/note.md APP_NAME APP_ID)
+    # shellcheck disable=SC2034  # read by render (files/agents/note.md)
+    USER_LANGUAGE=$(user_language)
+    pointer=$(render agents/note.md APP_NAME APP_ID USER_LANGUAGE)
     local -A files=(
         [claude]="$HOME/.claude/CLAUDE.md"
     )
@@ -51,7 +57,38 @@ install_context() {
         report_changed "${files[$tool]/#$HOME/\~} updated" "${files[$tool]/#$HOME/\~} already up to date"
     done
 
+    set_answer_style
     if $AGENT_NOTIFICATIONS; then install_agent_hooks; fi
+}
+
+# The user's language for the note, e.g. "Spanish (es_ES)", from their locale (English for C)
+user_language() {
+    local raw=${LANGUAGE:-${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}} name
+    raw=${raw%%:*} raw=${raw%%.*} raw=${raw%%@*}
+    if [[ -z $raw || $raw == C || $raw == POSIX ]]; then raw=en_US; fi
+    case ${raw%%_*} in
+        en) name=English ;; es) name=Spanish ;; de) name=German ;; fr) name=French ;;
+        it) name=Italian ;; pt) name=Portuguese ;; ca) name=Catalan ;; nl) name=Dutch ;;
+        *) name=$raw ;;
+    esac
+    printf '%s (%s)\n' "$name" "$raw"
+}
+
+# Claude Code answers tersely (its built-in Concise output style: the result first, no preamble
+# or narration), unless the user already chose a style in either of its settings files. Its
+# verbose mode (full command output on screen) stays off, always.
+set_answer_style() {
+    step "How the agents answer"
+    local settings="$HOME/.claude/settings.json" chosen
+    edit_json "$settings" '.verbose = false'
+    chosen=$(jq -r '.outputStyle // empty' "$settings" "$HOME/.claude/settings.local.json" 2>/dev/null || true)
+    if [[ -n $chosen ]]; then
+        ok "Claude Code keeps the answer style you chose (${chosen//$'\n'/, }); verbose mode off"
+        return 0
+    fi
+    edit_json "$settings" '.outputStyle = "Concise"'
+    report_changed "Claude Code answers concisely (its Concise output style); verbose mode off" \
+        "Claude Code already answers concisely; verbose mode off"
 }
 
 # Installs the read-only kinobu-agent subagent for every agent that has custom subagents,
@@ -118,18 +155,22 @@ hooks_report() {
     report_changed "$1: ${2/#$HOME/\~} updated" "$1: already up to date"
 }
 
-# Writes the skill guides from files/skill/ (generic on purpose: hardware is always checked live);
-# the shortcut table in shortcuts.md comes from SHORTCUTS
+# Writes the system skill from files/skills/kinobu/ (generic on purpose: hardware, versions and
+# apps are always checked live); the shortcut table in shortcuts.md comes from SHORTCUTS
 write_skill() {
     local dir=$1 guide table="" entry group accels action
     for entry in "${SHORTCUTS[@]}"; do
         IFS='|' read -r group accels action _ <<<"$entry"
         table+="| $group | $(pretty_all_keys "$accels") | $action |"$'\n'
     done
-    put_file "$dir/SKILL.md" < <(render skill/SKILL.md APP_ID APP_NAME APP_VERSION JAVA_DIR WORKSPACES \
-        OMB_THEME NERD_FONT_FAMILY SYSTEM_DIR BIN_DIR LAUNCHER NOTIFIER)
-    put_file "$dir/shortcuts.md" < <(render skill/shortcuts.md APP_ID APP_NAME LAUNCHER TABLE="${table%$'\n'}")
-    for guide in software desktop hardware agents; do
-        put_file "$dir/$guide.md" < <(render "skill/$guide.md" SYSTEM_DIR PROGRAMS_DIR BIN_DIR LAUNCHER NOTIFIER)
+    put_file "$dir/SKILL.md" < <(render skills/kinobu/SKILL.md APP_ID APP_NAME SYSTEM_DIR BIN_DIR LAUNCHER)
+    put_file "$dir/shortcuts.md" < <(render skills/kinobu/shortcuts.md APP_ID APP_NAME LAUNCHER TABLE="${table%$'\n'}")
+    for guide in software desktop look hardware agents; do
+        put_file "$dir/$guide.md" < <(render "skills/kinobu/$guide.md" APP_NAME SYSTEM_DIR BIN_DIR LAUNCHER NOTIFIER)
     done
+}
+
+# Writes the skill for developing programs (git checkpoints, CONTEXT.md, architecture)
+write_dev_skill() {
+    put_file "$1/SKILL.md" < <(render skills/kinobu-dev/SKILL.md APP_ID)
 }

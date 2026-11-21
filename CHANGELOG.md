@@ -2,6 +2,26 @@
 
 What changed in each version of Kinobu. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). To bring a computer set up by an earlier version to the latest one, run `bash kinobu.sh --update` (your look is kept).
 
+## [0.3.1] — 2026-11-21
+
+A critical fix for Seasons and an important step for the experience: every workspace keeps its own wallpaper when the theme changes again, and the agents' instructions are redone (a short system skill with its guides read only when needed, a skill for developing programs, your language, concise answers); Willow knows where you are and the terminal opens one window. Run `bash kinobu.sh --update` from the project's folder.
+
+### Added
+
+- **A skill for developing programs** (`kinobu-dev`), for any language, from a script to a large app. The agent keeps the project safe and easy to pick up again without being asked: git checkpoints after each piece that works (local, no GitHub unless asked), a `CONTEXT.md` for agents that lets a new conversation carry on, a `README.md` for people and an `AGENTS.md` for agents (loaded with `CONTEXT.md` through a two-line `CLAUDE.md`), a well-known architecture that can grow (for example hexagonal with DDD for a REST API), Clean Code and one short comment per function.
+- **Agents talk in your language**: the one you write in, or the system's language before that (written into the note of each user from their locale).
+- **Claude Code answers concisely** (its built-in Concise output style), unless you chose another style, and its verbose mode (the full output of every command on screen) stays off.
+- **Willow knows where you are** from this computer's settings: the time zone and the Weather app's city, read on every talk (no location services).
+
+### Changed
+
+- **The system skill, reorganised and corrected**: a short main file with an index, and the guides read only when needed (software, desktop, a new `look.md` for themes, wallpapers and the login and boot screens, shortcuts, hardware, agents), about a third shorter. It no longer names versions that go stale (Kinobu's, GraalVM's), no longer suggests `--install` to add Docker or editing the setup script for a shortcut, and describes what is, not plans. The note in the agents' instructions says when to load each skill and to read a project's `CONTEXT.md` first.
+
+### Fixed
+
+- **Different wallpapers on every workspace again after changing themes.** Since 0.3, Kinobu switched the per-workspace wallpapers extension off and on at once when it applied a theme; GNOME does that asynchronously, and the extension could stay off, leaving one wallpaper on every workspace (signing out and in brought it back). Now Kinobu switches it off and waits until GNOME says it is off, changes the wallpapers, gives it a second, switches it on and checks that it started, trying once more if not; it is never left off.
+- **Super+Enter opens one terminal**: the first time after logging in, Ptyxis also brought back the last session's windows (its session restore, on by default), the agent's tab among them without its program. Kinobu turns that restore off, on updates too.
+
 ## [0.3] — 2026-11-19
 
 Your own themes in Seasons, legible terminals, the theme's accent and the full logo in fastfetch, Kinobu's rings on the boot screen under the maker's logo, a login screen without Ubuntu's logo, and Willow can be stopped while it speaks. Run `bash kinobu.sh --update` from the project's folder: the installed `kinobu --update` still runs the copy it already has (fixed in 0.4).

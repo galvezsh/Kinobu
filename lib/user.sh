@@ -5,7 +5,7 @@
 # Configuration
 # ---------------------------------------------------------------------------------------------
 # Shell: Oh My Bash + a Nerd Font for its icons
-# shellcheck disable=SC2034  # read by render (files/shell/bashrc.sh, files/skill/SKILL.md)
+# shellcheck disable=SC2034  # read by render (files/shell/bashrc.sh, files/skills/kinobu/SKILL.md)
 OMB_THEME="powerbash10k"
 OMB_PLUGINS=(git)
 OMB_COMPLETIONS=(git ssh)
@@ -61,6 +61,7 @@ configure_user() {
     else
         gsettings set org.gnome.Ptyxis use-system-font false
         gsettings set org.gnome.Ptyxis font-name "$NERD_FONT_FAMILY $TERMINAL_FONT_SIZE"
+        ptyxis_fresh_start
         # The palette belongs to a profile: Ptyxis creates the default one on first start
         local uuid
         uuid=$(gsettings get org.gnome.Ptyxis default-profile-uuid | tr -d "'") || true
@@ -110,6 +111,15 @@ configure_user() {
         ok "$data_dir (${options/#$HOME/\~})"
     done
     if ((found == 0)); then info "No JetBrains-based IDE installed"; fi
+}
+
+# Ptyxis opens only the window asked for: its session restore (on by default) brought back the
+# last session's windows with the first one after logging in, so Super+Enter opened two or more,
+# the agent's tab among them without its program. Also on updates, for computers set up before.
+ptyxis_fresh_start() {
+    if has_line org.gnome.Ptyxis "$(gsettings list-schemas 2>/dev/null)" && [[ -n ${DBUS_SESSION_BUS_ADDRESS:-} ]]; then
+        gsettings set org.gnome.Ptyxis restore-session false
+    fi
 }
 
 # Writes the managed block of ~/.bashrc: environment, Oh My Bash, aliases, ff and fastfetch

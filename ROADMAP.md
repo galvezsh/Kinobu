@@ -22,12 +22,23 @@ The details are in the [Changelog](CHANGELOG.md).
 
 The details are in the [Changelog](CHANGELOG.md).
 
+## Done in 0.3.1 (2026-11-21)
+
+- An urgent fix: the per-workspace wallpapers extension could stay off after a theme change (one wallpaper everywhere); it is now paused, started again and checked. Checked on the author's computer.
+- The agents' instructions redone: a short note that says when to load each skill, the system skill as a short index with guides on demand (no versions, no plans), `kinobu-dev` for developing programs (git checkpoints, `CONTEXT.md`, README and AGENTS.md, an architecture that can grow), the user's language, concise answers with verbose off.
+- Willow knows the time zone and the Weather app's city.
+- Ptyxis no longer brings back the last session's windows with the first one after logging in.
+
 ## 0.4 — next
 
 ### Updates
 
 - [ ] **`kinobu --update` updates itself.** Today the installed command runs the installed copy (`/usr/local/share/kinobu/src`), which only reinstalls itself: new changes need `git pull` and `bash kinobu.sh --update` from the project's folder. The installed `kinobu --update` should look in the project's GitHub releases for a newer version than `/usr/local/share/kinobu/version` (`https://api.github.com/repos/agalvezsh/<repo>/releases/latest`, no personal data in the User-Agent), download it, check it (a SHA-256 in the release and a signature, GPG or minisign, since it runs with sudo), keep it in `src/` and run its own `kinobu.sh --update`, with the no-downgrade guard kept. To decide: a notice of a new version (at login or through Echo), and what happens while the repository is private. Later, maybe an APT repository.
 - [ ] Until then, **`kinobu --update` says when it runs the installed copy**: it brings nothing new, and the project folder's `kinobu.sh --update` is the one to run.
+
+### New users
+
+- [ ] **A user created after the setup starts with Kinobu's desktop at once**: Kinobu's GNOME settings (the Kinobu theme, extensions, shortcuts, terminal, dock) as system defaults in a dconf system database (`/etc/dconf/profile/user` with `system-db:local`, `/etc/dconf/db/local.d/`), and Kinobu's files in `/etc/skel` (the `~/.bashrc` block, fastfetch, the theme's CSS), so no terminal and no logging out again. Each user's own choices still win over the defaults, and existing users do not change. Only what is truly personal stays a step, offered in Sprout instead of a terminal that opens by itself: the AI agent and Willow's voices (or those in the system layer). Tried in the virtual machine with a second user first.
 
 ### Website
 
@@ -46,6 +57,10 @@ Still to run outside the author's computer (the tests use a fake home folder, a 
 - [ ] The menu tests that fail now and then (`tests/pty-run.py` under load): make them wait for what they need instead of fixed times.
 - [ ] The boot splash on a real start: the loop's speed, the size on a 4K screen (Plymouth doubles pictures only on dense screens: a large 4K monitor may need `DeviceScale=2`), with no maker's logo and with an encrypted disk's password box (in the virtual machine), and shutting down.
 - [ ] The login screen without Ubuntu's logo (`95-kinobu-login`), seen on a real login.
+
+### Agents
+
+- [ ] **MCP servers with up-to-date documentation** for each language, so `kinobu-dev` codes against today's APIs (which servers, installed how and for which agents: to decide).
 
 ### Look
 

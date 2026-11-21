@@ -376,6 +376,32 @@ def shortcuts_text():
             + "; ".join(f"{keys}: {action}" for _group, keys, action in rows) + ". ")
 
 
+def place():
+    """Where the user is, as the system says it (read on every talk, so a change in Settings or in
+    the Weather app counts at once): the time zone and the city chosen in the Weather app (Kinobu
+    sets it from the time zone; the top bar's when the app has none). No location services."""
+    try:
+        zone = GLib.TimeZone.new_local().get_identifier()
+    except (AttributeError, GLib.Error):
+        zone = ""
+    city = ""
+    source = Gio.SettingsSchemaSource.get_default()
+    for schema in ("org.gnome.Weather", "org.gnome.shell.weather"):
+        if source and source.lookup(schema, True):
+            try:
+                found = Gio.Settings.new(schema).get_value("locations").unpack()
+                city = found[0][1][0] if found else ""
+            except (IndexError, TypeError, GLib.Error):
+                city = ""
+        if city:
+            break
+    parts = ([f"time zone {zone}"] if zone and zone != "UTC" else []) + ([f"weather city {city}"] if city else [])
+    if not parts:
+        return ""
+    return (f"Where the user is, from this computer's settings: {', '.join(parts)}. Use it for local "
+            "answers (weather, places, opening hours, currency, holidays) unless they say otherwise. ")
+
+
 def system_prompt(config):
     """Willow's whole context: who it is, Kinobu and its shortcuts, how to talk, its tools, when to
     delegate. The stable part goes first and the time last, so it caches across conversations."""
@@ -428,18 +454,18 @@ def system_prompt(config):
             "goodbye and end with a last line exactly like [[close]]. "
             f"Answer in {language}. Your voice now is {'a woman' if female(config['voice']) else 'a man'}'s: "
             f"in languages with grammatical gender, always speak of yourself in the "
-            f"{gender_note(config['voice'])} form. Now: {now:%A %d %B %Y, %H:%M %Z}.")
+            f"{gender_note(config['voice'])} form. " + place() + f"Now: {now:%A %d %B %Y, %H:%M %Z}.")
 
 
 def background_prompt():
     language = LANGUAGE_NAMES.get(LANG, "the user's language")
-    return ("You do quick checks for Willow, the voice assistant of Kinobu (Ubuntu 26.04 with GNOME). "
+    return ("You do quick checks for Willow, the voice assistant of Kinobu (Ubuntu with GNOME). "
             "You can read the computer with read-only commands, read Kinobu's guides in "
             f"{SKILL_DIR} and use the web; you cannot change anything. Be efficient: the fewest "
             "commands and pages that answer well. Then answer for someone who has never used Linux, "
             f"in {language}, in two to four short sentences that will be read aloud: no Markdown, "
             "lists or code. If the answer needs a change to the system, say what would be needed and "
-            "that Willow can hand it to the full agent.")
+            "that Willow can hand it to the full agent. " + place())
 
 
 def muted(target):

@@ -2,7 +2,7 @@
 
 How Kinobu works inside: the modes, the blocks, where everything is installed, the agents' integration, the files it touches and how to undo things. For what Kinobu is and why it exists, start with the [README](README.md).
 
-> Kinobu 0.3 is in development: installed and updated on its author's computer, otherwise run in simulation. This guide describes what the code does; see the [Roadmap](ROADMAP.md) for what is not verified yet.
+> Kinobu 0.3.1 is in development: installed and updated on its author's computer, otherwise run in simulation. This guide describes what the code does; see the [Roadmap](ROADMAP.md) for what is not verified yet.
 
 ## Contents
 
@@ -71,7 +71,7 @@ They run in this order. `--update` runs the ones marked, with the function in th
 | `user` | Oh My Bash, the Nerd Font, Kinobu's block in `~/.bashrc`, the fastfetch summary, the Ptyxis palette and the terminal fonts of VS Code and the JetBrains IDEs | The `~/.bashrc` block and fastfetch |
 | `desktop` | GNOME extensions, clock, weather (the city of your time zone), four workspaces, power settings, dock, Geary in the background, the app grid, the boot splash and the look: Seasons, the themes and their icon and cursor packs, then your theme (Kinobu for a new user) | The themes and their packs; your look is kept |
 | `shortcuts` | The launcher, the shortcut table, the Super+K cheat sheet and the welcome tour | The same: Kinobu's shortcuts always win |
-| `context` | The system skill, the read-only subagent, the note and the agent's notifications | The same |
+| `context` | The skills (the system's and the one for developing programs), the read-only subagent, the note, the answer style and the agent's notifications | The same |
 
 Always installed: Python (`pip`, `venv`, the `python` command), Node.js, build tools, the GraalVM JDK, Git and GitHub CLI, ripgrep, fd, fastfetch, WireGuard, the GNOME apps (Contacts, Calendar, Weather, Clocks, Calculator, Characters, Geary), the themes' icons, cursors and fonts (Papirus, Numix Circle, elementary, Kora; Bibata, Breeze, Phinger, Catppuccin, Nordzy, macOS and WhiteSur cursors; Inter, JetBrains Mono), Handy and Willow. Firefox always stays.
 
@@ -110,7 +110,7 @@ What is the same for everybody lives in the system; what is personal lives in ea
 | `bin/kinobu-boot-splash` | Installs and chooses the boot splash: the maker's logo with Kinobu's rings turning under it (its frames in `share/kinobu/data/plymouth/`) |
 | `share/kinobu/programs/` | Kinobu's apps (Trail, Sprout, Gate, Echo's notices, Willow, Seasons) and the theme engine |
 | `share/kinobu/themes/` | The factory themes |
-| `share/kinobu/skills/` | The system skill |
+| `share/kinobu/skills/` | The skills: `kinobu` (the system) and `kinobu-dev` (developing programs) |
 | `share/kinobu/i18n/` | Every text of Kinobu's windows and notices, one file per language |
 | `share/kinobu/data/` | The shortcut table, the fastfetch logo and taglines, and the themes' templates |
 | `share/kinobu/src/` | A copy of Kinobu itself |
@@ -152,8 +152,10 @@ Each app has a name you see, the same in every language, and technical names und
 
 Kinobu integrates one agent for now, Claude Code, installed or not, so it is ready if you install it later. Other agents will come once this integration is complete.
 
-- **The skill.** A fixed description of the system in six guides (the system and its safety rules, software, desktop, shortcuts, hardware, agents), linked into Claude Code's skills folder (`~/.claude/skills`). Hardware is never written down: the skill tells agents to check it live.
-- **The note.** A short block in the agent's global instructions (`~/.claude/CLAUDE.md`): load the skill before changing the system, work step by step and wait for your go-ahead, work freely inside your folder and ask before `sudo`, and save tokens.
+- **The system skill (`kinobu`).** A short main file with the rules and an index, and guides the agent reads only when needed (software, desktop, look, shortcuts, hardware, agents), linked into Claude Code's skills folder (`~/.claude/skills`). Hardware, versions and installed apps are never written down: the skill tells agents to check them live.
+- **The skill for developing programs (`kinobu-dev`).** How the agent builds any program for someone who does not program: git checkpoints on this computer, a `CONTEXT.md` that lets a new conversation carry on, a `README.md` and an `AGENTS.md`, an architecture that can grow and lean, commented code.
+- **The note.** A short block in the agent's global instructions (`~/.claude/CLAUDE.md`), loaded in every conversation: when to load each skill, read a project's `CONTEXT.md` first, work step by step and wait for your go-ahead, work freely inside your folder and ask before `sudo`, talk in your language (the system's until you write) and save tokens.
+- **The answer style.** Claude Code answers concisely (its Concise output style), unless you chose another one; its verbose mode stays off.
 - **Kinobu Agent (`kinobu-agent`), the system subagent.** A read-only investigator the agent can call for diagnoses that need many commands; it returns a short report (cause, fix, check, what needs `sudo`).
 - **Echo, the notifications.** GNOME notices when an agent finished (tasks of 20 s or more), waits for you or stopped on an error, with a sound; clicking one brings back the agent's terminal.
 - **Gate, the approval window.** When Claude Code needs a permission, Gate asks with Allow, In terminal and Deny. No button starts with the keyboard focus and nothing counts in its first moment on screen, so a key you were typing never answers. Closing it, Esc, "In terminal" or no answer in 45 s leave the question in the agent's terminal: nothing is approved on its own. "In terminal" also takes you to that terminal, on whatever workspace it is. In Claude Code's auto mode Gate waits a few seconds first, so it only opens when the automatic check leaves the decision to you.
@@ -255,7 +257,7 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 | `~/.config/kinobu/look.toml` | Your look: the theme and what you picked in Seasons (never changed by updates) |
 | `~/.config/gtk-4.0/kinobu.css`, `~/.config/gtk-3.0/kinobu.css` | The theme's app colours, imported from a block in each `gtk.css` |
 | `~/.local/share/icons/<pack>`, `~/.icons/default` | Links to the icons and cursor in use, for sandboxed and older apps |
-| `~/.claude/` | The skill link, the note, the subagent and the hooks of Claude Code |
+| `~/.claude/` | The links to the two skills, the note, the subagent, the hooks and, unless you chose one, the Concise answer style of Claude Code |
 | `~/.config/kinobu/` | The default agent, your version, Willow's settings |
 | `~/.local/share/kinobu/voice/` | Willow's voices and models |
 | `~/.local/state/kinobu/` | One log per run and the GNOME settings before each run (last 10); `terminal-dark` and `terminal-light`, the theme's accent for fastfetch and the setup |

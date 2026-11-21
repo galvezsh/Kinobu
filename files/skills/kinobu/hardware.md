@@ -1,5 +1,5 @@
 <!-- Managed by Kinobu: rewritten on every run and --update. Do not edit it, changes are lost: add your own skills next to this one. -->
-# Hardware (always check live)
+# Hardware (always check it live)
 
 | What | Command |
 |---|---|
@@ -19,9 +19,9 @@
 ## Drivers
 
 ```bash
-ubuntu-drivers list            # drivers Ubuntu recommends for this hardware
+ubuntu-drivers list            # the drivers Ubuntu recommends for this hardware
 sudo ubuntu-drivers install    # install them
 ```
 
-Reboot after installing drivers. With Secure Boot on, a new driver may ask to enrol a
-MOK key on the next boot.
+Reboot after installing drivers. With Secure Boot on, a new driver may ask to enrol a MOK key at
+the next start.

@@ -142,7 +142,7 @@ kinobu-theme refresh                   re-generates the active theme (used by --
 - `--update` runs `kinobu-theme refresh`: template fixes reach every user, their theme is kept.
 - `kinobu --user` gives other users the default theme.
 - `ACCENT`, `COLOR_SCHEME`, `TERMINAL_PALETTE` and `WALLPAPER_DIR` leave `lib/desktop.sh` and `lib/user.sh`: the theme is the only source.
-- The skill (`files/skill/desktop.md`) tells agents to use `kinobu-theme` and never to edit the generated files.
+- The skill (`files/skills/kinobu/look.md`) tells agents to use `kinobu-theme` and never to edit the generated files.
 
 ## 7. Factory themes
 

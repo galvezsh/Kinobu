@@ -11,3 +11,7 @@ __pycache__/
 # Editors
 .idea/
 .vscode/
+
+# Agents' context of this project (kept on this computer only) and drafts
+CONTEXT.md
+drafts/

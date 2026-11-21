@@ -518,37 +518,75 @@ def settings(schema):
 WALLPAPERS_EXTENSION = ("workspace-wallpapers@jonathan.aljl.eu", "org.gnome.shell.extensions.workspace-wallpapers")
 
 
-def restart_extension(uuid):
-    """Turns a running GNOME Shell extension off and on again, so it reads its settings anew.
-    The per-workspace wallpapers extension needs it: it takes any outside change of the desktop's
-    wallpaper as the user's pick for the workspace on screen (applying a theme from the second
-    workspace copied the first wallpaper onto it), while on start it shows the right wallpaper of
-    the workspace on screen itself. False when it is not running or there is no GNOME session
-    (then the caller sets the desktop's wallpaper as before). Never in the tests: their own
-    settings database is not the one the running GNOME reads."""
-    if os.environ.get("DCONF_PROFILE"):
-        return False
-    from gi.repository import Gio, GLib
-    try:
-        Gio.Settings.sync()        # the extension must read the list just written
-        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+class PausedExtension:
+    """A running GNOME Shell extension switched off while its settings change, then on again.
 
-        def call(method, reply):
-            return bus.call_sync("org.gnome.Shell.Extensions", "/org/gnome/Shell/Extensions",
-                                 "org.gnome.Shell.Extensions", method, GLib.Variant("(s)", (uuid,)),
-                                 GLib.VariantType(reply), Gio.DBusCallFlags.NONE, 3000, None).unpack()[0]
-        info = call("GetExtensionInfo", "(a{sv})")
-        if not info.get("enabled") or info.get("state") != 1:     # 1: running
-            return False
-    except GLib.Error:
+    The per-workspace wallpapers extension needs it: while it runs it takes any outside change
+    of the desktop's wallpaper as the user's pick for the workspace on screen (applying a theme
+    from the second workspace copied the first wallpaper onto it); switched off it captures
+    nothing, and when it starts it shows the right wallpaper of the workspace on screen itself.
+
+    GNOME Shell switches extensions off and on asynchronously (extensionSystem.js): an "on" sent
+    before the "off" has finished is lost and the extension stays off (seen on 2026-11-19). So
+    each step waits for GNOME to report the state, the extension gets a second before starting,
+    and its start is checked and tried once more; whatever happens it is never left off.
+    Nothing happens in the tests (their own settings database is not the one GNOME reads) or
+    when the extension is not switched on."""
+    ACTIVE, INACTIVE = 1, 2           # ExtensionState in GNOME Shell
+
+    def __init__(self, uuid):
+        self.uuid, self.bus, self.paused = uuid, None, False
+        if os.environ.get("DCONF_PROFILE"):
+            return
+        from gi.repository import Gio, GLib
+        try:
+            self.bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+            if not self.info().get("enabled"):
+                return
+            self.call("DisableExtension", "(b)")
+            self.paused = self.wait(self.INACTIVE)
+        except GLib.Error:
+            self.paused = False
+
+    def call(self, method, reply):
+        from gi.repository import Gio, GLib
+        return self.bus.call_sync("org.gnome.Shell.Extensions", "/org/gnome/Shell/Extensions",
+                                  "org.gnome.Shell.Extensions", method, GLib.Variant("(s)", (self.uuid,)),
+                                  GLib.VariantType(reply), Gio.DBusCallFlags.NONE, 3000, None).unpack()[0]
+
+    def info(self):
+        return self.call("GetExtensionInfo", "(a{sv})")
+
+    def wait(self, state, seconds=3.0):
+        import time
+        end = time.monotonic() + seconds
+        while time.monotonic() < end:
+            if self.info().get("state") == state:
+                return True
+            time.sleep(0.1)
         return False
-    try:
-        call("DisableExtension", "(b)")
-    except GLib.Error:
-        pass
-    try:                           # on again whatever happened, never left off
-        return bool(call("EnableExtension", "(b)"))
-    except GLib.Error:
+
+    def resume(self):
+        """Switches it on again and checks that it started (True)."""
+        if not self.bus or not self.paused:
+            return False
+        import time
+        from gi.repository import Gio, GLib
+        Gio.Settings.sync()           # it must read the settings just written
+        try:
+            for attempt in range(2):
+                time.sleep(1.0)
+                self.call("EnableExtension", "(b)")
+                if self.wait(self.ACTIVE):
+                    return True
+                self.call("DisableExtension", "(b)")   # lost "on": off for real, then on again
+                self.wait(self.INACTIVE)
+            self.call("EnableExtension", "(b)")
+        except GLib.Error:
+            try:
+                self.call("EnableExtension", "(b)")
+            except GLib.Error:
+                pass
         return False
 
 
@@ -1106,19 +1144,20 @@ def apply(theme_id, palette=None, mode=None, quiet=False):
         four = [("file://" + w if w and os.path.isfile(w) else "") for w in use["wallpapers"]]
         uris = [four[i % WALL_SLOTS] for i in range(EXTENSION_SLOTS)]
         per_workspace = extension_settings(*WALLPAPERS_EXTENSION)
-        refreshed = False
+        paused = None
         if per_workspace and per_workspace.props.settings_schema.has_key("workspace-wallpapers"):
+            paused = PausedExtension(WALLPAPERS_EXTENSION[0])   # off while the wallpapers change
             old = per_workspace.get_strv("workspace-wallpapers")
             uris = [u or (old[i] if i < len(old) else "") for i, u in enumerate(uris)]
             per_workspace.set_value("workspace-wallpapers", GLib.Variant("as", uris))
-            refreshed = restart_extension(WALLPAPERS_EXTENSION[0])
-        if uris[0]:   # the first workspace is also the lock screen (and the desktop without the extension)
-            if not refreshed:
-                background.set_string("picture-uri", uris[0])
-                background.set_string("picture-uri-dark", uris[0])
+        if uris[0]:   # the first workspace is also the lock screen, and the desktop without the extension
+            background.set_string("picture-uri", uris[0])
+            background.set_string("picture-uri-dark", uris[0])
             screensaver = settings("org.gnome.desktop.screensaver")
             if screensaver:
                 screensaver.set_string("picture-uri", uris[0])
+        if paused and not paused.resume() and paused.paused:
+            notes.append("the per-workspace wallpapers extension did not start again: sign out and in")
     elif background and not quiet:
         notes.append("this theme has no wallpapers yet: kept the current ones")
 
