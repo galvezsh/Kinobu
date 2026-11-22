@@ -124,7 +124,7 @@ install_subagents() {
 # shellcheck disable=SC2016  # the jq filters use jq variables ($ours), not shell ones
 install_agent_hooks() {
     step "Agent notifications (GNOME)"
-    local n=$NOTIFIER wait=$((NOTIFY_WAIT + 15)) ours
+    local n=$NOTIFIER wait=$((NOTIFY_WAIT + 15)) ours gate_wait
     put_file "$NOTIFIER" 0755 < <(render agents/kinobu-notify WAIT="$NOTIFY_WAIT" MIN="$NOTIFY_MIN_SECONDS" \
         APPROVALS="$NOTIFY_APPROVALS" SOUND="$NOTIFY_SOUND" SYSTEM_DIR PROGRAMS_DIR)
     write_translations
@@ -140,14 +140,32 @@ install_agent_hooks() {
                                   | map(select((.hooks // []) | length > 0))))
         | with_entries(select(.value | length > 0)))
       | reduce ($ours | to_entries[]) as $e (.; .hooks[$e.key] = ((.hooks[$e.key] // []) + [$e.value]))'
-    ours=$(jq -n --arg n "$n" --argjson w "$wait" '{
+    # Notices run in the background (async): they answer nothing, so they never hold the agent.
+    # Gate must answer, so it runs in the foreground, with a line in the terminal while it waits.
+    # After a compaction the agent is told to read the project's CONTEXT.md again.
+    gate_wait=$(notify_text gate_wait)
+    ours=$(jq -n --arg n "$n" --argjson w "$wait" --arg gate "$gate_wait" '{
         UserPromptSubmit: {hooks: [{type: "command", command: "\($n) claude start", timeout: 5}]},
-        Stop: {hooks: [{type: "command", command: "\($n) claude done", timeout: 10}]},
-        StopFailure: {hooks: [{type: "command", command: "\($n) claude failed", timeout: 10}]},
-        Notification: {matcher: "idle_prompt", hooks: [{type: "command", command: "\($n) claude waiting", timeout: 10}]},
-        PermissionRequest: {hooks: [{type: "command", command: "\($n) claude permission", timeout: $w}]}}')
+        Stop: {hooks: [{type: "command", command: "\($n) claude done", timeout: 10, async: true}]},
+        StopFailure: {hooks: [{type: "command", command: "\($n) claude failed", timeout: 10, async: true}]},
+        Notification: {matcher: "idle_prompt|elicitation_dialog|elicitation_url_dialog|agent_needs_input",
+                       hooks: [{type: "command", command: "\($n) claude waiting", timeout: 10, async: true}]},
+        PermissionRequest: {hooks: [{type: "command", command: "\($n) claude permission", timeout: $w,
+                                     statusMessage: $gate}]},
+        SessionStart: {matcher: "compact", hooks: [{type: "command", command: "\($n) claude compacted", timeout: 5}]}}')
     edit_json "$HOME/.claude/settings.json" "$claude_style" --argjson ours "$ours"
     hooks_report "Claude Code" "$HOME/.claude/settings.json"
+}
+
+# A text of the notices (files/i18n, section "notify") in the user's language, English if missing
+notify_text() {
+    local code file text
+    code=$(user_language); code=${code##*(}; code=${code%%_*}
+    for file in "$ROOT_DIR/files/i18n/$code.json" "$ROOT_DIR/files/i18n/en.json"; do
+        text=$(jq -r --arg k "$1" '.notify[$k] // empty' "$file" 2>/dev/null || true)
+        if [[ -n $text ]]; then printf '%s\n' "$text"; return 0; fi
+    done
+    printf '%s\n' "$1"
 }
 
 # One line per agent for install_agent_hooks

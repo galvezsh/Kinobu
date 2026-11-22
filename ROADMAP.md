@@ -29,6 +29,13 @@ The details are in the [Changelog](CHANGELOG.md).
 - Willow knows the time zone and the Weather app's city.
 - Ptyxis no longer brings back the last session's windows with the first one after logging in.
 
+## Done in 0.3.2 (2026-11-22)
+
+- Claude Code's hooks checked against its reference: every turn-ending error said plainly, notices for MCP requests and background agents, how many tasks still run, `CONTEXT.md` reread after a compaction, notices in the background, a terminal line while Gate waits.
+- Every app in six languages (Sprout and Willow added in German, French, Italian and Portuguese), with a test; the tour's stale lines fixed.
+- Kinobu's login and logout sounds (`tools/login_sound.py`), chosen by ear with the author.
+- The login sound waits for a sound output and three seconds more (HDMI audio wakes up late after login), heard whole on the author's computer; the login screen in Kinobu's green accent.
+
 ## 0.4 — next
 
 ### Updates
@@ -39,6 +46,8 @@ The details are in the [Changelog](CHANGELOG.md).
 ### New users
 
 - [ ] **A user created after the setup starts with Kinobu's desktop at once**: Kinobu's GNOME settings (the Kinobu theme, extensions, shortcuts, terminal, dock) as system defaults in a dconf system database (`/etc/dconf/profile/user` with `system-db:local`, `/etc/dconf/db/local.d/`), and Kinobu's files in `/etc/skel` (the `~/.bashrc` block, fastfetch, the theme's CSS), so no terminal and no logging out again. Each user's own choices still win over the defaults, and existing users do not change. Only what is truly personal stays a step, offered in Sprout instead of a terminal that opens by itself: the AI agent and Willow's voices (or those in the system layer). Tried in the virtual machine with a second user first.
+
+- [ ] **An account picture from the first start**: when the setup ends (before the restart it asks for), a user with no picture gets one of GNOME's own, chosen at random from `/usr/share/pixmaps/faces` (`gnome-control-center-faces`), so the login screen and the top bar's menu never show the empty silhouette. Through AccountsService (`SetIconFile` on `org.freedesktop.Accounts`, which a user may call for their own account); a picture the user chose is never replaced. New users get one too (see above). To check: the polkit rule on Ubuntu 26.04.
 
 ### Website
 
@@ -56,6 +65,7 @@ Still to run outside the author's computer (the tests use a fake home folder, a 
 - [ ] Review the texts of the welcome tour and of the skill, adapted from Orkestr by name only.
 - [ ] The menu tests that fail now and then (`tests/pty-run.py` under load): make them wait for what they need instead of fixed times.
 - [ ] The boot splash on a real start: the loop's speed, the size on a 4K screen (Plymouth doubles pictures only on dense screens: a large 4K monitor may need `DeviceScale=2`), with no maker's logo and with an encrypted disk's password box (in the virtual machine), and shutting down.
+- [ ] The goodbye on a real shutdown and restart through the computer's own speakers or headphones (through a screen's speakers it is not heard: the screen is already off; accepted).
 - [ ] The login screen without Ubuntu's logo (`95-kinobu-login`), seen on a real login.
 
 ### Agents
@@ -63,6 +73,9 @@ Still to run outside the author's computer (the tests use a fake home folder, a 
 - [ ] **MCP servers with up-to-date documentation** for each language, so `kinobu-dev` codes against today's APIs (which servers, installed how and for which agents: to decide).
 
 ### Look
+
+- [ ] **A "Sounds" section in Seasons**: GNOME's Settings cannot change the login or logout sound, and an app only for them would be too much. Two switches (a sound when logging in, another when logging out) and, for each, Kinobu's sound or one of the user's own audio files, with a Listen button; kept in each user's `look.toml` (updates never change it), read by `kinobu-launch sound`, and `kinobu-theme pick login-sound|logout-sound FILE|kinobu|off` on the command line. Texts in the six languages.
+- [ ] Possible, not required: **Kinobu's own alert and notice sounds** (a task finished, waiting, a permission, errors, other GNOME alerts), drawn by `tools/login_sound.py` in the same family as the login sound, as a sound theme that inherits Ubuntu's (Yaru) so any sound not drawn keeps Ubuntu's; chosen in the same Seasons section.
 
 - [ ] Papirus folders in the theme's colour (`papirus-folders`).
 - [ ] Later for your own themes, if they are missed: the terminal's own colours, a new palette in a theme, and the theme's own icons, cursor, fonts and wallpapers in the editor (decided on 2026-11-19 to leave them in Seasons' tabs, where they are the user's over any theme; `theme.toml` already takes them by hand).

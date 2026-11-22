@@ -2,7 +2,7 @@
 
 How Kinobu works inside: the modes, the blocks, where everything is installed, the agents' integration, the files it touches and how to undo things. For what Kinobu is and why it exists, start with the [README](README.md).
 
-> Kinobu 0.3.1 is in development: installed and updated on its author's computer, otherwise run in simulation. This guide describes what the code does; see the [Roadmap](ROADMAP.md) for what is not verified yet.
+> Kinobu 0.3.2 is in development: installed and updated on its author's computer, otherwise run in simulation. This guide describes what the code does; see the [Roadmap](ROADMAP.md) for what is not verified yet.
 
 ## Contents
 
@@ -108,6 +108,7 @@ What is the same for everybody lives in the system; what is personal lives in ea
 | `bin/kinobu-theme` | The theme engine (Seasons uses it; agents and scripts too) |
 | `bin/kinobu-login-screen` | Builds the login screen's theme with Kinobu's background (`share/kinobu/login/`) |
 | `bin/kinobu-boot-splash` | Installs and chooses the boot splash: the maker's logo with Kinobu's rings turning under it (its frames in `share/kinobu/data/plymouth/`) |
+| `share/kinobu/data/sounds/` | Kinobu's login and logout sounds (`login.oga`, `logout.oga`) |
 | `share/kinobu/programs/` | Kinobu's apps (Trail, Sprout, Gate, Echo's notices, Willow, Seasons) and the theme engine |
 | `share/kinobu/themes/` | The factory themes |
 | `share/kinobu/skills/` | The skills: `kinobu` (the system) and `kinobu-dev` (developing programs) |
@@ -137,7 +138,7 @@ It shows no menus and never touches your look: your theme and what you picked in
 
 ## Kinobu's apps
 
-Each app has a name you see, the same in every language, and technical names underneath: the app ID that GNOME uses to tie a window to its icon, and the command that shortcuts, hooks, scripts and agents run. Only the visible name is a brand; the technical names say what the app does, so an agent understands them without explanations and a visible name can change without breaking anything.
+Kinobu's apps speak English, Spanish, German, French, Italian and Portuguese, following the desktop's language (English for any other). Each app has a name you see, the same in every language, and technical names underneath: the app ID that GNOME uses to tie a window to its icon, and the command that shortcuts, hooks, scripts and agents run. Only the visible name is a brand; the technical names say what the app does, so an agent understands them without explanations and a visible name can change without breaking anything.
 
 | Name | What it is | App ID | Command |
 |---|---|---|---|
@@ -157,7 +158,7 @@ Kinobu integrates one agent for now, Claude Code, installed or not, so it is rea
 - **The note.** A short block in the agent's global instructions (`~/.claude/CLAUDE.md`), loaded in every conversation: when to load each skill, read a project's `CONTEXT.md` first, work step by step and wait for your go-ahead, work freely inside your folder and ask before `sudo`, talk in your language (the system's until you write) and save tokens.
 - **The answer style.** Claude Code answers concisely (its Concise output style), unless you chose another one; its verbose mode stays off.
 - **Kinobu Agent (`kinobu-agent`), the system subagent.** A read-only investigator the agent can call for diagnoses that need many commands; it returns a short report (cause, fix, check, what needs `sudo`).
-- **Echo, the notifications.** GNOME notices when an agent finished (tasks of 20 s or more), waits for you or stopped on an error, with a sound; clicking one brings back the agent's terminal.
+- **Echo, the notifications.** GNOME notices when an agent finished (tasks of 20 s or more, with how many tasks still run in the background), waits for you (also when an MCP server asks for a value or a link, or a background agent needs an answer) or stopped on an error (said plainly: usage limit, expired session, busy servers…), with a sound; clicking one brings back the agent's terminal. They run in the background and never hold the agent. After a long conversation is compacted, the agent is told to reread the project's `CONTEXT.md`.
 - **Gate, the approval window.** When Claude Code needs a permission, Gate asks with Allow, In terminal and Deny. No button starts with the keyboard focus and nothing counts in its first moment on screen, so a key you were typing never answers. Closing it, Esc, "In terminal" or no answer in 45 s leave the question in the agent's terminal: nothing is approved on its own. "In terminal" also takes you to that terminal, on whatever workspace it is. In Claude Code's auto mode Gate waits a few seconds first, so it only opens when the automatic check leaves the decision to you.
 
 Kinobu never changes the agents' own permission settings.
@@ -246,8 +247,9 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 |---|---|
 | `/etc/apt/apt.conf.d/99enable-amd64v3` | Optimised package builds |
 | `/etc/apt/apt.conf.d/99kinobu-login-screen` | Rebuilds the login screen's theme when Ubuntu updates its own |
-| `/usr/share/gdm/dconf/95-kinobu-login` | No distribution logo on the login screen (GDM reads it with Ubuntu's settings on every start) |
+| `/usr/share/gdm/dconf/95-kinobu-login` | The login screen without a distribution logo and with Kinobu's green accent (GDM reads it with Ubuntu's settings on every start) |
 | `/usr/share/plymouth/themes/kinobu/` | The boot splash (Plymouth only looks there), chosen by hand as `default.plymouth` |
+| `/etc/xdg/autostart/kinobu-login-sound.desktop`, `/usr/local/lib/systemd/user/kinobu-logout-sound.service` | The sound when a session starts and when it ends, for every user (silent with the alert sounds off) |
 | `/etc/apt/sources.list.d/` and their keys | Software sources of the chosen apps only |
 | `/etc/udev/rules.d/60-uinput-uaccess.rules` | Lets `ydotool` type |
 | `/opt/java/graalvm-jdk-<version>/` | The GraalVM JDK |
@@ -283,6 +285,7 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 | Optimised packages | `sudo rm /etc/apt/apt.conf.d/99enable-amd64v3` |
 | Kinobu's login screen | `sudo kinobu-login-screen --remove` (Ubuntu's grey and logo come back), then `sudo rm /etc/apt/apt.conf.d/99kinobu-login-screen` |
 | Kinobu's boot splash | `sudo kinobu-boot-splash --remove` (Ubuntu's comes back at the next start) |
+| Kinobu's login and logout sounds | Settings > Sound: turn the alert sounds off; or remove `/etc/xdg/autostart/kinobu-login-sound.desktop` and run `sudo systemctl --global disable kinobu-logout-sound.service` |
 | Kinobu itself | `sudo rm -rf /usr/local/share/kinobu /usr/local/bin/kinobu* /etc/xdg/autostart/kinobu-user.desktop` |
 
 ## Tests

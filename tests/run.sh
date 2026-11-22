@@ -28,6 +28,10 @@ check "the skills name no versions or plans" bash -c '! grep -rIqiE "kinobu [0-9
 check "the note, loaded in every conversation, stays short" test "$(wc -w <files/agents/note.md)" -le 220
 # shellcheck disable=SC2016  # the check runs its own shell
 check "the skills' main files stay short" bash -c '[[ $(wc -w <files/skills/kinobu/SKILL.md) -le 600 && $(wc -w <files/skills/kinobu-dev/SKILL.md) -le 800 ]]'
+check "every app speaks every language (all texts of en.json in each file)" python3 -I -c '
+import json, glob, sys
+en = json.load(open("files/i18n/en.json"))
+sys.exit(any(k not in json.load(open(f)).get(sec, {}) for f in glob.glob("files/i18n/*.json") for sec in en for k in en[sec]))'
 check "no removed agent left" bash -c '! grep -rIqiE "opencode|hermes|cursor-agent" kinobu.sh lib files/skills files/agents files/subagents files/apps'
 
 # Opens the real Gate for a moment on the desktop: only when asked, so it never surprises anyone
@@ -199,6 +203,8 @@ else
     check "Ptyxis opens only the window asked for (no session restore)" test "$(isolated /org/gnome/Ptyxis/restore-session)" = "false"
     check "the note is in the agent's instructions" grep -q "kinobu:begin" "$home/.claude/CLAUDE.md"
     check "the subagent for Claude Code"        test -s "$home/.claude/agents/kinobu-agent.md"
+    check "Claude Code's notices run in the background, Gate in front" test "$(jq -r '[.hooks.Stop[0].hooks[0].async, .hooks.Notification[0].hooks[0].async, (.hooks.PermissionRequest[0].hooks[0].async // false)] | map(tostring) | join(" ")' "$home/.claude/settings.json")" = "true true false"
+    check "Claude Code is told to reread CONTEXT.md after compacting" test "$(jq -r '.hooks.SessionStart[0].matcher' "$home/.claude/settings.json")" = "compact"
     check "Claude Code's hooks call the system notifier" test "$(jq -r '.hooks.Stop[0].hooks[0].command' "$home/.claude/settings.json")" = "$prefix/bin/kinobu-notify claude done"
     check "nothing for the removed agents"      test ! -e "$home/.cursor" -a ! -e "$home/.hermes" -a ! -e "$home/.config/opencode" -a ! -e "$home/.codex" -a ! -e "$home/.gemini" -a ! -e "$home/.agents"
     check "the calculator is pinned in the dock" has "$(isolated /org/gnome/shell/favorite-apps)" "org.gnome.Calculator.desktop"
@@ -210,6 +216,8 @@ command='$prefix/bin/kinobu-launch welcome'"
     check "GNOME's Help shortcut is released"   has "$keys" "help=@as []"
     check "the tour is not in the app grid"     grep -q '^NoDisplay=true' "$prefix/share/applications/os.kinobu.Welcome.desktop"
     check "the login screen: its command, its picture and apt's hook" test -x "$prefix/bin/kinobu-login-screen" -a -s "$share/data/login-background.jpg"
+    check "the session sounds, the login entry and the goodbye service" test -s "$share/data/sounds/login.oga" -a -s "$share/data/sounds/logout.oga" -a -s "$prefix/etc/xdg/autostart/kinobu-login-sound.desktop" -a -s "$prefix/lib/systemd/user/kinobu-logout-sound.service"
+    check "the goodbye service is turned on for every user" has "$(<"$record")" "systemctl --global enable kinobu-logout-sound.service"
     check "the boot screen: its command and its frames"   test -x "$prefix/bin/kinobu-boot-splash" -a -s "$share/data/plymouth/kinobu.plymouth" -a -s "$share/data/plymouth/throbber-0090.png"
     check "the boot screen is set up with sudo, only when needed" has "$(<"$record")" "kinobu-boot-splash --if-needed"
     # shellcheck disable=SC2016  # the check runs its own shell
@@ -273,6 +281,45 @@ ask auto 1.5; ask default 1.5
 check "auto mode: Gate waits, so a request approved at once never shows it" test ! -e "$gate/auto"
 check "other modes: Gate opens straight away"         test -e "$gate/default"
 rm -rf "$gate"
+
+echo "Agent notices (Claude Code's hook input; a stand-in notice that writes what it would show)"
+nt=$(mktemp -d); mkdir -p "$nt/programs"; cp -r files/i18n "$nt/i18n"
+printf '#!/usr/bin/env python3\nimport os, sys\nwith open(os.environ["SHOWN"], "a") as f: f.write(" | ".join(sys.argv[1:]) + "\\n")\n' >"$nt/programs/kinobu-notice.py"
+sed -e "s|@PROGRAMS_DIR@|$nt/programs|g; s|@SYSTEM_DIR@|$nt|g; s|@WAIT@|45|; s|@MIN@|0|; s|@APPROVALS@|dialog|; s|@SOUND@|false|" \
+    files/agents/kinobu-notify >"$nt/notify"
+hook() {   # hook EVENT JSON: what the notice says (or prints) for that hook
+    : >"$nt/shown"
+    SHOWN=$nt/shown LANGUAGE=en XDG_RUNTIME_DIR=$nt bash "$nt/notify" claude "$1" <<<"$2" 2>/dev/null
+    sleep 0.3; cat "$nt/shown"
+}
+check "an API error is said plainly"            has "$(hook failed '{"error": "server_error", "session_id": "a"}')" "The servers are busy"
+check "an expired session is said plainly"      has "$(hook failed '{"error": "authentication_failed", "session_id": "b"}')" "sign in to the agent again"
+check "an unknown error shows the agent's text" has "$(hook failed '{"error": "unknown", "last_assistant_message": "API Error: odd", "session_id": "c"}')" "API Error: odd"
+check "an MCP server asking for a link notifies" has "$(hook waiting '{"notification_type": "elicitation_url_dialog", "message": "x", "session_id": "d"}')" "open a link"
+check "a background agent waiting notifies"     has "$(hook waiting '{"notification_type": "agent_needs_input", "session_id": "e"}')" "background agent needs your answer"
+check "finished says what still runs"           has "$(hook "done" '{"last_assistant_message": "Done.", "background_tasks": [{"id": "1", "status": "running"}, {"id": "2", "status": "running"}], "session_id": "f"}')" "2 tasks are still running"
+check "after a compaction the agent rereads CONTEXT.md" has "$(hook compacted '{"source": "compact"}')" "CONTEXT.md"
+rm -rf "$nt"
+
+echo "Session sounds (the launcher with stand-ins for gsettings and pw-play)"
+snd=$(mktemp -d); mkdir -p "$snd/data/sounds" "$snd/bin"; cp files/branding/sounds/*.oga "$snd/data/sounds/"
+sed "s|@SYSTEM_DIR@|$snd|g; s|@BIN_DIR@|$snd/bin|g; s|@PROGRAMS_DIR@|$snd|g" files/apps/kinobu-launch >"$snd/launch"
+# shellcheck disable=SC2016  # the stand-ins expand their own variables
+printf '#!/bin/sh\necho "$SOUNDS"\n' >"$snd/bin/gsettings"
+# shellcheck disable=SC2016  # the stand-ins expand their own variables
+printf '#!/bin/sh\necho "$1" >"$PLAYED"\n' >"$snd/bin/pw-play"
+chmod +x "$snd/bin/"*
+# shellcheck disable=SC2016  # the stand-in expands its own variable
+printf '#!/bin/sh\n[ -e "$SINK" ]\n' >"$snd/bin/wpctl"; chmod +x "$snd/bin/wpctl"
+sound() { rm -f "$snd/played"; SOUNDS=$1 PLAYED=$snd/played SINK=$snd/sink KINOBU_SOUND_SETTLE=0 PATH=$snd/bin:$PATH bash "$snd/launch" sound "$2" >/dev/null 2>&1; cat "$snd/played" 2>/dev/null; }
+: >"$snd/sink"   # a default output exists (the login sound waits for it)
+check "the login sound plays"                     has "$(sound true login)" "$snd/data/sounds/login.oga"
+check "the goodbye plays"                         has "$(sound true logout)" "$snd/data/sounds/logout.oga"
+check "both stay silent with the alert sounds off" test -z "$(sound false login)$(sound false logout)"
+check "only Kinobu's two sounds can be played"    test -z "$(sound true ../../etc/passwd)"
+rm -f "$snd/sink"; ( sleep 0.6; : >"$snd/sink" ) &
+check "the login sound waits until there is a sound output" has "$(sound true login)" "$snd/data/sounds/login.oga"
+rm -rf "$snd"
 
 echo "Willow's safe actions (kinobu-do, in a fake home: nothing of the desktop is changed)"
 kd_home=$(mktemp -d)

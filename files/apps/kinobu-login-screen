@@ -5,14 +5,14 @@
 # Ubuntu chooses that screen's theme through the alternative gdm-theme.gresource. This builds a
 # copy of Ubuntu's own (Yaru) with only the plain grey background replaced by Kinobu's picture,
 # and registers it with a higher priority: Ubuntu's files are never changed. It also takes Ubuntu's
-# logo off the bottom of that screen: a file of Kinobu's own in GDM's settings folder, which GDM
-# reads every time it starts. The lock screen (Super+L) is not affected: it shows each user's
+# logo off the bottom of that screen and gives its buttons Kinobu's green accent instead of
+# Ubuntu's orange: a file of Kinobu's own in GDM's settings folder, read every time GDM starts. The lock screen (Super+L) is not affected: it shows each user's
 # wallpaper.
 #
 #   sudo kinobu-login-screen              build it (again) and use it
 #   sudo kinobu-login-screen --if-needed  only when Ubuntu's theme or the picture changed (apt runs
 #                                         it after every package change)
-#   sudo kinobu-login-screen --remove     back to Ubuntu's grey and logo
+#   sudo kinobu-login-screen --remove     back to Ubuntu's grey, logo and orange
 #   kinobu-login-screen --build FILE      build the theme into FILE, changing nothing (tests)
 set -euo pipefail
 
@@ -69,9 +69,9 @@ stamp() { cat "$SOURCE" "$IMAGE" 2>/dev/null | sha256sum | cut -d' ' -f1; printf
 
 registered() { update-alternatives --query "$NAME" 2>/dev/null | grep -qx "Alternative: $TARGET"; }
 
-no_logo() {   # no distribution logo under the user list (Ubuntu sets its own; Kinobu's is the background)
+gdm_settings() {   # no logo under the user list (Kinobu's is the background) and a green accent
     local want
-    want=$'# Written by kinobu-login-screen: no logo under the user list\n[org/gnome/login-screen]\nlogo=\'\'\n'
+    want=$'# Written by kinobu-login-screen: no logo under the user list, Kinobu\'s green accent\n[org/gnome/login-screen]\nlogo=\'\'\n\n[org/gnome/desktop/interface]\naccent-color=\'green\'\n'
     [[ -d ${GDM_SETTINGS%/*} ]] || return 0
     if [[ "$(cat "$GDM_SETTINGS" 2>/dev/null)"$'\n' != "$want" ]]; then
         printf '%s' "$want" >"$GDM_SETTINGS"
@@ -82,7 +82,7 @@ no_logo() {   # no distribution logo under the user list (Ubuntu sets its own; K
 
 use() {
     [[ $EUID -eq 0 ]] || { say "Run it with sudo"; exit 1; }
-    no_logo
+    gdm_settings
     if [[ ! -f $SOURCE ]]; then say "Ubuntu's login theme (Yaru) is not installed: nothing to do"; exit 0; fi
     if [[ ${1:-} == --if-needed && -f $TARGET && "$(cat "$STAMP" 2>/dev/null)" == "$(stamp)" ]] && registered; then
         exit 0

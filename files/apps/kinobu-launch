@@ -49,6 +49,25 @@ case ${1:-} in
     voice)
         # Willow, the voice assistant; a second press brings back the open window
         exec python3 "@PROGRAMS_DIR@/voice.py" ;;
+    sound)
+        # Kinobu's sound when the session starts (login) or ends (logout); silent when the user
+        # turned the alert sounds off (org.gnome.desktop.sound event-sounds)
+        case ${2:-} in login|logout) ;; *) exit 1 ;; esac
+        file="@SYSTEM_DIR@/data/sounds/$2.oga"
+        if [[ -f $file && "$(gsettings get org.gnome.desktop.sound event-sounds 2>/dev/null)" != false ]]; then
+            # At login GNOME may start this before PipeWire and WirePlumber have chosen where sound
+            # goes: wait for a default output (10 s at most). Then 3 s more: a screen that plays
+            # the sound (HDMI) needs them after GNOME sets the display up, or only the end is heard
+            if [[ $2 == login ]]; then
+                sink="@DEFAULT_AUDIO_SINK"; sink+="@"   # split, or the setup takes it for one of its marks
+                for _ in {1..40}; do
+                    if wpctl inspect "$sink" >/dev/null 2>&1; then break; fi
+                    sleep 0.25
+                done
+                sleep "${KINOBU_SOUND_SETTLE:-3}"
+            fi
+            exec pw-play "$file"
+        fi ;;
     user-setup)
         # Run at every login: a user who is new, or behind the installed version, gets their part
         if [[ "$(cat "@SYSTEM_DIR@/version" 2>/dev/null)" != "$(cat "$HOME/.config/kinobu/version" 2>/dev/null)" ]]; then

@@ -2,6 +2,25 @@
 
 What changed in each version of Kinobu. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). To bring a computer set up by an earlier version to the latest one, run `bash kinobu.sh --update` (your look is kept).
 
+## [0.3.2] — 2026-11-22
+
+Claude Code's notices, checked against its hooks reference and brought up to date. Run `bash kinobu.sh --update` from the project's folder.
+
+### Added
+
+- **Notices for more kinds of waiting**: an MCP server asking for a value or for a link to be opened, and a background agent that needs your answer, besides the agent waiting for you.
+- **After a compaction the agent rereads the project's `CONTEXT.md`**: when a long conversation is compacted and loses details, Claude Code is told to read it again and bring it up to date.
+- **"Finished" says what is still running**: when the agent leaves tasks in the background, the notice says how many.
+- **A line in the terminal while Gate waits** for your answer, in your language.
+- **Kinobu's own login and logout sounds**: a soft chord that grows out of silence with four celesta notes (up, down and up again) when you log in, and its goodbye (a calmer chord with the notes going down) when you log out, restart or shut down. Drawn from code by `tools/login_sound.py` (no recordings), quiet, for every user; Ubuntu's own login sound is off by default and cannot be changed in Settings. Settings > Sound > alert sounds turns both off. The login sound waits until the sound system has an output and three seconds more, so a screen's speakers (HDMI), which need them after GNOME sets the display up, play it whole. Through a screen's speakers the goodbye is not heard on shutdown or restart (it plays, but the screen is already off); through the computer's own speakers or headphones it is.
+- **The login screen in Kinobu's green**: its buttons and selection take GNOME's green accent instead of Ubuntu's orange, to match Kinobu's background.
+- **Every app in six languages**: the welcome tour (Sprout) and Willow's window now also speak German, French, Italian and Portuguese, like Seasons and the notices; a test checks that no text is missing. The tour's stale lines are fixed (Super+F1 to see it again, `--manual` to add an agent, dictation on Super+Space).
+
+### Changed
+
+- **Every error that ends a turn is said plainly** in your language: an expired session, an account on hold, a billing problem, busy servers, an answer too long, a model or cloud credentials that fail, besides the usage limit; any other error shows the agent's own text.
+- **The notices run in the background**, so they never hold the agent, not even for a moment; Gate still answers in front.
+
 ## [0.3.1] — 2026-11-21
 
 A critical fix for Seasons and an important step for the experience: every workspace keeps its own wallpaper when the theme changes again, and the agents' instructions are redone (a short system skill with its guides read only when needed, a skill for developing programs, your language, concise answers); Willow knows where you are and the terminal opens one window. Run `bash kinobu.sh --update` from the project's folder.

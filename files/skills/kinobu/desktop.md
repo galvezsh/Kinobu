@@ -56,6 +56,13 @@ Ptyxis opens only the window asked for (its session restore is off). New windows
 the theme's colours. Deleting the `Managed by` line at the top of that config keeps the user's own
 changes on updates.
 
+## Sounds
+
+@APP_NAME@ plays a soft chord when a session starts (`/etc/xdg/autostart/kinobu-login-sound.desktop`)
+and its goodbye when it ends (user service `kinobu-logout-sound.service`), both
+`@LAUNCHER@ sound login|logout`. GNOME's alert sounds switch
+(`org.gnome.desktop.sound event-sounds`) silences both.
+
 ## Power and startup
 
 - Screen off: `org.gnome.desktop.session idle-delay` (seconds).

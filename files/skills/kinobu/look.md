@@ -48,7 +48,7 @@ own output take the theme's accent from `~/.local/state/kinobu/terminal-dark` or
 ## Login and boot screens
 
 - Login screen (GDM): @APP_NAME@'s background, built by `@BIN_DIR@/kinobu-login-screen`, without
-  Ubuntu's logo (`/usr/share/gdm/dconf/95-kinobu-login`). `sudo kinobu-login-screen --remove`
+  Ubuntu's logo and in GNOME's green accent (`/usr/share/gdm/dconf/95-kinobu-login`). `sudo kinobu-login-screen --remove`
   brings Ubuntu's back.
 - Boot screen (Plymouth): the maker's logo with @APP_NAME@'s rings turning under it, installed by
   `@BIN_DIR@/kinobu-boot-splash` in `/usr/share/plymouth/themes/kinobu`.

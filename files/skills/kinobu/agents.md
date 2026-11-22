@@ -33,8 +33,9 @@ When the report lists **Needs sudo**, ask the user to run those read-only comman
 ## Notifications
 
 @APP_NAME@'s hooks in `~/.claude/settings.json` (next to other tools' entries, which are kept) show a
-desktop notice when a task finished (20 s or more), the agent waits for the user or stops on an
-error; a click brings back the agent's terminal. Permission requests open Gate (Allow, In
+desktop notice when a task finished (20 s or more), the agent waits for the user (also an MCP
+server asking for input or a background agent) or stops on an error; a click brings back the
+agent's terminal. After a compaction, Claude Code is told to reread the project's CONTEXT.md. Permission requests open Gate (Allow, In
 terminal, Deny); no answer leaves the decision to the terminal. The notifier is `@NOTIFIER@`.
 To notify the user yourself (once per event, in their language, no personal data):
 

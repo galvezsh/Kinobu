@@ -1,0 +1,17 @@
+# Kinobu's goodbye sound: it plays when the graphical session ends (logging out, restarting or
+# shutting down). Ordered after PipeWire, so it stops, and plays, before the sound server does.
+# Written by Kinobu: rewritten on every run and --update.
+[Unit]
+Description=Kinobu's sound when the session ends
+PartOf=graphical-session.target
+After=graphical-session.target pipewire.service pipewire-pulse.service wireplumber.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+ExecStop=@LAUNCHER@ sound logout
+TimeoutStopSec=5
+
+[Install]
+WantedBy=graphical-session.target

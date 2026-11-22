@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # Kinobu agent notifications (written by Kinobu: rewritten on every run and --update): turns the hooks of the coding agents into GNOME notifications.
-# Usage: kinobu-notify <agent> <start|done|waiting|permission>   (hook JSON on stdin)
+# Usage: kinobu-notify <agent> <start|done|failed|waiting|permission|compacted>   (hook JSON on stdin)
 #   start       a task begins (remembered, so short tasks do not notify when they end)
 #   done        the agent finished: notifies when the task took KINOBU_NOTIFY_MIN_SECONDS or more
 #   failed      the turn ended on an error (API, usage limit): always notifies
-#   waiting     the agent waits for the user
+#   waiting     the agent waits for the user (idle, an MCP server asking for a value or a link,
+#               a background agent that needs an answer)
 #   permission  approval (Claude Code): Kinobu's window with Allow, Deny and "In terminal"
 #               (GNOME 50 shows no buttons in notifications). Closing it, "In terminal" or no
 #               answer in time leave the decision to the agent's own prompt in the terminal
+#   compacted   the conversation was just compacted: tells the agent (stdout) to read the
+#               project's CONTEXT.md again and bring it up to date
 # One notice per turn and session: a new one replaces the last, and "waiting" after a
 # "finished" is skipped. The notice header is the agent's name.
 # Privacy: only the agent's name, the project folder, the tool, the command and the agent's own text are
@@ -115,27 +118,52 @@ case $event in
         : >"$mark.done"
         status=$(field '.status // .terminationReason')
         message=$(field '.last_assistant_message')
+        # Tasks the agent left running in the background: "finished" would be misleading alone
+        running=$(jq -r '[.background_tasks[]? | select(.status == "running" or .status == "pending")] | length' \
+            <<<"$input" 2>/dev/null || echo 0)
         case $status in
             error|aborted) chime dialog-warning; notify normal "❌ $title" "$(t stopped): $status" ;;
-            *) chime complete; notify normal "✅ $title" "$(short "${message:-$(t finished)}")" ;;
+            *)  if ((${running:-0} > 0)); then message="$(printf "$(t still_running)" "$running"). ${message:-$(t finished)}"; fi
+                chime complete; notify normal "✅ $title" "$(short "${message:-$(t finished)}")" ;;
         esac
         ;;
     failed)
         # Claude Code's StopFailure: the turn ended on an API error or a usage limit
         rm -f "$mark"
         : >"$mark.done"
-        reason=$(field '.error.message // .error // .message // .reason')
+        # The error is one word (rate_limit, server_error…): said plainly in the desktop language;
+        # an unknown one shows the agent's own error text
+        kind=$(field '.error.type? // .error')
+        case $kind in
+            rate_limit*)            text=$(t limit) ;;
+            authentication_failed)  text=$(t err_auth) ;;
+            oauth_org_not_allowed)  text=$(t err_org) ;;
+            account_on_hold)        text=$(t err_hold) ;;
+            billing_error)          text=$(t err_billing) ;;
+            invalid_request)        text=$(t err_request) ;;
+            model_not_found)        text=$(t err_model) ;;
+            server_error)           text=$(t err_server) ;;
+            max_output_tokens)      text=$(t err_long) ;;
+            cloud_credential_error) text=$(t err_cloud) ;;
+            *)  reason=$(field '.last_assistant_message // .error_details // .error.message // .message // .reason')
+                text="$(t failed)${reason:+: $(short "$reason" 160)}" ;;
+        esac
         chime dialog-warning
-        if [[ $(field '.error.type? // .error') == rate_limit* ]]; then notify normal "❌ $title" "$(t limit)"
-        else notify normal "❌ $title" "$(t failed)${reason:+: $(short "$reason" 160)}"; fi
+        notify normal "❌ $title" "$text"
         ;;
     waiting)
         # Claude Code's own notice text is always English: say it in the desktop language instead.
         # Its idle notice comes a minute after a turn ends: skip it when "finished" already said so.
-        if [[ -n $(field '.notification_type') ]]; then
-            if [[ -e $mark.done ]]; then exit 0; fi
-            message=$(t idle)
-        else message=$(field '.message // .toolCall.args.Question // .toolCall.args.question // .description // .command'); fi
+        case $(field '.notification_type') in
+            idle_prompt)
+                if [[ -e $mark.done ]]; then exit 0; fi
+                message=$(t idle) ;;
+            elicitation_dialog)     message=$(t form) ;;
+            elicitation_url_dialog) message=$(t link) ;;
+            agent_needs_input)      message=$(t agent_input) ;;
+            '') message=$(field '.message // .toolCall.args.Question // .toolCall.args.question // .description // .command') ;;
+            *)  message=$(t idle) ;;
+        esac
         : >"$mark.done"
         chime message-new-instant
         notify normal "💬 $title" "$(short "${message:-$(t waiting)}")"
@@ -165,6 +193,10 @@ case $event in
         else
             notify critical "🔐 ${project:+$project · }$(t needs)" "$(short "$what")"
         fi
+        ;;
+    compacted)
+        # Claude Code's SessionStart after a compaction: what is printed reaches the agent as context
+        echo "The conversation was just compacted and details were lost. If this project has a CONTEXT.md, read it again now and bring it up to date with what was done before the compaction."
         ;;
 esac
 exit 0

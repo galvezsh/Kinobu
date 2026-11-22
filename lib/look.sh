@@ -61,6 +61,7 @@ install_look() {
     install_look_packs
     install_login_screen
     install_boot_splash
+    install_session_sounds
 }
 
 # The login screen (GDM): Ubuntu's own theme with Kinobu's background instead of the plain grey,
@@ -102,6 +103,27 @@ install_boot_splash() {
         ok "Kinobu's rings when the computer starts (you see them at the next start)"
     else
         warn "The boot screen keeps Ubuntu's (see the log)"
+    fi
+}
+
+# Kinobu's sounds when a session starts and ends (tools/login_sound.py), for every user: an
+# autostart entry for the login (Ubuntu's own login sound is off by default, and Settings cannot
+# change it) and a user service that plays the goodbye as the session stops, before PipeWire.
+# Both stay silent when the alert sounds are off.
+install_session_sounds() {
+    if ! $SYSTEM_WRITES; then return 0; fi
+    step "Login and logout sounds"
+    local autostart=/etc/xdg/autostart units="$PREFIX/lib/systemd/user" name
+    if [[ $PREFIX != /usr/local ]]; then autostart="$PREFIX/etc/xdg/autostart"; fi
+    for name in login logout; do
+        put_file "$SYSTEM_DIR/data/sounds/$name.oga" <"$ROOT_DIR/files/branding/sounds/$name.oga"
+    done
+    put_file "$autostart/$APP_ID-login-sound.desktop" < <(render apps/login-sound.desktop LAUNCHER)
+    put_file "$units/$APP_ID-logout-sound.service" < <(render services/kinobu-logout-sound.service LAUNCHER)
+    if run root systemctl --global enable "$APP_ID-logout-sound.service"; then
+        ok "A soft chord with a celesta when you log in, and its goodbye when you leave (Settings > Sound > alert sounds turns them off)"
+    else
+        warn "The logout sound could not be turned on (see the log)"
     fi
 }
 

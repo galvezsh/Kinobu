@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Kinobu login sound
+Comment=Plays Kinobu's sound when you log in (off with the alert sounds)
+Exec=@LAUNCHER@ sound login
+NoDisplay=true
+AutostartCondition=GSettings org.gnome.desktop.sound event-sounds
+X-GNOME-Autostart-Phase=Application
+X-GNOME-Autostart-enabled=true
