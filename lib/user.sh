@@ -17,6 +17,8 @@ NERD_FONT_SHA256="abcbf48bb68e2dd09d43dc0ea04f6878cc8ee46334a9f9ce52b51e06f31aa0
 NERD_FONT_FILES="UbuntuSansMonoNerdFontMono-*.ttf"
 NERD_FONT_FAMILY="UbuntuSansMono Nerd Font Mono"
 TERMINAL_FONT_SIZE=11
+# GNOME's own account pictures (gnome-control-center-faces): one at random for a user with none
+ACCOUNT_FACES=/usr/share/pixmaps/faces
 # Snaps of JetBrains-based IDEs whose terminal gets the Nerd Font (the installed ones)
 JETBRAINS_IDES=(intellij-idea pycharm webstorm clion goland rider phpstorm rubymine rustrover datagrip android-studio)
 
@@ -111,6 +113,40 @@ configure_user() {
         ok "$data_dir (${options/#$HOME/\~})"
     done
     if ((found == 0)); then info "No JetBrains-based IDE installed"; fi
+
+    set_account_picture
+}
+
+# A user with no account picture gets one of GNOME's own at random, so the login screen and the
+# top bar's menu never show the empty silhouette. Through AccountsService, which lets every user
+# change their own picture without sudo; a picture already there is never replaced. Nothing here
+# stops the setup: without AccountsService or GNOME's pictures it only says so.
+set_account_picture() {
+    step "Account picture"
+    local accounts=org.freedesktop.Accounts user icon face
+    user=$(gdbus call --system --dest $accounts --object-path /org/freedesktop/Accounts \
+        --method $accounts.FindUserByName "$(id -un)" 2>>"$LOG" || true)
+    user=${user#*\'}; user=${user%%\'*}
+    if [[ $user != /org/freedesktop/Accounts/* ]]; then
+        info "The account service did not answer: choose a picture in Settings > System > Users"
+        return 0
+    fi
+    icon=$(gdbus call --system --dest $accounts --object-path "$user" \
+        --method org.freedesktop.DBus.Properties.Get $accounts.User IconFile 2>>"$LOG" || true)
+    icon=${icon#*\'}; icon=${icon%%\'*}
+    if [[ -n $icon && -s $icon ]]; then
+        ok "Yours is kept"
+        return 0
+    fi
+    face=$(find "$ACCOUNT_FACES" -maxdepth 1 -type f \( -name '*.jpg' -o -name '*.png' \) 2>/dev/null | shuf -n 1 || true)
+    if [[ -z $face ]]; then
+        info "GNOME's pictures are not installed: choose one in Settings > System > Users"
+    elif gdbus call --system --dest $accounts --object-path "$user" \
+        --method $accounts.User.SetIconFile "$face" >>"$LOG" 2>&1; then
+        ok "One of GNOME's at random: $(basename "${face%.*}") (change it in Settings > System > Users)"
+    else
+        warn "The account picture could not be set: choose one in Settings > System > Users"
+    fi
 }
 
 # Ptyxis opens only the window asked for: its session restore (on by default) brought back the

@@ -226,6 +226,9 @@ command='$prefix/bin/kinobu-launch welcome'"
     check "the Settings folder has a translated name" test -s "$home/.local/share/desktop-directories/Kinobu-Settings.directory"
     check "the weather city comes from the time zone" has "$(isolated /org/gnome/shell/weather/locations)" "uint32"
     check "shortcuts run the system launcher"   has "$(isolated /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/kinobu-0/command)" "$prefix/bin/kinobu-launch terminal"
+    if [[ -d /usr/share/pixmaps/faces ]]; then
+        check "a user with no account picture gets one of GNOME's" has "$(<"$record")" "SetIconFile /usr/share/pixmaps/faces/"
+    fi
     check "the user's version is recorded"      test "$(cat "$home/.config/kinobu/version")" = "$(cat "$share/version")"
     echo " The look"
     check "a new user starts with the Kinobu theme" grep -q '^theme = "kinobu"' "$home/.config/kinobu/look.toml"
@@ -241,8 +244,11 @@ command='$prefix/bin/kinobu-launch welcome'"
     check "nor in the hooks"                    test "$(jq '.hooks.Stop | length' "$home/.claude/settings.json")" -eq 1
     check "the tour opens only the first time"  lacks "$out" "welcome tour is open"
     HOME=$home XDG_CONFIG_HOME=$real_config DCONF_PROFILE=$profile python3 -I "$share/programs/kinobu_theme.py" set nord >/dev/null 2>&1
-    out=$(whole update)
+    : >"$record"
+    out=$(KINOBU_TEST_ICON=/etc/hostname whole update)
     check "--update runs to the end"            has "$out" "✔ Done"
+    # shellcheck disable=SC2016  # the check runs its own shell
+    check "a picture already there is kept"     bash -c '[[ $1 == *"Yours is kept"* && $(<"$2") != *SetIconFile* ]]' _ "$out" "$record"
     # shellcheck disable=SC2016  # the check runs its own shell
     check "--update keeps the theme you chose"  bash -c '[[ $(grep "^theme" "$1") == "theme = \"nord\"" ]]' _ "$home/.config/kinobu/look.toml"
     check "--update leaves the look alone"      lacks "$out" "Dock favourites"
@@ -260,6 +266,9 @@ command='$prefix/bin/kinobu-launch welcome'"
     check "the shortcuts"                       has "$(isolated /org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/kinobu-0/command)" "kinobu-launch terminal"
     check "and is marked as up to date"         test "$(cat "$other/.config/kinobu/version")" = "$(cat "$share/version")"
     check "the welcome tour opens for them"     has "$out" "welcome tour"
+    if [[ -d /usr/share/pixmaps/faces ]]; then
+        check "and an account picture of their own" has "$(<"$record")" "SetIconFile /usr/share/pixmaps/faces/"
+    fi
     check "and their own look, the Kinobu theme" grep -q '^theme = "kinobu"' "$other/.config/kinobu/look.toml"
     out=$(whole user "$other")
     check "later it only refreshes (look kept)" lacks "$out" "Dock favourites"

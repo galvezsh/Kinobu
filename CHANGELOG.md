@@ -7,6 +7,7 @@ What changed in each version of Kinobu. The format follows [Keep a Changelog](ht
 ### Added
 
 - **A Sounds section in Seasons**: the sound when you log in and the one when you leave, each on or off, Kinobu's or a sound file of your own (OGG, Opus, WAV, FLAC or MP3), with a Listen button. Your file is copied, so it keeps playing if you move or delete the original; a long one is cut (10 s at login, 4 at logout). It says when Settings' alert sounds are off, since they silence both. Kept in your `look.toml`, so updates and theme changes never touch it; `kinobu-theme pick login-sound|logout-sound kinobu|off|FILE` does the same from the terminal.
+- **An account picture from the start**: a user with no picture gets one of GNOME's own at random when Kinobu sets them up or updates them, so the login screen and the top bar's menu never show the empty silhouette. A picture you chose is never replaced; change it in Settings > System > Users.
 - **Papirus' folders in the theme's colour**: with Papirus icons, folders take the colour nearest to the palette's accent (violet in Catppuccin, rose in Rosé Pine, orange in Gruvbox, Nord's own blue…), or the one a theme names (`folders` in `theme.toml`). Each user gets their own, without sudo and without changing the folders of other users.
 
 ## [0.3.2] — 2026-11-22

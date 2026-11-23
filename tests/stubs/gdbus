@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Test double for AccountsService: the user's picture is $KINOBU_TEST_ICON (none when empty);
+# every call is recorded and nothing is sent to the real system bus.
+echo "gdbus $*" >>"${KINOBU_TEST_SUDO:-/dev/null}"
+case "$*" in
+    *FindUserByName*) echo "(objectpath '/org/freedesktop/Accounts/User1000',)" ;;
+    *"Properties.Get"*IconFile*) echo "(<'${KINOBU_TEST_ICON:-}'>,)" ;;
+    *SetIconFile*) echo "()" ;;
+esac
+exit 0

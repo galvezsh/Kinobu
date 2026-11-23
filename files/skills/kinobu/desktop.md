@@ -34,6 +34,9 @@ button. Clipboard history: the clipboard-indicator extension (Super+V).
 
 ## Accounts, mail and calendar
 
+A user with no account picture gets one of GNOME's at random when @APP_NAME@ sets them up (only
+then: a chosen one is never replaced); Settings > System > Users changes it.
+
 Settings > Online Accounts connects Google, Microsoft and others; Contacts and Calendar then show
 them. Geary reads that mail and runs in the background (`org.gnome.Geary run-in-background`,
 started hidden from `~/.config/autostart/geary-autostart.desktop`), so new mail is notified.

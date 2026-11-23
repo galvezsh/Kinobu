@@ -79,6 +79,7 @@ update_user_files() {
     ok "Ptyxis does not bring back the last session's windows"
     step "Dictation typing (ydotool)"
     ydotool_retry
+    set_account_picture
 }
 
 # The themes and their packs, then the user's own look applied again (kept as it is)

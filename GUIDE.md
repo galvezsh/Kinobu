@@ -68,7 +68,7 @@ They run in this order. `--update` runs the ones marked, with the function in th
 | `ai` | Installs the chosen agents and local AI tools with their official installers, `uv` and Willow; the first chosen agent opens with Super+Shift+Enter | Updates the tools that are installed and Willow |
 | `drivers` | Installs the drivers Ubuntu recommends for the hardware | — |
 | `services` | Lets `ydotool` type dictated text, turns off ModemManager (unless there is a mobile modem) and the OpenVPN system service | — |
-| `user` | Oh My Bash, the Nerd Font, Kinobu's block in `~/.bashrc`, the fastfetch summary, the Ptyxis palette and the terminal fonts of VS Code and the JetBrains IDEs | The `~/.bashrc` block and fastfetch |
+| `user` | Oh My Bash, the Nerd Font, Kinobu's block in `~/.bashrc`, the fastfetch summary, the Ptyxis palette, the terminal fonts of VS Code and the JetBrains IDEs, and one of GNOME's account pictures at random if you have none | The `~/.bashrc` block and fastfetch; an account picture if you have none |
 | `desktop` | GNOME extensions, clock, weather (the city of your time zone), four workspaces, power settings, dock, Geary in the background, the app grid, the boot splash and the look: Seasons, the themes and their icon and cursor packs, then your theme (Kinobu for a new user) | The themes and their packs; your look is kept |
 | `shortcuts` | The launcher, the shortcut table, the Super+K cheat sheet and the welcome tour | The same: Kinobu's shortcuts always win |
 | `context` | The skills (the system's and the one for developing programs), the read-only subagent, the note, the answer style and the agent's notifications | The same |
@@ -261,6 +261,7 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 | `~/.local/share/icons/<pack>`, `~/.icons/default` | Links to the icons and cursor in use, for sandboxed and older apps |
 | `~/.local/share/icons/Papirus-*-kinobu-<colour>` | Papirus' folders in the theme's colour: a hidden icon theme of links over Papirus, made again when the colour changes |
 | `~/.local/share/kinobu/sounds/` | The copy of your own login or logout sound, chosen in Seasons |
+| Your account picture (AccountsService, `/var/lib/AccountsService/icons/<user>`) | Only when you had none: one of GNOME's from `/usr/share/pixmaps/faces`; change it in Settings > System > Users |
 | `~/.claude/` | The links to the two skills, the note, the subagent, the hooks and, unless you chose one, the Concise answer style of Claude Code |
 | `~/.config/kinobu/` | The default agent, your version, Willow's settings |
 | `~/.local/share/kinobu/voice/` | Willow's voices and models |
