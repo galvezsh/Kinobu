@@ -68,6 +68,7 @@ icons = "Papirus"                # Yaru follows the accent; or an installed pack
 cursor = "Bibata-Modern-Classic" # or one per mode: { dark = "…", light = "…" }
 button_layout = "appmenu:minimize,maximize,close"   # "close,minimize,maximize:appmenu" puts them left
 gnome_accent = "blue"            # optional; by default the nearest to the palette's accent
+folders = "indigo"               # optional, Papirus' folders; by default the nearest to the palette's accent
 intensity = 1                    # Kinobu's details (layer 2): 0 off, 1 default, 2 bold
 # interface_font = "Inter 11"    # optional, like monospace_font
 
@@ -168,7 +169,7 @@ The icons and cursors of each theme are a first choice; anyone can change them i
 ### Icons
 
 - **Yaru**: in Ubuntu, one variant per accent.
-- **Papirus**: in APT (`papirus-icon-theme`), dark and light.
+- **Papirus**: in APT (`papirus-icon-theme`), dark and light. Its folders take the theme's colour (built on 2026-11-23): Papirus ships every folder in about 25 colours and points `folder.svg`, `folder-documents.svg`, `user-home.svg`… at the blue ones by links in each size's `places`. Its own `papirus-folders` changes those links in `/usr/share` with sudo, for everybody; Kinobu makes `~/.local/share/icons/<Papirus-Dark|-Light>-kinobu-<colour>` instead, hidden, `Inherits=` the pack, with only the `places` folders that have colours and links to the coloured files (about 400). The colour is `folders` in `theme.toml` (theme or palette), else the nearest to the accent in OKLab, hue first (pale and grey colours only when named). A changed accent in the user's own theme updates its `folders` when it has one. Another colour is another name, so open apps reload their icons.
 - **Fluent** and **WhiteSur** (vinceliuice, GPL-3.0): not in APT. Installed from their GitHub releases at a fixed version into the system layer. Licence and installer to verify.
 - **Cursors**: Yaru (Ubuntu's), **Bibata** (in APT), WhiteSur cursors (GitHub). A theme sets one; the user can pick another one later.
 
@@ -181,7 +182,7 @@ The icons and cursors of each theme are a first choice; anyone can change them i
 
 **Seasons** (app ID `os.kinobu.Themes`, command `kinobu-launch themes` once it is installed): GTK 4 / libadwaita in Python, with the welcome tour's look, in the Settings folder of the app grid.
 
-A bar at the bottom with five sections (decided on 2026-11-17; built in the repository):
+A bar at the bottom with six sections (five decided on 2026-11-17; Sounds added on 2026-11-23):
 
 | Section | What it shows |
 |---|---|
@@ -189,6 +190,7 @@ A bar at the bottom with five sections (decided on 2026-11-17; built in the repo
 | **Icons** | A card per installed icon pack (Papirus covers Papirus-Dark and -Light), with ten of its own icons; *System* and *User* groups (a pack whose folder is in the home folder is the user's: `users_pack`) |
 | **Cursors** | A card per cursor theme, with five of its cursors read from their X cursor files; *System* and *User* groups, as for icons |
 | **Fonts** | Interface (menus, windows, documents) and monospace (editors, code), each written in its own font; size; any other font. The terminal keeps the Nerd Font: its prompt needs the symbols |
+| **Sounds** | The login and logout sounds: on or off, Kinobu's or a file of the user's (copied into `~/.local/share/kinobu/sounds/<login\|logout>/`), Listen; a notice when GNOME's alert sounds are off (they silence both). Kept in `look.toml` (`login_sound`, `logout_sound`: empty for Kinobu's, `off`, or the copy's path), not tied to the theme, so no Follow switch |
 | **Wallpapers** | One per workspace, the first also the lock screen; *Change…* opens a picture. **Find wallpapers on Wallhaven…** opens a window: a search box on top, random pictures as it opens, the theme's suggestion (`wallhaven` and `wallhaven_colour` in `theme.toml`), the popular ones; *Use* downloads one to `~/Pictures/Wallhaven` and sets it on a workspace or on all of them |
 
 **The theme proposes, the user decides.** Icons, Cursors, Fonts and Wallpapers open with a **Follow the theme** switch. On, the theme chooses and the choices below rest. Off, what the theme gives now becomes the user's own pick, to change as they like; it is kept in `~/.config/kinobu/look.toml` (an empty value means "the theme's") and stays when the theme changes. Turning it on again goes back to the theme's. Kinobu's updates never change that file. No GNOME Shell theme (decided: it can break, even with security updates). `kinobu-theme pick icons|cursor|interface-font|monospace-font|wallpaper N …` does the same from the command line, and `seasons.py --page NAME` opens a section.

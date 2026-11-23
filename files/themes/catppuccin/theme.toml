@@ -5,6 +5,7 @@ name = "Catppuccin"
 description = "Soothing pastels and purples: Catppuccin's flavours, with Dracula and Alucard."
 author = "Kinobu, on Catppuccin (MIT) and Dracula by Zeno Rocha (MIT)"
 gnome_accent = "purple"
+folders = "violet"                        # Papirus' folders in mauve (else the accent's nearest colour)
 icons = "Papirus"
 cursor = { dark = "catppuccin-mocha-dark-cursors", light = "catppuccin-latte-light-cursors" }
 button_layout = "appmenu:minimize,maximize,close"

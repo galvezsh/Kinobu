@@ -9,7 +9,8 @@
 # Design: docs/themes.md in Kinobu's repository.
 #
 # Usage: kinobu-theme list | current | set <id> [--palette P | --mode dark|light]
-#        | validate [--strict] [<id>...] | refresh | pick ... | css <id> [--palette P] [--gtk3]
+#        | validate [--strict] [<id>...] | refresh | pick ... | sound login|logout
+#        | css <id> [--palette P] [--gtk3]
 import argparse
 import configparser
 import json
@@ -43,6 +44,8 @@ else:
     DETAILS = {4: os.path.join(TEMPLATES, "gtk4-details.css"),
                3: os.path.join(TEMPLATES, "gtk3-details.css")}
 LOOK_FILE = os.path.join(CONFIG, "kinobu", "look.toml")
+KINOBU_SOUNDS = (os.path.join(HERE, "..", "branding", "sounds") if REPO
+                 else os.path.join(SYSTEM_DIR, "data", "sounds"))
 # Four wallpapers, one per workspace; more workspaces repeat them in order (the extension's list is
 # filled to EXTENSION_SLOTS, so new or dynamic workspaces always have one). Themes' wallpapers from
 # Wallhaven are downloaded here, by the user, when the theme is applied.
@@ -132,22 +135,28 @@ def legible(colour, background, minimum=4.5):
     return out
 
 
+def oklab(hex_colour):
+    """A colour in OKLab (lightness, a, b): distances there match what the eye sees."""
+    def lin(v):
+        return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+    r, g, b = (lin(v) for v in rgb(hex_colour))
+    l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
+    m = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
+    s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
+    return (0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+            1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+            0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s)
+
+
+def nearest(hex_colour, choices, weights=(0.3, 1, 1)):
+    """The key of choices ({key: "#RRGGBB"}) closest to a colour; hue and chroma matter more than
+    lightness (a and b weigh more)."""
+    x = oklab(hex_colour)
+    return min(choices, key=lambda k: sum(w * (p - q) ** 2 for w, p, q in zip(weights, x, oklab(choices[k]))))
+
+
 def nearest_accent(hex_colour):
-    def lab(c):   # OKLab
-        r, g, b = rgb(c)
-        def lin(v):
-            return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
-        r, g, b = lin(r), lin(g), lin(b)
-        l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
-        m = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
-        s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
-        return (0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
-                1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
-                0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s)
-    x = lab(hex_colour)
-    # hue and chroma matter more than lightness: weight a and b
-    return min(GNOME_ACCENTS, key=lambda k: sum(w * (p - q) ** 2 for w, p, q in
-                                                 zip((0.3, 1, 1), x, lab(GNOME_ACCENTS[k][0]))))
+    return nearest(hex_colour, {k: v[0] for k, v in GNOME_ACCENTS.items()})
 
 
 # --- Themes -----------------------------------------------------------------------------------
@@ -271,6 +280,8 @@ def load_all():
 def validate(theme):
     """Problems that stop a theme, as plain sentences (an empty list is a good theme)."""
     problems = []
+    if isinstance(theme.get("folders"), str) and theme["folders"] and theme["folders"] not in PAPIRUS_FOLDERS:
+        problems.append(f"folders must be one of Papirus' colours: {', '.join(PAPIRUS_FOLDERS)}")
     if not theme.get("palettes"):
         problems.append("it needs at least one palette: a [palettes.<id>] table")
     for pid, colours in theme.get("palettes", {}).items():
@@ -285,6 +296,8 @@ def validate(theme):
                 bad = True
         if bad:
             continue
+        if colours.get("folders", "") and colours["folders"] not in PAPIRUS_FOLDERS:
+            problems.append(f"{where} folders must be one of Papirus' colours: {', '.join(PAPIRUS_FOLDERS)}")
         for surface in ("background", "view", "card", "sidebar"):
             ratio = contrast(colours["foreground"], colours[surface])
             if ratio < 4.5:
@@ -427,6 +440,8 @@ def set_colours(theme_id, pid, colours):
         raise ThemeError("; ".join(problems))
     if "accent" in colours:   # GNOME's own accent (and Yaru's colour) follow the new one
         colours = dict(colours, gnome_accent=nearest_accent(colours["accent"]))
+        if theme_value(theme, "folders", pid):   # and Papirus' folders, when the theme names a colour
+            colours["folders"] = accent_folders(colours["accent"])
     def as_value(v):
         return v.upper() if v.startswith("#") else v
     path = os.path.join(theme["path"], "theme.toml")
@@ -943,11 +958,120 @@ def backgrounds(theme, mode):
     return [p for p in (wallhaven_file(w) for w in theme_wallhaven(theme, mode)) if p]
 
 
+# --- Folders in the theme's colour (Papirus) -------------------------------------------------
+# Papirus draws its folders in many colours. Its own tool (papirus-folders) changes them in
+# /usr/share with sudo, for every user at once; Kinobu makes a small hidden icon theme of the
+# user's own instead, in ~/.local/share/icons: links to the folders of one colour, everything else
+# inherited from Papirus. A theme may name its colour (folders = "violet"); otherwise the one
+# nearest to the palette's accent is used.
+PAPIRUS_DEFAULT = "blue"
+# The front of each colour's folder, as Papirus 20250501 draws it (folder-<colour>.svg)
+PAPIRUS_FOLDERS = {
+    "blue": "#5294E2", "bluegrey": "#607D8B", "brown": "#AE8E6C", "carmine": "#A30002",
+    "cyan": "#00BCD4", "darkcyan": "#45ABB7", "deeporange": "#EB6637", "green": "#87B158",
+    "grey": "#8E8E8E", "indigo": "#5C6BC0", "magenta": "#CA71DF", "nordic": "#81A1C1",
+    "orange": "#EE923A", "pink": "#F06292", "red": "#E25252", "teal": "#16A085",
+    "violet": "#7E57C2", "yellow": "#F9BD30",
+    # named by a theme only, never chosen from the accent
+    "adwaita": "#93C0EA", "black": "#4F4F4F", "breeze": "#57B8EC", "palebrown": "#D1BFAE",
+    "paleorange": "#EECA8F", "white": "#CCCCCC", "yaru": "#676767",
+}
+PAPIRUS_BY_ACCENT = ("blue", "bluegrey", "brown", "carmine", "cyan", "darkcyan", "deeporange", "green",
+                     "grey", "indigo", "magenta", "nordic", "orange", "pink", "red", "teal", "violet", "yellow")
+FOLDERS_MARK = "# Written by Kinobu (Seasons): Papirus' folders in the theme's colour. Do not edit it."
+
+
+def folder_colour(theme, pid):
+    """The colour of Papirus' folders for a palette: the theme's choice, or the accent's nearest."""
+    own = theme_value(theme, "folders", pid)
+    return own if own in PAPIRUS_FOLDERS else accent_folders(theme["palettes"][pid]["accent"])
+
+
+def accent_folders(accent):
+    """Papirus' folder colour nearest to an accent (the hue counts, the lightness barely)."""
+    return nearest(accent, {c: PAPIRUS_FOLDERS[c] for c in PAPIRUS_BY_ACCENT}, weights=(0.06, 1, 1))
+
+
+def folder_links(base, colour):
+    """The links of the folders' icons in a colour, {folder/name: target}, and the index.theme
+    sections they need. A pack without coloured folders gives none."""
+    parser = configparser.ConfigParser(interpolation=None, strict=False)
+    parser.optionxform = str
+    try:
+        parser.read(os.path.join(base, "index.theme"), encoding="utf-8")
+        folders = parser.get("Icon Theme", "Directories", fallback="").split(",")
+    except (configparser.Error, UnicodeDecodeError):
+        return {}, {}
+    links, sections = {}, {}
+    for folder in (f.strip() for f in folders):
+        real = os.path.realpath(os.path.join(base, folder))
+        if not folder.endswith("/places") or not parser.has_section(folder) or not os.path.isdir(real):
+            continue
+        for name in sorted(os.listdir(real)):
+            target = os.readlink(os.path.join(real, name)) if os.path.islink(os.path.join(real, name)) else ""
+            # folder.svg -> folder-blue.svg, folder-documents.svg -> folder-blue-documents.svg, user-home…
+            if re.match(rf"^(folder|user)-{PAPIRUS_DEFAULT}[-.]", target):
+                coloured = target.replace(f"-{PAPIRUS_DEFAULT}", f"-{colour}", 1)
+                if os.path.isfile(os.path.join(real, coloured)):
+                    links[f"{folder}/{name}"] = os.path.join(real, coloured)
+        if any(k.startswith(folder + "/") for k in links):
+            sections[folder] = dict(parser[folder])
+    return links, sections
+
+
+def ours(path):
+    try:
+        return read(os.path.join(path, "index.theme")).startswith(FOLDERS_MARK)
+    except OSError:
+        return False
+
+
+def coloured_folders(icons, colour):
+    """The icon theme to use for a Papirus pack with its folders in a colour: Kinobu's hidden one
+    over it (made or updated here), or the pack itself (another pack, Papirus' own colour, or no
+    coloured folders). Kinobu's others, no longer in use, are removed."""
+    import shutil
+    home_icons = os.path.join(DATA, "icons")
+    name, links, sections = icons, {}, {}
+    base = find_dir(icons, "icons")
+    if icons.startswith("Papirus") and base and colour != PAPIRUS_DEFAULT:
+        links, sections = folder_links(base, colour)
+        if links:
+            name = f"{icons}-kinobu-{colour}"
+    try:
+        others = [d for d in os.listdir(home_icons) if d != name and "-kinobu-" in d]
+    except OSError:
+        others = []
+    for other in others:
+        if ours(os.path.join(home_icons, other)):
+            shutil.rmtree(os.path.join(home_icons, other), ignore_errors=True)
+    if name == icons:
+        return icons
+    folder = os.path.join(home_icons, name)
+    lines = [FOLDERS_MARK, f"# {len(links)} links to {colour} folders", "[Icon Theme]",
+             f"Name={icons} ({colour} folders)", f"Inherits={icons}", "Hidden=true",
+             "Directories=" + ",".join(sections), ""]
+    for section, keys in sections.items():
+        lines += [f"[{section}]"] + [f"{k}={v}" for k, v in keys.items()] + [""]
+    index = "\n".join(lines)
+    if os.path.isdir(folder) and not ours(folder):
+        return icons   # a folder of the user's with that name: never touched
+    if ours(folder) and read(os.path.join(folder, "index.theme")) == index:
+        return name
+    shutil.rmtree(folder, ignore_errors=True)
+    for path, target in links.items():
+        os.makedirs(os.path.join(folder, os.path.dirname(path)), exist_ok=True)
+        os.symlink(target, os.path.join(folder, path))
+    write_if_changed(os.path.join(folder, "index.theme"), index)
+    return name
+
+
 # --- The user's look ------------------------------------------------------------------------
 # Everything the user chose lives in one file of their own: the theme and its palette, and what
 # they picked instead of the theme's (icons, cursor, fonts, wallpapers). Kinobu's updates
 # improve the themes and never touch this file. An empty value means "the theme's".
 LOOK_KEYS = ("theme", "palette", "icons", "cursor", "interface_font", "monospace_font")
+SOUND_KEYS = {"login": "login_sound", "logout": "logout_sound"}
 LOOK_HEADER = """# Your look: written by Seasons and kinobu-theme, read on every Kinobu update.
 # Kinobu's updates never change this file. An empty value means "the theme's".
 """
@@ -956,6 +1080,7 @@ LOOK_HEADER = """# Your look: written by Seasons and kinobu-theme, read on every
 def read_look():
     look = {key: "" for key in LOOK_KEYS}
     look["wallpapers"], look["mode"] = [], ""
+    look.update({key: "" for key in SOUND_KEYS.values()})
     try:
         with open(LOOK_FILE, "rb") as f:
             data = tomllib.load(f)
@@ -968,6 +1093,9 @@ def read_look():
     look["mode"] = data["variant"] if data.get("variant") in MODES and not look["palette"] else ""
     if isinstance(data.get("wallpapers"), list):
         look["wallpapers"] = [w if isinstance(w, str) else "" for w in data["wallpapers"]]
+    for key in SOUND_KEYS.values():
+        if isinstance(data.get(key), str):
+            look[key] = data[key]
     return look
 
 
@@ -981,6 +1109,8 @@ def write_look(look):
         lines.append(f"{key} = {q(look.get(key, ''))}{notes.get(key, '')}")
     walls = ", ".join(q(w) for w in look.get("wallpapers", [])[:WALL_SLOTS])
     lines.append(f"wallpapers = [{walls}]   # four, one per workspace (repeated on more); the first is also the lock screen")
+    for key in SOUND_KEYS.values():
+        lines.append(f'{key} = {q(look.get(key, ""))}   # "" Kinobu\'s sound, "off", or a sound file of your own')
     write_if_changed(LOOK_FILE, "\n".join(lines) + "\n")
 
 
@@ -1058,6 +1188,79 @@ def pick(**changes):
     return apply(look["theme"], look["palette"] or None, mode=look["mode"] or None, quiet=True)
 
 
+# --- Session sounds ----------------------------------------------------------------------------
+# Kinobu's sound when the session starts and ends (kinobu-launch sound login|logout), the user's
+# own, or none: chosen in Seasons and kept in look.toml. A file of the user's is copied into
+# ~/.local/share/kinobu/sounds, so it keeps playing when the original is moved or deleted.
+SOUND_TYPES = (".oga", ".ogg", ".opus", ".wav", ".flac", ".mp3")   # what pw-play reads
+SOUND_MAX_MB = 10
+OWN_SOUNDS = os.path.join(DATA, "kinobu", "sounds")
+
+
+def kinobu_sound(which):
+    return os.path.join(KINOBU_SOUNDS, f"{which}.oga")
+
+
+def own_sound(which):
+    """The user's own sound kept for login or logout (the copy), or ""."""
+    folder = os.path.join(OWN_SOUNDS, which)
+    try:
+        files = sorted(f for f in os.listdir(folder) if f.lower().endswith(SOUND_TYPES))
+    except OSError:
+        return ""
+    return os.path.join(folder, files[0]) if files else ""
+
+
+def sound_choice(which, look=None):
+    """"kinobu", "off" or "own": what plays for login or logout (an own sound whose file is gone
+    falls back to Kinobu's)."""
+    value = (look or read_look())[SOUND_KEYS[which]]
+    if value == "off":
+        return "off"
+    return "own" if value and os.path.isfile(value) else "kinobu"
+
+
+def sound_file(which):
+    """The file to play for login or logout, or "" when the user turned it off."""
+    choice = sound_choice(which)
+    if choice == "off":
+        return ""
+    return read_look()[SOUND_KEYS[which]] if choice == "own" else kinobu_sound(which)
+
+
+def pick_sound(which, value):
+    """Login or logout: "kinobu" (Kinobu's sound), "off", "own" (the copy kept before) or an audio
+    file, copied into the user's folder. Nothing else changes, so no theme is applied again."""
+    import shutil
+    if which not in SOUND_KEYS:
+        raise ThemeError("a session sound is login or logout")
+    look = read_look()
+    if value in ("kinobu", "theme", ""):
+        look[SOUND_KEYS[which]] = ""
+    elif value == "off":
+        look[SOUND_KEYS[which]] = "off"
+    elif value == "own":
+        if not own_sound(which):
+            raise ThemeError("there is no sound of your own yet: choose an audio file")
+        look[SOUND_KEYS[which]] = own_sound(which)
+    else:
+        path = os.path.abspath(os.path.expanduser(value))
+        if not os.path.isfile(path):
+            raise ThemeError(f"{value} does not exist")
+        if not path.lower().endswith(SOUND_TYPES):
+            raise ThemeError("that is not a sound Kinobu can play: " + ", ".join(SOUND_TYPES))
+        if os.path.getsize(path) > SOUND_MAX_MB * 1024 * 1024:
+            raise ThemeError(f"that file is too big for a short sound (more than {SOUND_MAX_MB} MB)")
+        folder = os.path.join(OWN_SOUNDS, which)
+        if os.path.dirname(path) != folder:   # a new file: it replaces the copy kept before
+            shutil.rmtree(folder, ignore_errors=True)
+            os.makedirs(folder, exist_ok=True)
+            path = shutil.copy(path, os.path.join(folder, os.path.basename(path)))
+        look[SOUND_KEYS[which]] = path
+    write_look(look)
+    return []
+
+
 def apply(theme_id, palette=None, mode=None, quiet=False):
     """Applies a theme in one of its palettes (or the one of a mode) with the user's picks on top.
     Returns notes for the user (what could not be used and why); quiet leaves out what the user
@@ -1107,7 +1310,7 @@ def apply(theme_id, palette=None, mode=None, quiet=False):
             notes.append(f"icons {use['icons']} are not installed: Yaru is used instead")
             icons = icon_theme("Yaru", scheme, yaru)
         if icons:
-            interface.set_string("icon-theme", icons)
+            interface.set_string("icon-theme", coloured_folders(icons, folder_colour(theme, chosen)))
         cursor = use["cursor"]
         if not find_dir(cursor, "icons"):
             notes.append(f"cursor {cursor} is not installed: Yaru is used instead")
@@ -1218,12 +1421,14 @@ def main(argv):
     p = sub.add_parser("delete", help="send your own theme to the Trash")
     p.add_argument("theme")
     p = sub.add_parser("pick", help="your own icons, cursor, fonts or wallpaper over the theme's "
-                       "('theme' goes back to the theme's)")
+                       "('theme' goes back to the theme's), and the login and logout sounds")
     p.add_argument("what", choices=("icons", "cursor", "interface-font", "monospace-font", "wallpaper",
-                                     "wallpapers"))
+                                     "wallpapers", "login-sound", "logout-sound"))
     p.add_argument("value", help="a name, a font like 'Inter 11', for a wallpaper: N PATH (1-4), "
-                   "for wallpapers: PATH on all four")
+                   "for wallpapers: PATH on all four, for a sound: kinobu, off or an audio FILE")
     p.add_argument("path", nargs="?")
+    p = sub.add_parser("sound", help="the file to play when the session starts or ends (none when off)")
+    p.add_argument("which", choices=tuple(SOUND_KEYS))
     sub.add_parser("packs", help="the icon packs, cursors and fonts installed")
     sub.add_parser("look", help="your look: the theme and what you picked")
     p = sub.add_parser("css", help="print the GTK CSS a theme makes")
@@ -1293,7 +1498,9 @@ def main(argv):
             print("✔ In the Trash")
         elif args.command == "pick":
             value = "" if args.value == "theme" else args.value
-            if args.what == "wallpaper":
+            if args.what in ("login-sound", "logout-sound"):
+                notes = pick_sound(args.what.split("-")[0], args.value)
+            elif args.what == "wallpaper":
                 if not args.value.isdigit():
                     raise ThemeError("wallpaper needs a workspace number: pick wallpaper 2 ~/picture.jpg")
                 path = "" if args.path in (None, "theme") else os.path.abspath(os.path.expanduser(args.path))
@@ -1308,6 +1515,8 @@ def main(argv):
             for note in notes:
                 print(f"· {note}")
             print("✔ Done")
+        elif args.command == "sound":
+            print(sound_file(args.which))
         elif args.command == "packs":
             print("Icons:   " + ", ".join(name for _, name in icon_families()))
             print("Cursors: " + ", ".join(name for name, _ in cursor_themes()))

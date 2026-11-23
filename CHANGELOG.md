@@ -2,6 +2,13 @@
 
 What changed in each version of Kinobu. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). To bring a computer set up by an earlier version to the latest one, run `bash kinobu.sh --update` (your look is kept).
 
+## [0.4] — in development
+
+### Added
+
+- **A Sounds section in Seasons**: the sound when you log in and the one when you leave, each on or off, Kinobu's or a sound file of your own (OGG, Opus, WAV, FLAC or MP3), with a Listen button. Your file is copied, so it keeps playing if you move or delete the original; a long one is cut (10 s at login, 4 at logout). It says when Settings' alert sounds are off, since they silence both. Kept in your `look.toml`, so updates and theme changes never touch it; `kinobu-theme pick login-sound|logout-sound kinobu|off|FILE` does the same from the terminal.
+- **Papirus' folders in the theme's colour**: with Papirus icons, folders take the colour nearest to the palette's accent (violet in Catppuccin, rose in Rosé Pine, orange in Gruvbox, Nord's own blue…), or the one a theme names (`folders` in `theme.toml`). Each user gets their own, without sudo and without changing the folders of other users.
+
 ## [0.3.2] — 2026-11-22
 
 Claude Code's notices, checked against its hooks reference and brought up to date. Run `bash kinobu.sh --update` from the project's folder.

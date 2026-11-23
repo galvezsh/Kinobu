@@ -1,13 +1,13 @@
 [Desktop Entry]
 Type=Application
 Name=Seasons
-Comment=Choose the look of your desktop: theme, icons, cursor, fonts and wallpapers
-Comment[es]=Elige el aspecto de tu escritorio: tema, iconos, cursor, fuentes y fondos
+Comment=Choose the look of your desktop: theme, icons, cursor, fonts, wallpapers and sounds
+Comment[es]=Elige el aspecto de tu escritorio: tema, iconos, cursor, fuentes, fondos y sonidos
 Exec=@LAUNCHER@ themes
 Icon=os.kinobu.Themes
 Terminal=false
 Categories=GNOME;GTK;Settings;DesktopSettings;
-Keywords=Kinobu;Seasons;Theme;Appearance;Icons;Cursor;Fonts;Wallpaper;Dark;Light;
-Keywords[es]=Kinobu;Seasons;Tema;Apariencia;Iconos;Cursor;Fuentes;Fondo;Oscuro;Claro;
+Keywords=Kinobu;Seasons;Theme;Appearance;Icons;Cursor;Fonts;Wallpaper;Dark;Light;Sound;Login;
+Keywords[es]=Kinobu;Seasons;Tema;Apariencia;Iconos;Cursor;Fuentes;Fondo;Oscuro;Claro;Sonido;Inicio;
 StartupNotify=true
 StartupWMClass=os.kinobu.Themes

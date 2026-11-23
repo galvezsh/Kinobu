@@ -29,7 +29,7 @@ Ubuntu with GNOME on Wayland, set up by @APP_NAME@: a shared part in `@SYSTEM_DI
 | Guide | For |
 |---|---|
 | [software.md](software.md) | installing, removing and updating; repositories; Docker, virtual machines, Java, IDEs |
-| [desktop.md](desktop.md) | GNOME settings, workspaces, extensions, dock, accounts, dictation, shell, power |
+| [desktop.md](desktop.md) | GNOME settings, workspaces, extensions, dock, accounts, dictation, shell, power, login and logout sounds |
 | [look.md](look.md) | themes (Seasons), icons, cursors, fonts, wallpapers, terminal colours, login and boot screens |
 | [shortcuts.md](shortcuts.md) | the keyboard shortcuts |
 | [hardware.md](hardware.md) | checking the hardware and drivers |

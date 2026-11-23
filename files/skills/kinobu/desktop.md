@@ -61,7 +61,10 @@ changes on updates.
 @APP_NAME@ plays a soft chord when a session starts (`/etc/xdg/autostart/kinobu-login-sound.desktop`)
 and its goodbye when it ends (user service `kinobu-logout-sound.service`), both
 `@LAUNCHER@ sound login|logout`. GNOME's alert sounds switch
-(`org.gnome.desktop.sound event-sounds`) silences both.
+(`org.gnome.desktop.sound event-sounds`) silences both. Each user chooses in Seasons > Sounds
+(`@LAUNCHER@ themes sounds`) or with `kinobu-theme pick login-sound|logout-sound kinobu|off|FILE`:
+the choice is in `~/.config/kinobu/look.toml`, a file of their own is copied into
+`~/.local/share/kinobu/sounds/`; `kinobu-theme sound login` prints what will play.
 
 ## Power and startup
 

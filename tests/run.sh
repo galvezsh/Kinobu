@@ -456,6 +456,17 @@ check "changing one wallpaper makes the four your own"      has "$out" "one-wall
 check "one wallpaper on every workspace"                 has "$out" "everywhere=4"
 check "there are four wallpapers, not more"              has "$out" "there are 4 wallpapers"
 check "older apps get your cursor too (~/.icons/default)" has "$out" "default-cursor=Inherits=Adwaita"
+if [[ -d /usr/share/icons/Papirus ]]; then
+    check "Papirus' folders take the theme's colour"           has "$out" "folders-violet='Papirus-Dark-kinobu-violet'"
+    check "… linked to Papirus' own coloured folders"         has "$out" "folder-link=/usr/share/icons/Papirus/48x48/places/folder-violet.svg"
+    check "… one at a time: another theme's colour replaces it" has "$out" "folders-nord='Papirus-Dark-kinobu-nordic' violet-gone=yes"
+    check "… and no folders of Kinobu's over another pack"   has "$out" "none-left=0"
+fi
+check "the login and logout sounds are Kinobu's by default" has "$out" "sound-default=login.oga"
+check "a session sound can be turned off"                  has "$out" "sound-off=[]"
+check "your own sound is a copy, kept when the theme changes" has "$out" "sound-own=$fake/.local/share/kinobu/sounds/login/bell.ogg logout-kept=[]"
+check "a file that is not a sound is refused"              has "$out" "not a sound Kinobu can play"
+check "your own sound comes back after Kinobu's"            has "$out" "sound-own-again=bell.ogg"
 check "apply: the real settings were not touched"         test "$real_before" = "$(dconf dump / | sha256sum)"
 rm -rf "$fake"
 

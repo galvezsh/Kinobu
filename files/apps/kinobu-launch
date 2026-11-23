@@ -44,21 +44,27 @@ case ${1:-} in
     welcome)
         exec python3 "@PROGRAMS_DIR@/welcome.py" ;;
     themes)
-        # Seasons; kinobu-launch themes icons|cursors|fonts|wallpapers opens on that section
+        # Seasons; kinobu-launch themes icons|cursors|fonts|wallpapers|sounds opens on that section
         exec python3 "@PROGRAMS_DIR@/seasons.py" ${2:+--page "$2"} ;;
     voice)
         # Willow, the voice assistant; a second press brings back the open window
         exec python3 "@PROGRAMS_DIR@/voice.py" ;;
     sound)
-        # Kinobu's sound when the session starts (login) or ends (logout); silent when the user
-        # turned the alert sounds off (org.gnome.desktop.sound event-sounds)
+        # The sound when the session starts (login) or ends (logout): Kinobu's, the user's own or
+        # none, as chosen in Seasons (Kinobu's when the choice cannot be read). Silent when the
+        # user turned the alert sounds off (org.gnome.desktop.sound event-sounds). A long file of
+        # the user's is cut: 10 s at login, 4 at logout (the session waits 5 s for it at most)
         case ${2:-} in login|logout) ;; *) exit 1 ;; esac
-        file="@SYSTEM_DIR@/data/sounds/$2.oga"
-        if [[ -f $file && "$(gsettings get org.gnome.desktop.sound event-sounds 2>/dev/null)" != false ]]; then
+        if ! file=$("@BIN_DIR@/kinobu-theme" sound "$2" 2>/dev/null); then
+            file="@SYSTEM_DIR@/data/sounds/$2.oga"
+        fi
+        if [[ -n $file && -f $file && "$(gsettings get org.gnome.desktop.sound event-sounds 2>/dev/null)" != false ]]; then
             # At login GNOME may start this before PipeWire and WirePlumber have chosen where sound
             # goes: wait for a default output (10 s at most). Then 3 s more: a screen that plays
             # the sound (HDMI) needs them after GNOME sets the display up, or only the end is heard
+            limit=4
             if [[ $2 == login ]]; then
+                limit=10
                 sink="@DEFAULT_AUDIO_SINK"; sink+="@"   # split, or the setup takes it for one of its marks
                 for _ in {1..40}; do
                     if wpctl inspect "$sink" >/dev/null 2>&1; then break; fi
@@ -66,7 +72,7 @@ case ${1:-} in
                 done
                 sleep "${KINOBU_SOUND_SETTLE:-3}"
             fi
-            exec pw-play "$file"
+            exec timeout "$limit" pw-play "$file"
         fi ;;
     user-setup)
         # Run at every login: a user who is new, or behind the installed version, gets their part

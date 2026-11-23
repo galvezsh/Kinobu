@@ -74,10 +74,10 @@ Still to run outside the author's computer (the tests use a fake home folder, a 
 
 ### Look
 
-- [ ] **A "Sounds" section in Seasons**: GNOME's Settings cannot change the login or logout sound, and an app only for them would be too much. Two switches (a sound when logging in, another when logging out) and, for each, Kinobu's sound or one of the user's own audio files, with a Listen button; kept in each user's `look.toml` (updates never change it), read by `kinobu-launch sound`, and `kinobu-theme pick login-sound|logout-sound FILE|kinobu|off` on the command line. Texts in the six languages.
+- [x] **A "Sounds" section in Seasons** (built in the repository, 2026-11-23; your own file is copied into `~/.local/share/kinobu/sounds`, cut at 10 s at login and 4 at logout): GNOME's Settings cannot change the login or logout sound, and an app only for them would be too much. Two switches (a sound when logging in, another when logging out) and, for each, Kinobu's sound or one of the user's own audio files, with a Listen button; kept in each user's `look.toml` (updates never change it), read by `kinobu-launch sound`, and `kinobu-theme pick login-sound|logout-sound FILE|kinobu|off` on the command line. Texts in the six languages.
 - [ ] Possible, not required: **Kinobu's own alert and notice sounds** (a task finished, waiting, a permission, errors, other GNOME alerts), drawn by `tools/login_sound.py` in the same family as the login sound, as a sound theme that inherits Ubuntu's (Yaru) so any sound not drawn keeps Ubuntu's; chosen in the same Seasons section.
 
-- [ ] Papirus folders in the theme's colour (`papirus-folders`).
+- [x] Papirus folders in the theme's colour (built in the repository, 2026-11-23): not with `papirus-folders`, which changes `/usr/share` with sudo for every user, but with a small hidden icon theme of each user's own over Papirus; the colour nearest to the accent, or `folders` in `theme.toml`. Still to see on the author's computer (with a Papirus theme).
 - [ ] Later for your own themes, if they are missed: the terminal's own colours, a new palette in a theme, and the theme's own icons, cursor, fonts and wallpapers in the editor (decided on 2026-11-19 to leave them in Seasons' tabs, where they are the user's over any theme; `theme.toml` already takes them by hand).
 
 ### Willow, the voice assistant

@@ -74,3 +74,26 @@ echo "one-wallpaper=$(grep -o '"[^"]*"' <<<"$(grep '^wallpapers' "$XDG_CONFIG_HO
 k pick wallpapers "$HOME/Pictures/a.png" >/dev/null
 echo "everywhere=$(grep -o 'a.png' "$XDG_CONFIG_HOME/kinobu/look.toml" | wc -l)"
 k pick wallpaper 5 "$HOME/Pictures/a.png" 2>&1 | head -1
+# Papirus' folders in the theme's colour: a hidden theme of the user's over Papirus, one at a time
+if [[ -d /usr/share/icons/Papirus ]]; then
+    k set catppuccin --palette mocha >/dev/null
+    echo "folders-violet=$(get org.gnome.desktop.interface icon-theme) links=$(find "$XDG_DATA_HOME/icons/Papirus-Dark-kinobu-violet" -type l | wc -l)"
+    readlink "$XDG_DATA_HOME/icons/Papirus-Dark-kinobu-violet/48x48/places/folder.svg" | sed 's/^/folder-link=/'
+    k set nord >/dev/null
+    echo "folders-nord=$(get org.gnome.desktop.interface icon-theme) violet-gone=$([[ -e $XDG_DATA_HOME/icons/Papirus-Dark-kinobu-violet ]] && echo no || echo yes)"
+    k set macos >/dev/null
+    echo "folders-blue=$(get org.gnome.desktop.interface icon-theme) none-left=$(find "$XDG_DATA_HOME/icons" -maxdepth 1 -name '*-kinobu-*' | wc -l)"
+fi
+# Session sounds: Kinobu's by default, off, or the user's own file (copied); a theme keeps them
+echo "sound-default=$(basename "$(k sound login)")"
+k pick logout-sound off >/dev/null
+echo "sound-off=[$(k sound logout)]"
+printf 'x' >"$HOME/Pictures/bell.ogg"
+k pick login-sound "$HOME/Pictures/bell.ogg" >/dev/null
+rm "$HOME/Pictures/bell.ogg"
+k set kinobu >/dev/null
+echo "sound-own=$(k sound login) logout-kept=[$(k sound logout)]"
+k pick login-sound /etc/hostname 2>&1 | head -1
+k pick login-sound kinobu >/dev/null
+k pick login-sound own >/dev/null
+echo "sound-own-again=$(basename "$(k sound login)")"

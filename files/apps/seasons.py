@@ -1,9 +1,11 @@
 # Seasons, Kinobu's themes app. Written by Kinobu: rewritten on every run and --update.
 # A gallery of the themes (factory and the user's own): a preview of each one drawn from its
 # colours, its palettes and Apply; then icons, cursors, fonts and wallpapers, each with a switch
-# to follow the theme or choose your own. The work is done by kinobu_theme.py (the kinobu-theme command).
+# to follow the theme or choose your own; and the login and logout sounds. The work is done by
+# kinobu_theme.py (the kinobu-theme command).
 import math
 import os
+import subprocess
 import sys
 import threading
 
@@ -1225,6 +1227,118 @@ class WallhavenWindow(Adw.Window):
 
 
 # --- The window ------------------------------------------------------------------------------
+# --- Sounds ----------------------------------------------------------------------------------
+class SoundGroup:
+    """One session sound (login or logout): on or off, Kinobu's or one of your own, and Listen."""
+
+    def __init__(self, win, which):
+        self.win, self.which = win, which
+        self.group = Adw.PreferencesGroup(title=t(f"sound_{which}"))
+        self.switch = Adw.SwitchRow(title=t(f"sound_{which}_on"), subtitle=t(f"sound_{which}_desc"))
+        self.switch.connect("notify::active", self.on_switch)
+        self.group.add(self.switch)
+        self.kinobu = self.choice_row(t("sound_kinobu"), t(f"sound_kinobu_{which}"), "kinobu")
+        self.own = self.choice_row(t("sound_own"), "", "own", group=self.kinobu.check)
+        choose = Gtk.Button(label=t("sound_choose"), valign=Gtk.Align.CENTER)
+        choose.connect("clicked", lambda _b: self.choose())
+        self.own.add_suffix(choose)
+        self.choose_button = choose
+        self.quiet = False
+
+    def choice_row(self, title, subtitle, choice, group=None):
+        row = Adw.ActionRow(title=title, subtitle=subtitle, activatable=True)
+        row.check = Gtk.CheckButton(group=group, valign=Gtk.Align.CENTER)
+        row.check.connect("toggled", self.on_choice, choice)
+        row.add_prefix(row.check)
+        row.set_activatable_widget(row.check)
+        row.listen = Gtk.Button(icon_name="media-playback-start-symbolic", tooltip_text=t("listen"),
+                                valign=Gtk.Align.CENTER, css_classes=["flat"])
+        row.listen.connect("clicked", lambda _b: self.win.listen(
+            engine.kinobu_sound(self.which) if choice == "kinobu" else engine.own_sound(self.which)))
+        row.add_suffix(row.listen)
+        self.group.add(row)
+        return row
+
+    def pick(self, value, message):
+        self.win.run(lambda: engine.pick_sound(self.which, value), message)
+
+    def on_switch(self, row, _pspec):
+        if not self.quiet:
+            self.pick("kinobu" if row.get_active() else "off",
+                      t(f"sound_{self.which}_now_on") if row.get_active() else t(f"sound_{self.which}_now_off"))
+
+    def on_choice(self, check, choice):
+        if self.quiet or not check.get_active():
+            return
+        if choice == "own" and not engine.own_sound(self.which):
+            self.choose()   # nothing of your own yet: pick a file first
+        else:
+            self.pick(choice, t("sound_now_kinobu") if choice == "kinobu" else t("sound_now_own"))
+
+    def choose(self):
+        dialog = Gtk.FileDialog(title=t("sound_choose_title"), modal=True)
+        audio = Gtk.FileFilter(name=t("sound_files"))
+        for suffix in engine.SOUND_TYPES:
+            audio.add_suffix(suffix.lstrip("."))
+        filters = Gio.ListStore.new(Gtk.FileFilter)
+        filters.append(audio)
+        dialog.set_filters(filters)
+        music = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_MUSIC)
+        if music and os.path.isdir(music):
+            dialog.set_initial_folder(Gio.File.new_for_path(music))
+
+        def chosen(dlg, result):
+            try:
+                path = dlg.open_finish(result).get_path()
+            except GLib.Error:   # cancelled: the radio goes back to what is in use
+                self.refresh(self.win.state)
+                return
+            self.pick(path, t("sound_now_own"))
+        dialog.open(self.win, None, chosen)
+
+    def refresh(self, state, busy=False):
+        self.quiet = True
+        choice = engine.sound_choice(self.which, state["look"])
+        own = engine.own_sound(self.which)
+        self.switch.set_active(choice != "off")
+        if choice != "off":
+            (self.own if choice == "own" else self.kinobu).check.set_active(True)
+        self.own.set_subtitle(os.path.basename(own) if own else t("sound_own_none"))
+        self.own.listen.set_sensitive(bool(own))
+        for row in (self.kinobu, self.own):
+            row.set_sensitive(not busy and choice != "off")
+        self.switch.set_sensitive(not busy)
+        self.choose_button.set_sensitive(not busy and choice != "off")
+        self.quiet = False
+
+
+class SoundsPage:
+    def __init__(self, win):
+        page = Adw.PreferencesPage(description=t("sounds_intro"))
+        # GNOME's alert sounds off silence both: said here, with the way to Settings
+        self.muted = Adw.PreferencesGroup()
+        row = Adw.ActionRow(title=t("sounds_muted"), subtitle=t("sounds_muted_desc"))
+        row.add_prefix(Gtk.Image(icon_name="audio-volume-muted-symbolic"))
+        settings = Gtk.Button(label=t("sounds_settings"), valign=Gtk.Align.CENTER)
+        settings.connect("clicked", lambda _b: Gio.AppInfo.create_from_commandline(
+            "gnome-control-center sound", None, Gio.AppInfoCreateFlags.NONE).launch([], None))
+        row.add_suffix(settings)
+        self.muted.add(row)
+        page.add(self.muted)
+        self.groups = [SoundGroup(win, "login"), SoundGroup(win, "logout")]
+        for g in self.groups:
+            page.add(g.group)
+        hint = Adw.PreferencesGroup(description=t("sounds_hint"))
+        page.add(hint)
+        self.widget = page
+
+    def refresh(self, state, busy=False):
+        sound = engine.settings("org.gnome.desktop.sound")
+        self.muted.set_visible(bool(sound) and not sound.get_boolean("event-sounds"))
+        for g in self.groups:
+            g.refresh(state, busy)
+
+
 class Window(Adw.ApplicationWindow):
     def __init__(self, app):
         super().__init__(application=app, title="Seasons", default_width=1120, default_height=820)
@@ -1249,11 +1363,13 @@ class Window(Adw.ApplicationWindow):
             themes_page.append(part)
         self.theme_cards = []
         self.reload_themes(refresh=False)
-        self.pages = [PacksPage(self, "icons"), PacksPage(self, "cursor"), FontsPage(self), WallpapersPage(self)]
+        self.pages = [PacksPage(self, "icons"), PacksPage(self, "cursor"), FontsPage(self), WallpapersPage(self),
+                      SoundsPage(self)]
         self.stack.add_titled_with_icon(themes_widget, "themes", t("tab_themes"), "applications-graphics-symbolic")
-        for page, name, icon in zip(self.pages, ("icons", "cursors", "fonts", "wallpapers"),
+        for page, name, icon in zip(self.pages, ("icons", "cursors", "fonts", "wallpapers", "sounds"),
                                     ("view-grid-symbolic", "input-mouse-symbolic",
-                                     "font-select-symbolic", "image-x-generic-symbolic")):
+                                     "font-select-symbolic", "image-x-generic-symbolic",
+                                     "audio-speakers-symbolic")):
             self.stack.add_titled_with_icon(page.widget, name, t("tab_" + name), icon)
         self.refresh()
         self.state["first"] = False
@@ -1377,6 +1493,15 @@ class Window(Adw.ApplicationWindow):
 
         threading.Thread(target=worker, daemon=True).start()
 
+    def listen(self, path):
+        """Plays a sound once (10 s at most), stopping the one still playing."""
+        player = getattr(self, "player", None)
+        if player and player.poll() is None:
+            player.terminate()
+        if path and os.path.isfile(path):
+            self.player = subprocess.Popen(["timeout", "10", "pw-play", path],
+                                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
     def open_folder(self, _button):
         os.makedirs(engine.USER_THEMES, exist_ok=True)
         Gio.AppInfo.launch_default_for_uri(GLib.filename_to_uri(engine.USER_THEMES), None)
@@ -1401,7 +1526,7 @@ CSS = """
 """
 
 
-# seasons.py --page icons|cursors|fonts|wallpapers opens on that section
+# seasons.py --page icons|cursors|fonts|wallpapers|sounds opens on that section
 PAGE = sys.argv[sys.argv.index("--page") + 1] if "--page" in sys.argv[:-1] else "themes"
 # seasons.py --edit THEME opens the colours of the user's own theme (or Duplicate for another one)
 EDIT = sys.argv[sys.argv.index("--edit") + 1] if "--edit" in sys.argv[:-1] else ""
@@ -1418,7 +1543,7 @@ def main():
             Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), provider,
                                                       Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
             win = Window(app)
-        if PAGE in ("themes", "icons", "cursors", "fonts", "wallpapers"):
+        if PAGE in ("themes", "icons", "cursors", "fonts", "wallpapers", "sounds"):
             win.stack.set_visible_child_name(PAGE)
         win.present()
         if EDIT:

@@ -18,6 +18,7 @@ kinobu-theme pick icons Papirus              # the user's pick over the theme's 
 kinobu-theme pick interface-font "Inter 11"
 kinobu-theme pick wallpaper 2 ~/Pictures/forest.jpg   # wallpaper 2 of 4; 1 is also the lock screen
 kinobu-theme pick wallpapers ~/Pictures/forest.jpg    # the same on every workspace
+kinobu-theme pick login-sound ~/Music/bell.ogg       # or logout-sound; kinobu, off (desktop.md)
 kinobu-theme new "My Nord" --from nord       # the user's own copy of a theme (prints its id)
 kinobu-theme colour my-nord polar-night accent=#D08770   # its colours
 kinobu-theme buttons my-nord left            # its window buttons on the left (or right)
@@ -29,6 +30,8 @@ kinobu-theme delete my-nord                  # to the Trash (not the theme in us
 - Factory themes: `@SYSTEM_DIR@/themes/`. The user's own: `~/.config/kinobu/themes/<id>/theme.toml`.
 - Icon and cursor packs: the system's in `/usr/share/icons` and `/usr/local/share/icons`; a user
   adds their own by unpacking them into `~/.local/share/icons`.
+- With Papirus icons the folders take the theme's colour: a hidden icon theme of links,
+  `~/.local/share/icons/Papirus-*-kinobu-<colour>` (a theme may name it: `folders = "violet"`).
 - Never edit what the engine writes: `~/.config/gtk-4.0/kinobu.css`, `gtk-3.0/kinobu.css`, the
   `kinobu-*.palette` of Ptyxis, the links in `~/.local/share/icons`. Open apps take a new theme
   when they open again.

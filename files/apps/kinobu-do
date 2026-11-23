@@ -34,7 +34,7 @@ kinobu-do night-light on|off                  warmer colours at night
 kinobu-do dnd on|off                          Do Not Disturb (no notification banners)
 kinobu-do style dark|light                    dark or light mode (the theme's palette for it)
 kinobu-do theme ID [PALETTE|dark|light] | themes   change the theme / list them and their palettes
-kinobu-do seasons [icons|cursors|fonts|wallpapers]   open Seasons
+kinobu-do seasons [icons|cursors|fonts|wallpapers|sounds]   open Seasons
 kinobu-do media play|pause|toggle|next|previous|status
 kinobu-do settings PANEL                      open a page of Settings (kinobu-do settings list)
 kinobu-do wifi on|off | bluetooth on|off
@@ -170,7 +170,7 @@ case ${1:-help} in
             *) "$THEME" set "$2" --palette "$3" 2>&1 | tail -n 3 ;;
         esac ;;
     themes) "$THEME" list ;;
-    seasons) case ${2:-} in ''|themes|icons|cursors|fonts|wallpapers) ;; *) fail "icons, cursors, fonts or wallpapers" ;; esac
+    seasons) case ${2:-} in ''|themes|icons|cursors|fonts|wallpapers|sounds) ;; *) fail "icons, cursors, fonts, wallpapers or sounds" ;; esac
         setsid "$LAUNCHER" themes ${2:+"$2"} </dev/null >/dev/null 2>&1 &
         say "Seasons is open." ;;
     media) media "${2:-}" ;;

@@ -5,6 +5,7 @@ name = "Rosé Pine"
 description = "Muted and elegant: rose, gold and pine on a soft night."
 author = "Kinobu, on Rosé Pine (MIT)"
 gnome_accent = "pink"
+folders = "pink"                          # Papirus' folders in rose (else the accent's nearest colour)
 icons = "Papirus"
 cursor = { dark = "phinger-cursors-dark", light = "phinger-cursors-light" }
 button_layout = "appmenu:minimize,maximize,close"

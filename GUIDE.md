@@ -147,7 +147,7 @@ Kinobu's apps speak English, Spanish, German, French, Italian and Portuguese, fo
 | **Echo** | The agents' notifications (no window of its own) | — | `kinobu-notify` |
 | **Gate** | The approval window for the agents' permissions | `os.kinobu.Approve` | opened by `kinobu-notify` |
 | **Willow** | The voice assistant | `os.kinobu.Voice` | `kinobu-launch voice` |
-| **Seasons** | Themes with their palettes (each dark or light), icons, cursors, fonts and wallpapers, each with a "Follow the theme" switch, wallpapers from Wallhaven, and your own themes: duplicate one from its menu and change its colours. Themes, icons and cursors show the system's and yours apart (see [docs/themes.md](docs/themes.md)) | `os.kinobu.Themes` | `kinobu-launch themes`; the engine is `kinobu-theme` |
+| **Seasons** | Themes with their palettes (each dark or light), icons, cursors, fonts and wallpapers, each with a "Follow the theme" switch, wallpapers from Wallhaven, and your own themes: duplicate one from its menu and change its colours. Sounds: the login and logout sounds on or off, Kinobu's or a file of your own. With Papirus icons, the folders take the theme's colour. Themes, icons and cursors show the system's and yours apart (see [docs/themes.md](docs/themes.md)) | `os.kinobu.Themes` | `kinobu-launch themes`; the engine is `kinobu-theme` |
 
 ## AI agents
 
@@ -249,7 +249,7 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 | `/etc/apt/apt.conf.d/99kinobu-login-screen` | Rebuilds the login screen's theme when Ubuntu updates its own |
 | `/usr/share/gdm/dconf/95-kinobu-login` | The login screen without a distribution logo and with Kinobu's green accent (GDM reads it with Ubuntu's settings on every start) |
 | `/usr/share/plymouth/themes/kinobu/` | The boot splash (Plymouth only looks there), chosen by hand as `default.plymouth` |
-| `/etc/xdg/autostart/kinobu-login-sound.desktop`, `/usr/local/lib/systemd/user/kinobu-logout-sound.service` | The sound when a session starts and when it ends, for every user (silent with the alert sounds off) |
+| `/etc/xdg/autostart/kinobu-login-sound.desktop`, `/usr/local/lib/systemd/user/kinobu-logout-sound.service` | The sound when a session starts and when it ends, for every user: Kinobu's, the user's own or none, as chosen in Seasons (silent with the alert sounds off) |
 | `/etc/apt/sources.list.d/` and their keys | Software sources of the chosen apps only |
 | `/etc/udev/rules.d/60-uinput-uaccess.rules` | Lets `ydotool` type |
 | `/opt/java/graalvm-jdk-<version>/` | The GraalVM JDK |
@@ -259,6 +259,8 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 | `~/.config/kinobu/look.toml` | Your look: the theme and what you picked in Seasons (never changed by updates) |
 | `~/.config/gtk-4.0/kinobu.css`, `~/.config/gtk-3.0/kinobu.css` | The theme's app colours, imported from a block in each `gtk.css` |
 | `~/.local/share/icons/<pack>`, `~/.icons/default` | Links to the icons and cursor in use, for sandboxed and older apps |
+| `~/.local/share/icons/Papirus-*-kinobu-<colour>` | Papirus' folders in the theme's colour: a hidden icon theme of links over Papirus, made again when the colour changes |
+| `~/.local/share/kinobu/sounds/` | The copy of your own login or logout sound, chosen in Seasons |
 | `~/.claude/` | The links to the two skills, the note, the subagent, the hooks and, unless you chose one, the Concise answer style of Claude Code |
 | `~/.config/kinobu/` | The default agent, your version, Willow's settings |
 | `~/.local/share/kinobu/voice/` | Willow's voices and models |
@@ -285,7 +287,7 @@ Besides the [system layer](#two-layers-the-system-and-each-user):
 | Optimised packages | `sudo rm /etc/apt/apt.conf.d/99enable-amd64v3` |
 | Kinobu's login screen | `sudo kinobu-login-screen --remove` (Ubuntu's grey and logo come back), then `sudo rm /etc/apt/apt.conf.d/99kinobu-login-screen` |
 | Kinobu's boot splash | `sudo kinobu-boot-splash --remove` (Ubuntu's comes back at the next start) |
-| Kinobu's login and logout sounds | Settings > Sound: turn the alert sounds off; or remove `/etc/xdg/autostart/kinobu-login-sound.desktop` and run `sudo systemctl --global disable kinobu-logout-sound.service` |
+| Kinobu's login and logout sounds | Seasons > Sounds: turn either off; Settings > Sound: turn the alert sounds off (both); or remove `/etc/xdg/autostart/kinobu-login-sound.desktop` and run `sudo systemctl --global disable kinobu-logout-sound.service` |
 | Kinobu itself | `sudo rm -rf /usr/local/share/kinobu /usr/local/bin/kinobu* /etc/xdg/autostart/kinobu-user.desktop` |
 
 ## Tests
