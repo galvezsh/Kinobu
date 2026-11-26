@@ -87,6 +87,8 @@ POWERS = {"quick": ("haiku", "low"), "smart": ("haiku", "high"), "strong": ("son
 DEFAULTS = {"engine": "kokoro", "voice": "em_santa", "continuous": True, "power": "quick",
             "background_model": "sonnet", "background_effort": "medium",
             "persona": "", "idle_close": 60}
+# Web addresses: shown in the window (to copy or click) but never read aloud
+URL = re.compile(r"(?:https?://|www\.)[^\s<>\"']+[^\s<>\"'.,;:!?)\]]", re.I)
 BACKGROUND = re.compile(r"\[\[\s*background:\s*(.+?)\]\]", re.S | re.I)
 HERE = os.path.dirname(os.path.abspath(__file__))
 MODELS = os.path.join(GLib.get_user_data_dir(), "kinobu", "voice", "models")
@@ -419,6 +421,10 @@ def system_prompt(config):
             "Answer spoken, in one to three short sentences (a little more when you guide "
             "someone step by step): no Markdown, lists, emojis, code or file paths unless asked; say "
             "numbers, times and key names the way people say them. "
+            "Links: when a web address helps (a download, a guide, a page to read), write the full "
+            "https:// address in your answer, where it shows in the window to copy or click, and say in "
+            "the same answer that you left the link in the window: the address itself is never read "
+            "aloud, so never spell it out or describe it letter by letter. "
             "Tools: WebSearch and WebFetch for quick facts from the internet, and Bash limited to "
             "read-only commands (hardware, lspci, nvidia-smi, sensors, free, df, uptime, journalctl, "
             "systemctl status and --failed, apt and dpkg queries, network status, /proc, /sys and "
@@ -464,7 +470,8 @@ def background_prompt():
             f"{SKILL_DIR} and use the web; you cannot change anything. Be efficient: the fewest "
             "commands and pages that answer well. Then answer for someone who has never used Linux, "
             f"in {language}, in two to four short sentences that will be read aloud: no Markdown, "
-            "lists or code. If the answer needs a change to the system, say what would be needed and "
+            "lists or code. A useful web address may go in full (https://…): it is shown, not read. "
+            "If the answer needs a change to the system, say what would be needed and "
             "that Willow can hand it to the full agent. " + place())
 
 
@@ -491,6 +498,28 @@ def transcribe(path):
             except ValueError:
                 pass
     return None
+
+
+def unspoken(sentence):
+    """A sentence as it is read aloud: its web addresses left out (the window shows them), and the
+    punctuation or brackets they leave behind tidied. Empty when nothing is left to say."""
+    text = URL.sub("", sentence)
+    text = re.sub(r"[(\[<]\s*[)\]>]", "", text)              # brackets that held only a link
+    text = re.sub(r"\s+([.,;:!?…])", r"\1", text)             # "in the window ." -> "in the window."
+    text = re.sub(r"[:,;]\s*([.!?…]|$)", r"\1", text)          # "here: ." or a sentence ending in ":"
+    text = re.sub(r"\s{2,}", " ", text).strip()
+    return text if re.search(r"\w", text) else ""
+
+
+def linked(text):
+    """Pango markup of a text with its web addresses as links (the window's answer)."""
+    parts, last = [], 0
+    for m in URL.finditer(text):
+        href = m.group(0) if m.group(0).lower().startswith("http") else "https://" + m.group(0)
+        parts += [GLib.markup_escape_text(text[last:m.start()]),
+                  f'<a href="{GLib.markup_escape_text(href)}">{GLib.markup_escape_text(m.group(0))}</a>']
+        last = m.end()
+    return "".join(parts + [GLib.markup_escape_text(text[last:])])
 
 
 class Listener(threading.Thread):
@@ -1031,7 +1060,7 @@ class VoiceWindow(Adw.ApplicationWindow):
             self.spoken = len(text)
 
     def queue_sentence(self, sentence):
-        sentence = sentence.strip()
+        sentence = unspoken(sentence)
         if sentence and not self.sound_muted and not self.hushed and self.config["engine"] in ENGINES:
             self.speaker.say(sentence, self.config["engine"], self.config["voice"])
 
@@ -1054,7 +1083,7 @@ class VoiceWindow(Adw.ApplicationWindow):
             self.bubble(t("app"), t("agent_error"), False)
         self.speak_ready(final=True)
         if self.answer_label is not None:
-            self.answer_label.set_label(self.visible())
+            self.answer_label.set_markup(linked(self.visible()))
         self.closing = bool(CLOSE.search(self.answer))
         task = DELEGATE.search(self.answer)
         if task:
@@ -1087,7 +1116,7 @@ class VoiceWindow(Adw.ApplicationWindow):
         except OSError:
             pass
         if answer and self.get_visible():
-            self.bubble(t("app"), answer, False)
+            self.bubble(t("app"), answer, False).set_markup(linked(answer))
             if not self.sound_muted:
                 for sentence in re.split(r"(?<=[.!?])\s+", answer):
                     self.queue_sentence(sentence)

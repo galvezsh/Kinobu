@@ -207,7 +207,7 @@ install_debs() {
 install_handy() {
     local latest version="" url="" current
     step "Handy (dictation that stays on this computer)"
-    latest=$(curl -fsSL https://api.github.com/repos/cjpais/Handy/releases/latest 2>>"$LOG" \
+    latest=$("${CURL[@]}" https://api.github.com/repos/cjpais/Handy/releases/latest 2>>"$LOG" \
         | jq -r '(.tag_name | ltrimstr("v")) + " " + ([.assets[] | select(.name | endswith("_amd64.deb")) | .browser_download_url][0] // "")' 2>>"$LOG" \
         || true)
     read -r version url <<<"$latest"

@@ -10,6 +10,10 @@ SYSTEM_WRITES=true                          # false with --user: only the user's
 LOG="" TMP_DIR="" SUDO_PID="" CURRENT="" CURRENT_STEP="" DCONF_BACKUP=""
 WARNINGS=() REBOOT_REASONS=() NEXT_STEPS=()
 CHANGED=false
+# Every download: fails on HTTP errors, gives up on a connection that never answers or stalls
+# (under 10 KB/s for a minute, as after a cut in the internet) instead of hanging the setup,
+# and tries again three times
+CURL=(curl -fsSL --connect-timeout 20 --speed-limit 10240 --speed-time 60 --retry 3 --retry-delay 5 --retry-connrefused)
 
 # ---------------------------------------------------------------------------------------------
 # Messages: on screen and in the log
@@ -65,15 +69,17 @@ run() {
     return "$status"
 }
 
-# Downloads a file, showing how much has arrived: download URL DEST
+# Downloads a file, showing how much has arrived: download URL DEST [resume]. With "resume", a
+# DEST left by a cut download goes on from where it stopped instead of starting again.
 download() {
-    local pid status=0
+    local pid status=0 args=("${CURL[@]}")
     log "\$ download $1"
+    if [[ ${3:-} == resume ]]; then args+=(-C -); fi
     if [[ ! -t 1 ]]; then
-        curl -fsSL "$1" -o "$2" 2>>"$LOG" || status=$?
+        "${args[@]}" "$1" -o "$2" 2>>"$LOG" || status=$?
         return "$status"
     fi
-    curl -fsSL "$1" -o "$2" 2>>"$LOG" &
+    "${args[@]}" "$1" -o "$2" 2>>"$LOG" &
     pid=$!
     watch_pid "$pid" "$2"
     wait "$pid" || status=$?
@@ -211,7 +217,7 @@ to_gvariant() {
 # Downloads an APT signing key (dearmored unless the destination ends in .asc).
 put_key() {
     local url=$1 dest=$2
-    curl -fsSL "$url" -o "$TMP_DIR/key" 2>>"$LOG" || return 1
+    "${CURL[@]}" "$url" -o "$TMP_DIR/key" 2>>"$LOG" || return 1
     if [[ $dest == *.asc ]]; then
         put_file "$dest" <"$TMP_DIR/key"
     else

@@ -38,7 +38,7 @@ has_cmd() { command -v "$1" >/dev/null 2>&1; }
 run_installer() {   # run_installer URL SHELL
     local script="$TMP_DIR/installer.sh"
     rm -f "$script"
-    if ! curl -fsSL "$1" -o "$script" 2>>"$LOG"; then return 1; fi
+    if ! "${CURL[@]}" "$1" -o "$script" 2>>"$LOG"; then return 1; fi
     run "$2" "$script"
 }
 
@@ -109,12 +109,19 @@ install_ai_tools() {
     fi
 }
 
-# Downloads a file once: skipped when it is already there; an interrupted download starts again
+# Downloads a file once: skipped when it is already there. A cut download is kept as .part and
+# goes on from there the next time (the models are hundreds of megabytes)
 fetch() {
     if [[ -s $2 ]]; then return 0; fi
     mkdir -p "$(dirname "$2")"
-    if download "$1" "$2.part"; then mv "$2.part" "$2"; return 0; fi
-    rm -f "$2.part"
+    local status=0
+    download "$1" "$2.part" resume || status=$?
+    if ((status == 33)); then   # the server cannot go on from the middle: start again
+        rm -f "$2.part"
+        status=0
+        download "$1" "$2.part" || status=$?
+    fi
+    if ((status == 0)); then mv "$2.part" "$2"; return 0; fi
     return 1
 }
 

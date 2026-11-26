@@ -21,7 +21,8 @@ install_context() {
     step "Skills for the agents ($skills)"
     write_skill "$skills/$APP_ID"
     write_dev_skill "$skills/$APP_ID-dev"
-    ok "The system's ($(find "$skills/$APP_ID" -name '*.md' | wc -l) guides) and the one for developing programs"
+    put_file "$skills/$APP_ID-council/SKILL.md" < <(render skills/kinobu-council/SKILL.md APP_ID)
+    ok "The system's ($(find "$skills/$APP_ID" -name '*.md' | wc -l) guides), the one for developing programs and the council"
 
     step "Linking the skills into each agent"
     # Same layout as Omarchy: symlinks, so re-running this script updates every agent.
@@ -29,7 +30,7 @@ install_context() {
     local dirs=("$HOME/.claude/skills") dir name link
     for dir in "${dirs[@]}"; do
         mkdir -p "$dir"
-        for name in "$APP_ID" "$APP_ID-dev"; do
+        for name in "$APP_ID" "$APP_ID-dev" "$APP_ID-council"; do
             link="$dir/$name"
             if [[ -e $link && ! -L $link ]]; then
                 warn "Kept your own ${link/#$HOME/\~} (not a $APP_NAME link)"
@@ -188,7 +189,8 @@ write_skill() {
     done
 }
 
-# Writes the skill for developing programs (git checkpoints, CONTEXT.md, architecture)
+# Writes the skill for developing programs (specs, git checkpoints, CONTEXT.md, architecture) and its guide
 write_dev_skill() {
     put_file "$1/SKILL.md" < <(render skills/kinobu-dev/SKILL.md APP_ID)
+    put_file "$1/specs.md" < <(render skills/kinobu-dev/specs.md)
 }

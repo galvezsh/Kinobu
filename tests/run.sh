@@ -27,7 +27,7 @@ check "nothing still says Orkestr" bash -c '! grep -rIqi orkestr kinobu.sh lib f
 check "the skills name no versions or plans" bash -c '! grep -rIqiE "kinobu [0-9]|@APP_VERSION@|graalvm-jdk-[0-9]|planned|for now|later version" files/skills files/agents/note.md'
 check "the note, loaded in every conversation, stays short" test "$(wc -w <files/agents/note.md)" -le 220
 # shellcheck disable=SC2016  # the check runs its own shell
-check "the skills' main files stay short" bash -c '[[ $(wc -w <files/skills/kinobu/SKILL.md) -le 600 && $(wc -w <files/skills/kinobu-dev/SKILL.md) -le 800 ]]'
+check "the skills' main files stay short" bash -c '[[ $(wc -w <files/skills/kinobu/SKILL.md) -le 600 && $(wc -w <files/skills/kinobu-dev/SKILL.md) -le 1000 && $(wc -w <files/skills/kinobu-council/SKILL.md) -le 900 ]]'
 check "every app speaks every language (all texts of en.json in each file)" python3 -I -c '
 import json, glob, sys
 en = json.load(open("files/i18n/en.json"))
@@ -195,6 +195,8 @@ else
     check "fastfetch config points to the system logo" grep -q "$share/data/fastfetch-logo.txt" "$home/.config/fastfetch/config.jsonc"
     check "the skill is linked into Claude Code" test "$(readlink "$home/.claude/skills/kinobu")" = "$share/skills/kinobu"
     check "the skill for developing programs is linked too" test "$(readlink "$home/.claude/skills/kinobu-dev")" = "$share/skills/kinobu-dev"
+    check "and it has its guide for specs"      test -s "$share/skills/kinobu-dev/specs.md"
+    check "the council skill is linked too"     test "$(readlink "$home/.claude/skills/kinobu-council")" = "$share/skills/kinobu-council"
     # shellcheck disable=SC2016  # the check runs its own shell
     check "the skills and the note have every mark filled" bash -c '! grep -rqE "@[A-Z_]+@" "$1/skills" "$2/.claude/CLAUDE.md"' _ "$share" "$home"
     check "the note gives the system's language"  grep -qE "system.s language: [A-Za-z]+ \(" "$home/.claude/CLAUDE.md"
@@ -330,6 +332,13 @@ rm -f "$snd/sink"; ( sleep 0.6; : >"$snd/sink" ) &
 check "the login sound waits until there is a sound output" has "$(sound true login)" "$snd/data/sounds/login.oga"
 rm -rf "$snd"
 
+echo "Willow's links: shown in the window, never read aloud"
+# shellcheck disable=SC2016  # the check runs its own Python
+check "a web address is left out of the voice, the sentence kept" python3 -I -c '
+import sys; sys.argv = ["x"]; sys.path.insert(0, "files/apps"); import voice as v
+assert v.unspoken("Te he dejado el enlace en la ventana: https://ubuntu.com/download/desktop.") == "Te he dejado el enlace en la ventana."
+assert v.unspoken("https://example.com") == "" and v.unspoken("Hola, todo bien.") == "Hola, todo bien."
+assert v.linked("Ver https://a.b/c?x=1&y=2. <b>") == "Ver <a href=\"https://a.b/c?x=1&amp;y=2\">https://a.b/c?x=1&amp;y=2</a>. &lt;b&gt;"'
 echo "Willow's safe actions (kinobu-do, in a fake home: nothing of the desktop is changed)"
 kd_home=$(mktemp -d)
 kd() { HOME=$kd_home bash files/apps/kinobu-do "$@" 2>&1; }

@@ -62,13 +62,13 @@ configure_desktop() {
             ok "$uuid"
             continue
         fi
-        url=$(curl -fsSL "https://extensions.gnome.org/extension-info/?uuid=${uuid}&shell_version=${shell_major}" \
+        url=$("${CURL[@]}" "https://extensions.gnome.org/extension-info/?uuid=${uuid}&shell_version=${shell_major}" \
             | jq -r '.download_url // empty' 2>/dev/null || true)
         if [[ -z $url ]]; then
             warn "$uuid has no release for GNOME $shell_major"
             continue
         fi
-        curl -fsSL "https://extensions.gnome.org${url}" -o "$TMP_DIR/$uuid.zip"
+        "${CURL[@]}" "https://extensions.gnome.org${url}" -o "$TMP_DIR/$uuid.zip"
         gnome-extensions install --force "$TMP_DIR/$uuid.zip" >>"$LOG" 2>&1
         new=true
         ok "$uuid installed"

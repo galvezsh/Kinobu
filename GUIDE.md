@@ -2,7 +2,7 @@
 
 How Kinobu works inside: the modes, the blocks, where everything is installed, the agents' integration, the files it touches and how to undo things. For what Kinobu is and why it exists, start with the [README](README.md).
 
-> Kinobu 0.3.2 is in development: installed and updated on its author's computer, otherwise run in simulation. This guide describes what the code does; see the [Roadmap](ROADMAP.md) for what is not verified yet.
+> Kinobu 0.3.3 is in development: installed and updated on its author's computer, otherwise run in simulation. This guide describes what the code does; see the [Roadmap](ROADMAP.md) for what is not verified yet.
 
 ## Contents
 
@@ -111,7 +111,7 @@ What is the same for everybody lives in the system; what is personal lives in ea
 | `share/kinobu/data/sounds/` | Kinobu's login and logout sounds (`login.oga`, `logout.oga`) |
 | `share/kinobu/programs/` | Kinobu's apps (Trail, Sprout, Gate, Echo's notices, Willow, Seasons) and the theme engine |
 | `share/kinobu/themes/` | The factory themes |
-| `share/kinobu/skills/` | The skills: `kinobu` (the system) and `kinobu-dev` (developing programs) |
+| `share/kinobu/skills/` | The skills: `kinobu` (the system), `kinobu-dev` (developing programs) and `kinobu-council` (debating decisions) |
 | `share/kinobu/i18n/` | Every text of Kinobu's windows and notices, one file per language |
 | `share/kinobu/data/` | The shortcut table, the fastfetch logo and taglines, and the themes' templates |
 | `share/kinobu/src/` | A copy of Kinobu itself |
@@ -154,7 +154,8 @@ Kinobu's apps speak English, Spanish, German, French, Italian and Portuguese, fo
 Kinobu integrates one agent for now, Claude Code, installed or not, so it is ready if you install it later. Other agents will come once this integration is complete.
 
 - **The system skill (`kinobu`).** A short main file with the rules and an index, and guides the agent reads only when needed (software, desktop, look, shortcuts, hardware, agents), linked into Claude Code's skills folder (`~/.claude/skills`). Hardware, versions and installed apps are never written down: the skill tells agents to check them live.
-- **The skill for developing programs (`kinobu-dev`).** How the agent builds any program for someone who does not program: git checkpoints on this computer, a `CONTEXT.md` that lets a new conversation carry on, a `README.md` and an `AGENTS.md`, an architecture that can grow and lean, commented code.
+- **The skill for developing programs (`kinobu-dev`).** How the agent builds any program for someone who does not program: a spec agreed before the code (what it will and will not do, with checks for each part, in `specs/`; a list of checks in the conversation for a small fix; someone who programs keeps their own spec and way of working; the installed versions and today's official docs checked before coding against a library), git checkpoints on this computer, a `CONTEXT.md` that lets a new conversation carry on, a `README.md` and an `AGENTS.md`, an architecture that can grow and lean, commented code.
+- **The council (`kinobu-council`).** When you ask the agent to debate an idea or a choice, independent advisors look at it from fixed angles (for it, against it, the problem it really solves; in a thorough council also an outsider and someone who has to do it, with an anonymous review) without seeing your conversation, and a chair gives a plain verdict, what would change it and the first step. Only when you ask or accept its offer; the verdict is kept in the project when it shapes it.
 - **The note.** A short block in the agent's global instructions (`~/.claude/CLAUDE.md`), loaded in every conversation: when to load each skill, read a project's `CONTEXT.md` first, work step by step and wait for your go-ahead, work freely inside your folder and ask before `sudo`, talk in your language (the system's until you write) and save tokens.
 - **The answer style.** Claude Code answers concisely (its Concise output style), unless you chose another one; its verbose mode stays off.
 - **Kinobu Agent (`kinobu-agent`), the system subagent.** A read-only investigator the agent can call for diagnoses that need many commands; it returns a short report (cause, fix, check, what needs `sudo`).
@@ -169,7 +170,7 @@ Press **Super+Shift+Space**, speak, and it answers aloud and keeps listening. It
 
 What it can do:
 
-- **Answer and look things up**: the web, and the computer with read-only commands.
+- **Answer and look things up**: the web, and the computer with read-only commands. A useful link is left in the window (click or copy it), never read aloud.
 - **Act, safely**: volume, microphone, brightness, night light, Do Not Disturb, dark or light mode, the theme, music, a page of Settings, Wi-Fi, Bluetooth, reminders and timers. All through `kinobu-do`, the only command that lets it change anything (`kinobu-do help` lists its actions; you can use it too).
 - **See your screen** when you ask ("what does this message mean?"). The first time, GNOME asks whether apps may take screenshots: choose Allow. The picture stays in Willow's private folder.
 - **Know this computer**: it reads Kinobu's skill only when it is unsure, so it costs nothing the rest of the time.
